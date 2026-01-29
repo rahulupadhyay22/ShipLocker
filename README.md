@@ -1,4 +1,4 @@
-# Ruffleberry Global Locker
+# ShipLocker
 
 A modern Django-based platform for international parcel forwarding, locker management, and shipping automation. Built for security, scalability, and user experience.
 
@@ -28,8 +28,8 @@ A modern Django-based platform for international parcel forwarding, locker manag
 
 1. **Clone the repo:**
    ```bash
-   git clone https://github.com/your-org/ruffleberry.git
-   cd ruffleberry
+   git clone https://github.com/your-org/ShipLocker.git
+   cd ShipLocker
    ```
 
 2. **Install dependencies:**
@@ -74,7 +74,7 @@ apps/
   locker/        # Locker, parcel, images
   shipments/     # Shipments, items, documents
   content/       # Static pages, calculator
-ruffleberry/     # Project settings, middleware, mixins
+ShipLocker/     # Project settings, middleware, mixins
 static/          # CSS, JS, images
 templates/       # HTML templates
 ```
@@ -88,16 +88,17 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## 👨‍💻 Maintainers
 - Rahul (Lead Developer)
-- Ruffleberry Team
+- ShipLocker Team
 
 ---
 
 ## 🌐 Live Demo
-- [https://your-ruffleberry-app.com](https://your-ruffleberry-app.com)
+- [https://your-ShipLocker-app.com](https://your-ShipLocker-app.com)
 
 ---
 
 ## 📣 Contact & Support
-- Email: support@ruffleberry.com
-- [Open an issue](https://github.com/your-org/ruffleberry/issues)
+- Email: rahulu825@gmail.com
+- [Open an issue](https://github.com/your-org/ShipLocker/issues)
 #
+
