@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+
+{% block title %}Duties & Customs - Ruffleberry{% endblock %}
+
+{% block content %}
+<style>
+    .duties-page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding-bottom: 3rem;
+    }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1F2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+        color: #6B7280;
+        font-size: 1rem;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6B7280;
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .back-link:hover {
+        color: #667eea;
+    }
+
+    /* Info Cards */
+    .info-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #E5E7EB;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-card h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1F2937;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .info-card p {
+        color: #4B5563;
+        line-height: 1.7;
+        margin-bottom: 1rem;
+    }
+
+    .info-card ul {
+        margin-left: 1.25rem;
+        color: #4B5563;
+    }
+
+    .info-card li {
+        margin-bottom: 0.5rem;
+        line-height: 1.6;
+    }
+
+    /* Alert Box */
+    .alert-box {
+        background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+        border: 1px solid #F59E0B;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .alert-box .icon {
+        font-size: 1.5rem;
+    }
+
+    .alert-box h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #92400E;
+        margin-bottom: 0.25rem;
+    }
+
+    .alert-box p {
+        font-size: 0.9rem;
+        color: #92400E;
+        margin: 0;
+    }
+
+    /* FAQ Section */
+    .faq-item {
+        border-bottom: 1px solid #E5E7EB;
+        padding: 1.25rem 0;
+    }
+
+    .faq-item:last-child {
+        border-bottom: none;
+    }
+
+    .faq-question {
+        font-weight: 600;
+        color: #1F2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .faq-answer {
+        color: #6B7280;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    /* Help Card */
+    .help-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        color: white;
+        text-align: center;
+        margin-top: 2rem;
+    }
+
+    .help-card h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .help-card p {
+        opacity: 0.9;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .help-card a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: white;
+        color: #667eea;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+    }
+
+    .help-card a:hover {
+        background: #F9FAFB;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+        .duties-page {
+            padding: 0 1rem 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .info-card {
+            padding: 1.25rem;
+        }
+
+        .info-card h2 {
+            font-size: 1.1rem;
+        }
+
+        .alert-box {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
+</style>
+
+<div class="duties-page">
+    <a href="{% url 'accounts:dashboard' %}" class="back-link">← Back to Dashboard</a>
+
+    <div class="page-header">
+        <h1>📋 Duties & Customs Information</h1>
+        <p>Understand import duties, taxes, and customs procedures for international shipments.</p>
+    </div>
+
+    <!-- Important Alert -->
+    <div class="alert-box">
+        <span class="icon">⚠️</span>
+        <div>
+            <h3>Duties Are Receiver Responsibility</h3>
+            <p>Import duties are excluded & assessed by destination customs based on item value. Tariff is emailed to
+                the receiver. Ruffleberry is not liable for rejected shipments.</p>
+        </div>
+    </div>
+
+    <!-- Key Points -->
+    <div class="info-card">
+        <h2>🔑 Key Points</h2>
+        <ul>
+            <li><strong>Duties are payable by the receiver</strong> - The person receiving the package pays any
+                applicable customs duties.</li>
+            <li><strong>Duty rates vary by country</strong> - Each country has its own duty rates based on product
+                category and value.</li>
+            <li><strong>De minimis thresholds</strong> - Many countries have a minimum value below which no duties
+                apply.</li>
+            <li><strong>Commercial vs Personal</strong> - Commercial shipments may have different duty rates than
+                personal ones.</li>
+        </ul>
+    </div>
+
+    <!-- Common Countries -->
+    <div class="info-card">
+        <h2>🌍 Common Destination Duty Rates</h2>
+        <p>Approximate duty rates (may vary based on product category):</p>
+        <ul>
+            <li><strong>USA:</strong> 0-25% (de minimis $800)</li>
+            <li><strong>UK:</strong> 0-20% VAT + duties (de minimis £135)</li>
+            <li><strong>Canada:</strong> 0-18% + GST (de minimis $20 CAD)</li>
+            <li><strong>Australia:</strong> 5-10% + 10% GST (de minimis $1000 AUD)</li>
+            <li><strong>UAE:</strong> 5% VAT (de minimis varies)</li>
+            <li><strong>Singapore:</strong> 7% GST (de minimis $400 SGD)</li>
+        </ul>
+        <p style="font-size: 0.85rem; color: #9CA3AF; margin-top: 1rem;">* Rates are approximate and subject to change.
+            Always check with local customs.</p>
+    </div>
+
+    <!-- U.S. Tariff Updates -->
+    <div class="info-card">
+        <h2>🇺🇸 U.S. IEEPA Tariff Updates</h2>
+        <p>Effective August 2025, shipments from India to the USA are subject to additional IEEPA tariffs:</p>
+        <ul>
+            <li>Additional IEEPA rate: <strong>25%</strong></li>
+            <li>Total IEEPA duty: <strong>50% (25% + 25%)</strong> + general duty rate</li>
+            <li>Expect extended clearance delays</li>
+        </ul>
+        <p style="margin-top: 1rem;"><strong>Contact for help:</strong></p>
+        <ul>
+            <li>📞 DHL Tariff Helpline: +1 (866) 638-7668</li>
+            <li>📞 UPS Tariff Helpline: +1 (866) 493-7140</li>
+        </ul>
+    </div>
+
+    <!-- FAQ -->
+    <div class="info-card">
+        <h2>❓ Frequently Asked Questions</h2>
+
+        <div class="faq-item">
+            <div class="faq-question">What happens if I don't pay duties?</div>
+            <div class="faq-answer">The shipment will be held at customs and may be returned to origin or destroyed.
+                You'll also be charged return shipping fees.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Can I prepay duties?</div>
+            <div class="faq-answer">Some carriers offer Delivered Duty Paid (DDP) options. Contact us for more
+                information about DDP shipping.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Why is my package stuck at customs?</div>
+            <div class="faq-answer">Packages may be held for documentation review, duty payment, or random inspection.
+                Check your email for any customs notices.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">How long does customs clearance take?</div>
+            <div class="faq-answer">Typically 1-5 business days, but can be longer during peak seasons or if additional
+                documentation is required.</div>
+        </div>
+    </div>
+
+    <!-- Help Card -->
+    <div class="help-card">
+        <h3>💬 Need Help with Customs?</h3>
+        <p>Our support team can help you understand duties and resolve customs issues.</p>
+        <a href="https://wa.me/917337257774" target="_blank">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                    d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+            </svg>
+            Chat on WhatsApp
+        </a>
+    </div>
+</div>
+{% endblock %}

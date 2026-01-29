@@ -1,0 +1,302 @@
+{% extends 'public_base.html' %}
+
+{% block title %}About Us - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="about-hero">
+    <h1>Bridging the Gap Between <br><span class="highlight">India & The World</span></h1>
+    <p class="hero-subtitle">We make shopping from India as easy as shopping locally, no matter where you live.</p>
+</div>
+
+<div class="about-container">
+    <!-- Mission Section -->
+    <div class="content-section">
+        <div class="text-col">
+            <h2>Our Mission</h2>
+            <p>Our mission is simple: to connect global shoppers with the vibrant, diverse, and affordable markets of
+                India. We believe that borders shouldn't limit your choices.</p>
+            <p>Whether you're an expat missing the taste of home, a fashion enthusiast looking for ethnic wear, or a
+                business sourcing products, Ruffleberry provides the logistics infrastructure to make it happen
+                seamlessly.</p>
+        </div>
+        <div class="visual-col mission-visual">
+            <div class="visual-card">
+                <span class="emoji">🌏</span>
+                <h3>Global Reach</h3>
+            </div>
+            <div class="visual-card">
+                <span class="emoji">🇮🇳</span>
+                <h3>Indian Roots</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Values Grid -->
+    <div class="values-section">
+        <h2>Our Core Values</h2>
+        <div class="values-grid">
+            <div class="value-card">
+                <div class="icon-box blue">🤝</div>
+                <h3>Trust First</h3>
+                <p>We treat your packages like our own. Safety and security are our top priorities.</p>
+            </div>
+            <div class="value-card">
+                <div class="icon-box purple">⚡</div>
+                <h3>Speed & Efficiency</h3>
+                <p>We understand you want your items fast. We process shipments within 24 hours.</p>
+            </div>
+            <div class="value-card">
+                <div class="icon-box orange">💎</div>
+                <h3>Transparency</h3>
+                <p>No hidden fees. What you see on our calculator is what you pay.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team/Story -->
+    <div class="story-section">
+        <h2>Why Ruffleberry?</h2>
+        <p class="story-text">Founded by a team of logistics experts and tech enthusiasts, Ruffleberry was born out of a
+            personal frustration: the difficulty of getting authentic Indian products abroad. High shipping costs,
+            customs complexity, and unreliable couriers made it a nightmare.</p>
+        <p class="story-text">We built Ruffleberry to fix this. By consolidating shipments, we drastically reduce costs.
+            By handling customs paperwork, we remove the stress. And by using technology, we give you complete control
+            over your packages.</p>
+
+        <div class="stats-row">
+            <div class="stat">
+                <strong>50k+</strong>
+                <span>Happy Customers</span>
+            </div>
+            <div class="stat">
+                <strong>1M+</strong>
+                <span>Packages Shipped</span>
+            </div>
+            <div class="stat">
+                <strong>200+</strong>
+                <span>Countries Served</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .about-hero {
+        text-align: center;
+        padding: 4rem 1rem;
+        background: radial-gradient(circle at center, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
+        margin-bottom: 4rem;
+    }
+
+    .about-hero h1 {
+        font-size: 3.5rem;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 1.5rem;
+        color: #111827;
+    }
+
+    .about-hero .highlight {
+        background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-subtitle {
+        font-size: 1.25rem;
+        color: #6B7280;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .about-container {
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
+    /* Content Section */
+    .content-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+        align-items: center;
+        margin-bottom: 6rem;
+    }
+
+    .text-col h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #1F2937;
+    }
+
+    .text-col p {
+        font-size: 1.1rem;
+        color: #4B5563;
+        margin-bottom: 1.5rem;
+        line-height: 1.7;
+    }
+
+    .visual-col {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+    }
+
+    .visual-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 20px;
+        border: 1px solid #E5E7EB;
+        text-align: center;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+        width: 180px;
+    }
+
+    .visual-card .emoji {
+        font-size: 3rem;
+        display: block;
+        margin-bottom: 1rem;
+    }
+
+    .visual-card h3 {
+        font-size: 1.1rem;
+        color: #111827;
+    }
+
+    /* Values */
+    .values-section {
+        text-align: center;
+        margin-bottom: 6rem;
+    }
+
+    .values-section h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 3rem;
+    }
+
+    .values-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+    }
+
+    .value-card {
+        padding: 2rem;
+        background: #F9FAFB;
+        border-radius: 20px;
+        transition: transform 0.3s;
+    }
+
+    .value-card:hover {
+        transform: translateY(-5px);
+        background: white;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+    }
+
+    .icon-box {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin: 0 auto 1.5rem;
+    }
+
+    .icon-box.blue {
+        background: #EBF5FF;
+    }
+
+    .icon-box.purple {
+        background: #F3E8FF;
+    }
+
+    .icon-box.orange {
+        background: #FFF7ED;
+    }
+
+    .value-card h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+        color: #111827;
+    }
+
+    .value-card p {
+        color: #6B7280;
+        line-height: 1.6;
+    }
+
+    /* Story */
+    .story-section {
+        background: #111827;
+        color: white;
+        padding: 4rem;
+        border-radius: 30px;
+        text-align: center;
+    }
+
+    .story-section h2 {
+        font-size: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .story-text {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        max-width: 700px;
+        margin: 0 auto 1.5rem;
+        line-height: 1.8;
+    }
+
+    .stats-row {
+        display: flex;
+        justify-content: center;
+        gap: 4rem;
+        margin-top: 3rem;
+        padding-top: 3rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat strong {
+        display: block;
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat span {
+        opacity: 0.7;
+    }
+
+    @media (max-width: 768px) {
+        .about-hero h1 {
+            font-size: 2.5rem;
+        }
+
+        .content-section {
+            grid-template-columns: 1fr;
+        }
+
+        .values-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .story-section {
+            padding: 2rem;
+        }
+
+        .stats-row {
+            flex-direction: column;
+            gap: 2rem;
+        }
+    }
+</style>
+{% endblock %}

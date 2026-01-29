@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ parcel.item_name|default:parcel.tracking_number }} - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="{% url 'locker:my_locker' %}" class="btn btn-secondary btn-sm">← Back</a>
+        <div>
+            <h1 class="page-title">Parcel Details</h1>
+            <p class="page-subtitle">Review and approve this parcel for shipping.</p>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-layout">
+    <!-- Left Column: Images & Info -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Inspection Photos -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📷 Inspection Photos</h3>
+            </div>
+            <div class="card-body">
+                {% if parcel.images.all %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem;">
+                    {% for image in parcel.images.all %}
+                    <div
+                        style="position: relative; border-radius: 12px; overflow: hidden; height: 140px; border: 1px solid var(--surface-200);">
+                        <img src="{{ image.image_url }}" alt="Inspection photo"
+                            style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: transform 0.2s;"
+                            onclick="window.open('{{ image.image_url }}', '_blank')"
+                            onmouseover="this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.transform='scale(1)'">
+                        {% if image.is_primary %}
+                        <span
+                            style="position: absolute; top: 0.5rem; left: 0.5rem; background: var(--primary); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">Primary</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div
+                    style="text-align: center; padding: 3rem 1rem; color: var(--text-muted); background: var(--surface-50); border-radius: var(--radius-sm);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📷</div>
+                    <p>No inspection photos available yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Inspection Notes -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📝 Inspection Notes</h3>
+            </div>
+            <div class="card-body">
+                {% if parcel.inspection_notes %}
+                <p style="font-size: 1rem; color: var(--text-main);">{{ parcel.inspection_notes }}</p>
+                {% else %}
+                <p style="color: var(--text-muted);">No notes from warehouse.</p>
+                {% endif %}
+
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--surface-100);">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div>
+                            <span class="stat-label">Weight</span>
+                            <div class="stat-value" style="font-size: 1.25rem;">{{ parcel.weight_kg|default:"--" }} kg
+                            </div>
+                        </div>
+                        <div>
+                            <span class="stat-label">Received</span>
+                            <div class="stat-value" style="font-size: 1.25rem;">{{ parcel.received_at|date:"M d, Y" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Declaration Form -->
+    <div>
+        {% if parcel.status == 'action_required' %}
+        <div class="card" style="border-top: 4px solid var(--primary);">
+            <div class="card-header">
+                <h3>✏️ Item Declaration</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'locker:approve_parcel' pk=parcel.pk %}"
+                    enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="form-group">
+                        <label class="form-label" for="item_name">Item Name <span
+                                style="color: var(--danger-text);">*</span></label>
+                        <input type="text" id="item_name" name="item_name" class="form-input"
+                            value="{{ parcel.item_name }}" placeholder="e.g. Nike Air Jordan Shoes" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="item_price">Item Value ({{ parcel.item_currency }}) <span
+                                style="color: var(--danger-text);">*</span></label>
+                        <input type="number" id="item_price" name="item_price" class="form-input"
+                            value="{{ parcel.item_price }}" step="0.01" placeholder="0.00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="category">Category <span
+                                style="color: var(--danger-text);">*</span></label>
+                        <select id="category" name="category" class="form-input" required>
+                            <option value="">Select category...</option>
+                            <option value="clothing">Clothing &amp; Accessories</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="cosmetics">Cosmetics &amp; Personal Care</option>
+                            <option value="food">Food &amp; Supplements</option>
+                            <option value="home">Home &amp; Kitchen</option>
+                            <option value="books">Books &amp; Stationery</option>
+                            <option value="jewelry">Jewelry &amp; Watches</option>
+                            <option value="sports">Sports &amp; Fitness</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="customs_description">Customs Description <span
+                                style="color: var(--danger-text);">*</span></label>
+                        <textarea id="customs_description" name="customs_description" class="form-input" rows="3"
+                            placeholder="Brief description for customs (e.g. Men's athletic shoes, size 10, new)"
+                            required>{{ parcel.customs_description }}</textarea>
+                        <small
+                            style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.5rem;">Be
+                            accurate - incorrect declarations can cause customs delays</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="invoice">Invoice (Optional)</label>
+                        <div style="position: relative;">
+                            <input type="file" id="invoice" name="invoice" class="form-input"
+                                accept=".pdf,.jpg,.jpeg,.png" style="padding-top: 0.6rem;">
+                        </div>
+                        <small
+                            style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.5rem;">Upload
+                            purchase invoice for faster customs clearance</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                        ✓ Approve & Move to Ready to Ship
+                    </button>
+                </form>
+
+                <div style="margin: 2rem 0; height: 1px; background: var(--surface-200);"></div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="btn btn-secondary" style="flex: 1;"
+                        onclick="document.getElementById('returnModal').style.display='flex'">
+                        Request Return
+                    </button>
+                    <button type="button" class="btn btn-danger" style="flex: 1;"
+                        onclick="document.getElementById('discardModal').style.display='flex'">
+                        Discard
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-header">
+                <h3>📦 Parcel Status</h3>
+            </div>
+            <div class="card-body">
+                <span class="status-badge 
+                    {% if parcel.status == 'approved' %}status-approved
+                    {% elif parcel.status == 'shipped' %}status-shipped
+                    {% else %}status-pending{% endif %}" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                    {{ parcel.get_status_display }}
+                </span>
+
+                <div style="margin-top: 2rem;">
+                    <div class="stat-label">Item Name</div>
+                    <div style="font-size: 1.1rem; font-weight: 500; margin-top: 0.25rem;">
+                        {{ parcel.item_name|default:"--" }}</div>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <div class="stat-label">Declared Value</div>
+                    <div style="font-size: 1.1rem; font-weight: 500; margin-top: 0.25rem;">{{ parcel.item_currency }} 
+                        {{ parcel.item_price|default:"--" }}</div>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <div class="stat-label">Category</div>
+                    <div style="font-size: 1.1rem; font-weight: 500; margin-top: 0.25rem;">{{ parcel.get_category_display|default:"--" }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Return Modal -->
+<div id="returnModal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="width: 100%; max-width: 500px; margin: 1.5rem; animation: slideUp 0.3s ease-out;">
+        <div class="card-header">
+            <h3>Request Return</h3>
+            <button onclick="document.getElementById('returnModal').style.display='none'"
+                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary);">&times;</button>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'locker:request_return' pk=parcel.pk %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Reason for return <span
+                            style="color: var(--danger-text);">*</span></label>
+                    <textarea name="reason" class="form-input" rows="4" required
+                        placeholder="Please explain why you want to return this item..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Return Request</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Discard Modal -->
+<div id="discardModal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card"
+        style="width: 100%; max-width: 500px; margin: 1.5rem; border-color: var(--danger-bg); animation: slideUp 0.3s ease-out;">
+        <div class="card-header" style="background: var(--danger-bg); border-bottom-color: #FCA5A5;">
+            <h3 style="color: var(--danger-text);">⚠️ Confirm Discard</h3>
+            <button onclick="document.getElementById('discardModal').style.display='none'"
+                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--danger-text);">&times;</button>
+        </div>
+        <div class="card-body">
+            <div class="modern-alert alert-danger" style="margin-top: 0;">
+                <p><strong>This action is IRREVERSIBLE!</strong> The item will be donated or disposed of.</p>
+            </div>
+            <form method="post" action="{% url 'locker:request_discard' pk=parcel.pk %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Reason (optional)</label>
+                    <textarea name="reason" class="form-input" rows="2"
+                        placeholder="Why are you discarding this item?"></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger" style="width: 100%;">Yes, Discard This Item</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes slideUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>
+
+<script>
+    // Close modals on outside click
+    window.onclick = function (event) {
+        if (event.target.id === 'returnModal') {
+            document.getElementById('returnModal').style.display = "none";
+        }
+        if (event.target.id === 'discardModal') {
+            document.getElementById('discardModal').style.display = "none";
+        }
+    }
+</script>
+{% endblock %}

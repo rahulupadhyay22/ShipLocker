@@ -1,0 +1,115 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - Ruffleberry Global Locker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+
+<body>
+    <div class="auth-split-layout">
+        <!-- Left Pane (Marketing) - Identical to Login -->
+        <div class="auth-left">
+            <!-- Brand -->
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div
+                    style="width: 36px; height: 36px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 24 24">
+                        <path
+                            d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" />
+                    </svg>
+                </div>
+                <span style="font-family: 'Outfit'; font-weight: 700; font-size: 1.25rem;">Ruffleberry</span>
+            </div>
+
+            <!-- Feature Card -->
+            <div class="auth-feature-card">
+                <img src="{% static 'images/login-bg.png' %}" alt="Smart Warehouse" class="auth-feature-img">
+                <div class="auth-feature-overlay">
+                    <div style="font-size: 2rem; margin-bottom: 0.25rem;">📦</div>
+                    <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.25rem;">Smart Locker #402</div>
+                    <div style="font-size: 0.85rem; opacity: 0.9;">Status: Ready for pickup</div>
+                </div>
+            </div>
+
+            <!-- Copy -->
+            <div>
+                <h2 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; line-height: 1.2;">Seamless
+                    Logistics Management</h2>
+                <p style="font-size: 1.1rem; opacity: 0.8; max-width: 600px; line-height: 1.6;">Track shipments, manage
+                    lockers, and automate your delivery workflows in real-time with our intelligent platform.</p>
+            </div>
+        </div>
+
+        <!-- Right Pane (Form) -->
+        <div class="auth-right">
+            <div class="auth-form-container">
+                <div style="margin-bottom: 2rem;">
+                    <h1 style="font-size: 2rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+                        One-Time Password</h1>
+                    <p style="color: var(--text-secondary); font-size: 1rem;">
+                        We sent a code to <strong style="color: var(--text-main);">{{ email }}</strong>
+                    </p>
+                </div>
+
+                {% if messages %}
+                <div class="messages" style="margin-bottom: 1.5rem;">
+                    {% for message in messages %}
+                    <div
+                        class="modern-alert {% if message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="post" action="{% url 'accounts:verify_otp' %}">
+                    {% csrf_token %}
+
+                    <div class="form-group">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <label class="form-label" for="otp" style="margin-bottom: 0;">Secure Code</label>
+                            <a href="{% url 'accounts:login' %}"
+                                style="font-size: 0.85rem; color: var(--primary); font-weight: 500;">Change email</a>
+                        </div>
+
+                        <!-- Premium Single Input simulating boxes -->
+                        <input type="text" id="otp" name="otp" class="form-control" placeholder="0 0 0 0 0 0"
+                            pattern="[0-9]{6}" maxlength="6" required autofocus autocomplete="one-time-code"
+                            style="text-align: center; font-size: 2rem; letter-spacing: 0.75rem; height: 64px; font-weight: 600; font-family: monospace;">
+
+                        <p
+                            style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            ℹ️ Code expires in 5 minutes
+                        </p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; height: 48px; font-size: 1rem;">
+                        Verify & Login
+                    </button>
+                </form>
+
+                <p style="text-align: center; margin-top: 2rem; font-size: 0.9rem; color: var(--text-secondary);">
+                    Didn't receive the code?
+                    <a href="{% url 'accounts:login' %}" style="color: var(--primary); font-weight: 600;">Resend</a>
+                </p>
+
+                <div style="text-align: center; margin-top: 3rem;">
+                    <a href="#" style="font-size: 0.85rem; color: var(--text-muted);">Having trouble? Contact
+                        Support</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

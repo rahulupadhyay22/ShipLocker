@@ -1,0 +1,154 @@
+{% extends 'public_base.html' %}
+
+{% block title %}Privacy Policy - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Privacy Policy</h1>
+    <p>Last updated: January 1, 2024</p>
+</div>
+
+<div class="legal-container">
+    <div class="modern-card">
+        <div class="card-body-legal">
+            <section>
+                <h3>1. Introduction</h3>
+                <p>At Ruffleberry ("we," "our," or "us"), we respect your privacy and are committed to protecting your
+                    personal data. This privacy policy will inform you as to how we look after your personal data when
+                    you visit our website (regardless of where you visit it from) and tell you about your privacy rights
+                    and how the law protects you.</p>
+            </section>
+
+            <section>
+                <h3>2. Data We Collect</h3>
+                <p>We may collect, use, store and transfer different kinds of personal data about you which we have
+                    grouped together follows:</p>
+                <ul class="bullet-list">
+                    <li><strong>Identity Data:</strong> includes first name, maiden name, last name, username or similar
+                        identifier.</li>
+                    <li><strong>Contact Data:</strong> includes billing address, delivery address, email address and
+                        telephone numbers.</li>
+                    <li><strong>Transaction Data:</strong> includes details about payments to and from you and other
+                        details of products and services you have purchased from us.</li>
+                    <li><strong>Technical Data:</strong> includes internet protocol (IP) address, your login data,
+                        browser type and version, time zone setting and location.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h3>3. How We Use Your Data</h3>
+                <p>We will only use your personal data when the law allows us to. Most commonly, we will use your
+                    personal data in the following circumstances:</p>
+                <ul class="bullet-list">
+                    <li>To register you as a new customer.</li>
+                    <li>To process and deliver your orders including: manage payments, fees and charges, and collect and
+                        recover money owed to us.</li>
+                    <li>To manage our relationship with you which will include: notifying you about changes to our terms
+                        or privacy policy, asking you to leave a review or take a survey.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h3>4. Data Security</h3>
+                <p>We have put in place appropriate security measures to prevent your personal data from being
+                    accidentally lost, used or accessed in an unauthorized way, altered or disclosed. In addition, we
+                    limit access to your personal data to those employees, agents, contractors and other third parties
+                    who have a business need to know.</p>
+            </section>
+
+            <section>
+                <h3>5. Data Retention</h3>
+                <p>We will only retain your personal data for as long as necessary to fulfill the purposes we collected
+                    it for, including for the purposes of satisfying any legal, accounting, or reporting requirements.
+                </p>
+            </section>
+
+            <section>
+                <h3>6. Your Legal Rights</h3>
+                <p>Under certain circumstances, you have rights under data protection laws in relation to your personal
+                    data, including the right to request access, correction, erasure, restriction, transfer, to object
+                    to processing, to portability of data and (where the lawful ground of processing is consent) to
+                    withdraw consent.</p>
+            </section>
+
+            <section>
+                <h3>7. Contact Us</h3>
+                <p>If you have any questions about this privacy policy or our privacy practices, please contact us at:
+                    <a href="mailto:privacy@ruffleberry.com" style="color: #2563EB;">privacy@ruffleberry.com</a></p>
+            </section>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        margin-bottom: 3rem;
+        text-align: center;
+    }
+
+    .page-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+        color: #6B7280;
+    }
+
+    .legal-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .modern-card {
+        background: white;
+        border: 1px solid #E5E7EB;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-body-legal {
+        padding: 3rem;
+    }
+
+    section {
+        margin-bottom: 2.5rem;
+    }
+
+    section:last-child {
+        margin-bottom: 0;
+    }
+
+    h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 1rem;
+    }
+
+    p {
+        color: #374151;
+        line-height: 1.7;
+    }
+
+    .bullet-list {
+        list-style-type: disc;
+        padding-left: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .bullet-list li {
+        margin-bottom: 0.5rem;
+        color: #374151;
+    }
+
+    @media (max-width: 768px) {
+        .card-body-legal {
+            padding: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}

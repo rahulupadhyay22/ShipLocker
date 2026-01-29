@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Shipment - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header" style="align-items: flex-start; flex-direction: column; gap: 1rem;">
+    <a href="{% url 'shipments:list' %}" class="btn btn-secondary btn-sm" style="align-self: flex-start;">← Back</a>
+    <div>
+        <h1 class="page-title">Create Shipment</h1>
+        <p class="page-subtitle">Select items and choose where to ship them.</p>
+    </div>
+</div>
+
+{% if not has_kyc %}
+<div class="modern-alert" style="background: var(--warning-bg); border: 1px solid #FCD34D;">
+    <div style="font-size: 1.5rem;">⚠️</div>
+    <div style="flex: 1;">
+        <strong>KYC Verification Pending</strong>
+        <p style="color: var(--warning-text); margin-top: 0.25rem;">
+            International shipments require KYC. You might face customs delays or higher duties.
+            <a href="{% url 'kyc:list' %}" style="text-decoration: underline; font-weight: 600; color: inherit;">Upload
+                documents now</a>.
+        </p>
+    </div>
+</div>
+{% endif %}
+
+{% if parcels %}
+<form method="post" id="shipmentForm" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="dashboard-layout">
+        <!-- Left Column: Item Selection -->
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>📦 Select Items</h3>
+                    <span class="selection-count status-badge status-pending" style="font-size: 0.8rem;">0
+                        selected</span>
+                </div>
+                <div class="card-body" style="background: var(--surface-50);">
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% for parcel in parcels %}
+                        <label class="parcel-select-card">
+                            <input type="checkbox" name="parcels" value="{{ parcel.id }}" class="parcel-checkbox"
+                                onchange="updateSummary()">
+                            <div class="psc-content">
+                                <div class="psc-image">
+                                    {% if parcel.images.first %}
+                                    <img src="{{ parcel.images.first.image_url }}" alt="Item">
+                                    {% else %}
+                                    <span style="font-size: 1.5rem;">📦</span>
+                                    {% endif %}
+                                </div>
+                                <div style="flex: 1;">
+                                    <div class="psc-title">{{ parcel.item_name|default:parcel.tracking_number }}</div>
+                                    <div class="psc-meta">
+                                        {{ parcel.get_category_display }} • {{ parcel.weight_kg|default:"--" }} kg
+                                    </div>
+                                </div>
+                                <div class="psc-price">
+                                    {{ parcel.item_currency }} {{ parcel.item_price }}
+                                </div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>🚀 Shipment Type</h3>
+                </div>
+                <div class="card-body">
+                    <div class="radio-group">
+                        <label class="radio-card">
+                            <input type="radio" name="shipment_type" value="international" checked>
+                            <span class="rc-content">
+                                <div class="rc-icon-wrapper">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <strong>International</strong>
+                                    <span>Global shipping</span>
+                                </div>
+                            </span>
+                        </label>
+                        <label class="radio-card">
+                            <input type="radio" name="shipment_type" value="domestic">
+                            <span class="rc-content">
+                                <div class="rc-icon-wrapper">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <strong>Domestic</strong>
+                                    <span>Within India</span>
+                                </div>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Address -->
+        <div>
+            <div class="card" style="position: sticky; top: 2rem;">
+                <div class="card-header">
+                    <h3>📍 Delivery Address</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="recipient_name" class="form-control" required
+                            placeholder="Receiver Name">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        <input type="text" name="address_line1" class="form-control" required
+                            placeholder="Receiver Address">
+                        <input type="text" name="address_line2" class="form-control" style="margin-top: 0.5rem;"
+                            placeholder="Apt, Suite, Unit (Optional)">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">City</label>
+                            <input type="text" name="city" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">State</label>
+                            <input type="text" name="state" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">ZIP / Postal Code</label>
+                            <input type="text" name="postal_code" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Country</label>
+                            <select name="country" class="form-control" required>
+                                <option value="">Select...</option>
+                                <option value="US">United States</option>
+                                <option value="GB">United Kingdom</option>
+                                <option value="CA">Canada</option>
+                                <option value="AU">Australia</option>
+                                <option value="AE">UAE</option>
+                                <option value="SG">Singapore</option>
+                                <option value="DE">Germany</option>
+                                <option value="IN">India</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" name="recipient_phone" class="form-control" required
+                            placeholder="+1 234 567 8900" pattern="[+]?[0-9\s\-]{7,20}"
+                            title="Enter a valid phone number">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="recipient_email" class="form-control" required
+                            placeholder="For tracking updates">
+                    </div>
+
+                    <!-- Declaration -->
+                    <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px dashed var(--surface-100);">
+                        <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">📄 Customs Declaration</h4>
+
+                        <div class="modern-alert"
+                            style="background: var(--success-bg); border: 1px solid #BBF7D0; color: #166534; flex-direction: column; align-items: flex-start;">
+                            <p style="margin: 0; font-size: 0.9rem;">Download, sign, and upload the declaration form.
+                            </p>
+                            <a href="{% static 'documents/Customer_Declaration_Authorization.pdf' %}"
+                                class="btn btn-sm btn-secondary" style="margin-top: 0.5rem; background: white;"
+                                download>
+                                📥 Download Form
+                            </a>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label class="form-label">Upload Signed Declaration *</label>
+                            <input type="file" name="declaration_file" class="form-control" required
+                                accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem; border-top: 1px solid var(--surface-200); padding-top: 1.5rem;">
+                        <div
+                            style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-weight: 600;">
+                            <span>Items Selected</span>
+                            <span id="summaryCount">0</span>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled
+                            style="width: 100%; justify-content: center;">
+                            Create Shipment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% else %}
+<div class="card" style="text-align: center; padding: 5rem 2rem;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+    <h3>No Approved Items</h3>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">You need to approve items in your locker before you
+        can ship them.</p>
+    <a href="{% url 'locker:action_required' %}" class="btn btn-primary">Go to Locker</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateSummary() {
+        const checkboxes = document.querySelectorAll('.parcel-checkbox');
+        let count = 0;
+
+        checkboxes.forEach(cb => {
+            const card = cb.closest('.parcel-select-card');
+            if (cb.checked) {
+                count++;
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        });
+
+        document.querySelector('.selection-count').textContent = count + ' selected';
+        document.getElementById('summaryCount').textContent = count;
+
+        const btn = document.getElementById('submitBtn');
+        if (count > 0) {
+            btn.removeAttribute('disabled');
+            btn.style.opacity = '1';
+        } else {
+            btn.setAttribute('disabled', 'true');
+            btn.style.opacity = '0.5';
+        }
+    }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Radio Cards */
+    .radio-group {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .radio-card {
+        flex: 1;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .radio-card input {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .rc-content {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        padding: 1rem;
+        border: 2px solid var(--surface-200);
+        border-radius: 12px;
+        transition: 0.2s;
+    }
+
+    .rc-icon-wrapper {
+        width: 44px;
+        height: 44px;
+        background: var(--surface-100);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        transition: 0.2s;
+    }
+
+    .rc-icon-wrapper svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .radio-card input:checked+.rc-content {
+        border-color: var(--text-main);
+        background: var(--surface-50);
+    }
+
+    .radio-card input:checked+.rc-content .rc-icon-wrapper {
+        background: var(--text-main);
+        color: white;
+    }
+
+    /* Parcel Checkbox Cards */
+    .parcel-select-card {
+        display: block;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .parcel-checkbox {
+        position: absolute;
+        opacity: 0;
+        height: 0;
+        width: 0;
+    }
+
+    .psc-content {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        padding: 1rem;
+        border: 2px solid var(--surface-200);
+        border-radius: 12px;
+        transition: 0.2s;
+        background: white;
+    }
+
+    .parcel-select-card:hover .psc-content {
+        border-color: var(--text-muted);
+    }
+
+    .parcel-select-card.selected .psc-content {
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .psc-image {
+        width: 60px;
+        height: 60px;
+        background: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 1px solid var(--surface-200);
+    }
+
+    .psc-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .psc-title {
+        font-weight: 600;
+        color: var(--text-main);
+        font-size: 0.95rem;
+    }
+
+    .psc-meta {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 0.25rem;
+    }
+
+    .psc-price {
+        font-weight: 600;
+        color: var(--text-main);
+        font-size: 0.95rem;
+        margin-left: auto;
+    }
+</style>
+{% endblock %}

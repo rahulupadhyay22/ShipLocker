@@ -1,0 +1,26 @@
+# Render deployment configuration
+# See: https://render.com/docs/deploy-django
+
+services:
+  - type: web
+    name: ruffleberry
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn ruffleberry.wsgi:application"
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: LOCKER_ADDRESS
+        value: "Unit 402, Warehouse Zone, Mumbai, India"

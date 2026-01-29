@@ -1,0 +1,389 @@
+{% extends "public_base.html" %}
+
+{% block title %}Shipping Calculator - Ruffleberry{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calc-container {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 3rem;
+        align-items: start;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg-light);
+        transition: all 0.2s;
+        font-family: inherit;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        background: white;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3F%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.25em;
+    }
+
+    .tips-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 2rem;
+    }
+
+    .tip-item {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .tip-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .tip-icon {
+        width: 32px;
+        height: 32px;
+        background: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        flex-shrink: 0;
+    }
+
+    .result-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        transition: transform 0.2s;
+    }
+
+    .result-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    }
+
+    .result-card.featured {
+        background: #EFF6FF;
+        border-color: #BFDBFE;
+    }
+
+    @media (max-width: 900px) {
+        .calc-container {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 3rem; text-align: center;">
+    <h1 style="font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Shipping
+        Calculator</h1>
+    <p style="font-size: 1.1rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+        Get instant estimates for shipping your packages from India to anywhere in the world.
+    </p>
+</div>
+
+<div class="calc-container">
+    <!-- Calculator Form -->
+    <div
+        style="background: white; padding: 2rem; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+        <form id="calculatorForm">
+            <div class="form-group">
+                <label class="form-label">Destination Country</label>
+                <select class="form-control form-select" id="country" required>
+                    <option value="">Select destination...</option>
+                    {% for zone in zones %}
+                    {% for country_code in zone.get_countries_list %}
+                    <option value="{{ country_code }}">{{ country_code }}</option>
+                    {% endfor %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Package Weight (kg)</label>
+                <div style="position: relative;">
+                    <input type="number" class="form-control" id="weight" step="0.1" min="0.1" max="100"
+                        placeholder="e.g. 2.5" required style="padding-right: 3rem;">
+                    <span
+                        style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 500;">KG</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Dimensions (Optional)</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+                    <div style="position: relative;">
+                        <input type="number" class="form-control" id="length" placeholder="L">
+                        <span
+                            style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted);">cm</span>
+                    </div>
+                    <div style="position: relative;">
+                        <input type="number" class="form-control" id="width" placeholder="W">
+                        <span
+                            style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted);">cm</span>
+                    </div>
+                    <div style="position: relative;">
+                        <input type="number" class="form-control" id="height" placeholder="H">
+                        <span
+                            style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted);">cm</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+                Calculate Shipping Rates
+            </button>
+        </form>
+
+        <!-- Results Section -->
+        <div id="results"
+            style="display: none; margin-top: 2.5rem; border-top: 1px solid var(--border); padding-top: 2rem; animation: fadeIn 0.3s ease;">
+            <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">Estimated Shipping Costs</h3>
+            <div id="ratesContainer"></div>
+
+            <div
+                style="margin-top: 1.5rem; background: #F0FDF4; border: 1px solid #BBF7D0; padding: 1rem; border-radius: 8px; font-size: 0.9rem; color: #166534; display: flex; gap: 0.75rem;">
+                <span>✨</span>
+                <span><strong>Pro Tip:</strong> Rates drop significantly for weights above 10kg. Try consolidating more
+                    items!</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Tips -->
+    <div>
+        <div class="tips-card">
+            <h3
+                style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span style="color: #F59E0B;">💡</span> Smart Shipping Tips
+            </h3>
+
+            <div class="tip-item">
+                <div class="tip-icon">📦</div>
+                <div>
+                    <strong style="display: block; margin-bottom: 0.25rem;">Consolidate & Save</strong>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Combine multiple packages into one
+                        shipment to save up to 80% on shipping costs.</p>
+                </div>
+            </div>
+
+            <div class="tip-item">
+                <div class="tip-icon">⚖️</div>
+                <div>
+                    <strong style="display: block; margin-bottom: 0.25rem;">Volumetric Weight</strong>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">For light but bulky items (like
+                        pillows), carriers charge based on size, the formula is LxWxH/5000.</p>
+                </div>
+            </div>
+
+            <div class="tip-item">
+                <div class="tip-icon">🎁</div>
+                <div>
+                    <strong style="display: block; margin-bottom: 0.25rem;">Free Repacking</strong>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">We discard unnecessary shoe boxes and
+                        packaging to reduce weight before shipping.</p>
+                </div>
+            </div>
+
+            <div class="tip-item">
+                <div class="tip-icon">👮</div>
+                <div>
+                    <strong style="display: block; margin-bottom: 0.25rem;">Customs & Duties</strong>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Import duties are not included in
+                        shipping rates and must be paid by the receiver.</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem; text-align: center;">
+            <p style="margin-bottom: 1rem; font-weight: 600;">Ready to start shopping?</p>
+            {% if not user.is_authenticated %}
+            <a href="{% url 'accounts:login' %}" class="btn btn-outline" style="width: 100%;">Create Free Account</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Load backend data
+    const ZONES_DATA = JSON.parse('{{ zones_json|escapejs }}');
+
+    document.getElementById('calculatorForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const country = document.getElementById('country').value;
+        const actualWeight = parseFloat(document.getElementById('weight').value) || 0;
+
+        // Get dimensions
+        const length = parseFloat(document.getElementById('length').value) || 0;
+        const width = parseFloat(document.getElementById('width').value) || 0;
+        const height = parseFloat(document.getElementById('height').value) || 0;
+
+        // Calculate Volumetric Weight: (L x W x H) / 5000
+        let volumetricWeight = 0;
+        if (length > 0 && width > 0 && height > 0) {
+            volumetricWeight = (length * width * height) / 5000;
+        }
+
+        // Chargeable Weight is the higher of Actual or Volumetric
+        const chargeableWeight = Math.max(actualWeight, volumetricWeight);
+        const finalWeight = Math.ceil(chargeableWeight * 2) / 2; // Round up to nearest 0.5kg
+
+        // --- Backend Data Logic ---
+
+        // 1. Find the zone
+        const zone = ZONES_DATA.find(z => z.countries.includes(country));
+
+        if (!zone) {
+            alert('Sorry, we currently do not have shipping rates for ' + country + '. Please contact support.');
+            return;
+        }
+
+        // 2. Find the rate
+        const rate = zone.rates.find(r => finalWeight >= r.min_weight && finalWeight < r.max_weight);
+
+        if (!rate) {
+            alert('Sorry, no rate found for this weight (' + finalWeight + ' kg). Please contact support for heavy shipments.');
+            return;
+        }
+
+        // 3. Calculate Cost
+        let baseCost = 0;
+        if (rate.rate_type === 'fixed') {
+            baseCost = rate.price;
+        } else {
+            baseCost = finalWeight * rate.price;
+        }
+
+        const standardRate = Math.round(baseCost);
+        const expressRate = Math.round(baseCost * 1.4) + 500;
+        const economyRate = Math.round(baseCost * 0.85);
+
+        document.getElementById('results').style.display = 'block';
+
+        // Build weight breakdown HTML
+        let weightHtml = `
+            <div style="margin-bottom: 1.5rem; background: var(--bg-light); border-radius: 8px; padding: 1rem; font-size: 0.9rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span style="color: var(--text-secondary);">Actual Weight:</span>
+                    <strong>${actualWeight} kg</strong>
+                </div>
+        `;
+
+        if (volumetricWeight > 0) {
+            weightHtml += `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span style="color: var(--text-secondary);">Volumetric Weight (${length}x${width}x${height}/5000):</span>
+                    <strong>${volumetricWeight.toFixed(2)} kg</strong>
+                </div>
+            `;
+        }
+
+        weightHtml += `
+            <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.5rem;">
+                <span style="color: var(--text-primary); font-weight: 600;">Chargeable Weight:</span>
+                <strong style="color: var(--primary); font-size: 1.1rem;">${finalWeight.toFixed(1)} kg</strong>
+            </div>
+        </div>
+        `;
+
+        document.getElementById('ratesContainer').innerHTML = weightHtml + `
+            <div class="result-card featured">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div style="background: white; padding: 0.5rem; border-radius: 6px;">🚀</div>
+                    <div>
+                        <div style="font-weight: 700; color: var(--primary-dark);">Express</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">3-6 Business Days</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 800; font-size: 1.25rem; color: var(--primary);">₹${expressRate}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">DHL / FedEx</div>
+                </div>
+            </div>
+
+            <div class="result-card">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div style="background: #F1F5F9; padding: 0.5rem; border-radius: 6px;">✈️</div>
+                    <div>
+                        <div style="font-weight: 700;">Standard</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">${rate.delivery_min}-${rate.delivery_max} Business Days</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 800; font-size: 1.25rem;">₹${standardRate}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Aramex / UPS</div>
+                </div>
+            </div>
+
+            <div class="result-card">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div style="background: #F1F5F9; padding: 0.5rem; border-radius: 6px;">📦</div>
+                    <div>
+                        <div style="font-weight: 700;">Economy</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">15-20 Business Days</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 800; font-size: 1.25rem;">₹${economyRate}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Postal / EMS</div>
+                </div>
+            </div>
+            
+            <p style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+                * Rates are estimates based on Chargeable Weight (Final Weight). Final Zone: ${zone.name}
+            </p>
+        `;
+
+        // Smooth scroll to results
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // Add simple animation styles
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

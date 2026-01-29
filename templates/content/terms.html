@@ -1,0 +1,133 @@
+{% extends 'public_base.html' %}
+
+{% block title %}Terms of Service - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Terms of Service</h1>
+    <p>Last updated: January 1, 2024</p>
+</div>
+
+<div class="legal-container">
+    <div class="modern-card">
+        <div class="card-body-legal">
+            <section>
+                <h3>1. Acceptance of Terms</h3>
+                <p>Welcome to Ruffleberry. By accessing or using our websites and services, you agree to comply with and
+                    be bound by these Terms of Service. If you do not agree to these terms, please do not use our
+                    services.</p>
+            </section>
+
+            <section>
+                <h3>2. Service Description</h3>
+                <p>Ruffleberry provides package forwarding services from India to international destinations. We provide
+                    you with a virtual address in India to receive packages. We receive, store, consolidate, and forward
+                    these packages to you based on your instructions.</p>
+            </section>
+
+            <section>
+                <h3>3. User Accounts</h3>
+                <p>To use our services, you must register for an account. You agree to provide accurate and complete
+                    information. You are responsible for maintaining the confidentiality of your account credentials and
+                    for all activities that occur under your account.</p>
+            </section>
+
+            <section>
+                <h3>4. Prohibited Items</h3>
+                <p>You agree not to use our service for shipping any items prohibited by Indian export laws,
+                    international aviation regulations (IATA), or the import laws of your destination country.
+                    Prohibited items include but are not limited to: explosives, firearms, flammable items, perishable
+                    goods, and illegal substances. Ruffleberry reserves the right to refuse, discard, or surrender to
+                    authorities any packages containing prohibited items.</p>
+            </section>
+
+            <section>
+                <h3>5. Liability and Insurance</h3>
+                <p>Ruffleberry's liability for lost or damaged packages is limited to the handling fees paid for that
+                    specific package, unless additional insurance was purchased. We are not liable for consequential
+                    damages, loss of profits, or delays caused by customs, carriers, or force majeure events.</p>
+            </section>
+
+            <section>
+                <h3>6. Payment and Fees</h3>
+                <p>You agree to pay all shipping fees, service charges, duties, and taxes associated with your
+                    shipments. Shipping rates are estimates until the package is measured and weighed at our facility.
+                    We reserve the right to change our rates at any time.</p>
+            </section>
+
+            <section>
+                <h3>7. Customs and Duties</h3>
+                <p>You are the importer of record and are responsible for complying with all laws and regulations of the
+                    destination country. You are responsible for paying all import duties, taxes, and customs fees.</p>
+            </section>
+
+            <section>
+                <h3>8. Storage Policy</h3>
+                <p>We provide 30 days of free storage. After 30 days, storage fees will accrue. Packages stored for more
+                    than 90 days without activity may be considered abandoned and disposed of at our discretion.</p>
+            </section>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        margin-bottom: 3rem;
+        text-align: center;
+    }
+
+    .page-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+        color: #6B7280;
+    }
+
+    .legal-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .modern-card {
+        background: white;
+        border: 1px solid #E5E7EB;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-body-legal {
+        padding: 3rem;
+    }
+
+    section {
+        margin-bottom: 2.5rem;
+    }
+
+    section:last-child {
+        margin-bottom: 0;
+    }
+
+    h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 1rem;
+    }
+
+    p {
+        color: #374151;
+        line-height: 1.7;
+    }
+
+    @media (max-width: 768px) {
+        .card-body-legal {
+            padding: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}

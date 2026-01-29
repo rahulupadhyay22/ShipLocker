@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}KYC Documents - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">KYC Documents</h1>
+        <p class="page-subtitle">Upload your identity documents for international shipping.</p>
+    </div>
+    <a href="{% url 'kyc:upload' %}" class="btn btn-primary">+ Upload Document</a>
+</div>
+
+<!-- Why KYC -->
+<div class="modern-alert" style="background: var(--primary-light); color: var(--primary);">
+    <div style="font-size: 1.5rem;">ℹ️</div>
+    <div>
+        <strong>Why do we need KYC documents?</strong>
+        <p style="margin-top: 0.25rem; font-size: 0.9rem;">
+            For international shipments, customs requires identity verification (Aadhaar, Passport, etc.).
+            Without KYC, shipments move in "Commercial Mode" which may result in higher duties and longer processing.
+        </p>
+    </div>
+</div>
+
+{% if documents %}
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        {% for doc in documents %}
+        <div style="padding: 1.5rem; border-bottom: 1px solid var(--surface-100); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; transition: background 0.2s;"
+            onmouseover="this.style.background='var(--surface-50)'" onmouseout="this.style.background='transparent'">
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div
+                    style="width: 40px; height: 40px; background: var(--surface-100); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                    📄</div>
+                <div>
+                    <strong style="color: var(--text-main); font-size: 1rem;">{{ doc.get_document_type_display }}</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                        Uploaded: {{ doc.uploaded_at|date:"M d, Y" }}
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span class="status-badge 
+                    {% if doc.status == 'approved' %}status-approved
+                    {% elif doc.status == 'rejected' %}status-action
+                    {% else %}status-pending{% endif %}">
+                    {{ doc.get_status_display }}
+                </span>
+                <a href="{% url 'kyc:detail' pk=doc.pk %}" class="btn btn-secondary btn-sm">View</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="card" style="text-align: center; padding: 4rem 2rem;">
+    <div
+        style="width: 80px; height: 80px; background: var(--surface-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            style="width: 40px; height: 40px; color: var(--text-secondary);">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+    </div>
+    <h3>No Documents Uploaded</h3>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Upload your identity documents to enable international
+        shipping.</p>
+    <a href="{% url 'kyc:upload' %}" class="btn btn-primary">Upload Document</a>
+</div>
+{% endif %}
+{% endblock %}

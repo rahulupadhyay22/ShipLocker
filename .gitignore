@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+
+# Django
+*.log
+*.pot
+*.pyc
+*.mo
+*.db
+*.sqlite3
+media/
+staticfiles/
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env & Secrets
+.env
+.env.*
+*.env
+secrets.json
+*.key
+*.pem
+
+# Supabase
+.supabase/
+
+# Migrations
+**/migrations/__pycache__/
+**/migrations/*.pyc
+
+# Node
+node_modules/
+
+# Build
+build/
+dist/
+
+# Other
+logs/
+*.bak
+*.swp
+*.tmp
+
+# Ignore local settings
+local_settings.py
+
+# Ignore test output
+.coverage
+htmlcov/
+
+# Ignore compiled files
+*.so
+*.dll
+*.o
+*.a
+*.out
+
+# Ignore backup files
+*~
+
+# Ignore Jupyter
+.ipynb_checkpoints/
+
+# Ignore admin static
+static/admin/

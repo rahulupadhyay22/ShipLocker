@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Customs Help - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Package Stuck at Customs?</h1>
+    <p>Follow these steps to resolve customs issues with your shipment.</p>
+</div>
+
+<!-- Important Disclaimer -->
+<div class="alert alert-warning" style="margin-bottom: 1.5rem;">
+    <div>
+        <strong>Important Reminder</strong>
+        <p style="font-size: 0.85rem; margin-top: 0.25rem;">
+            After shipping, the receiver is responsible for working with the carrier to:
+            clear customs, pay duties/taxes, and ensure successful delivery.
+            Ruffleberry is not responsible for customs delays or additional charges.
+        </p>
+    </div>
+</div>
+
+<!-- Carrier Contacts -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h3>📞 Carrier Helplines</h3>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% for carrier in carriers %}
+        <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>{{ carrier.name }}</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        <a href="tel:{{ carrier.phone }}">{{ carrier.phone }}</a>
+                    </div>
+                </div>
+                <a href="{{ carrier.url }}" target="_blank" class="btn btn-sm btn-secondary">Track →</a>
+            </div>
+            {% if carrier.upload_url %}
+            <div style="margin-top: 0.5rem;">
+                <a href="{{ carrier.upload_url }}" target="_blank" style="font-size: 0.85rem;">
+                    📄 Upload customs documents
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Step by Step Guide -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h3>📋 Step-by-Step Resolution</h3>
+    </div>
+    <div class="card-body">
+        <ol style="margin: 0; padding-left: 1.25rem;">
+            <li style="margin-bottom: 1rem;">
+                <strong>Check your tracking status</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0.25rem 0 0;">
+                    Visit the carrier website and enter your tracking number to see the current status.
+                </p>
+            </li>
+            <li style="margin-bottom: 1rem;">
+                <strong>Contact the carrier directly</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0.25rem 0 0;">
+                    Call the helpline numbers above. Have your tracking number ready.
+                </p>
+            </li>
+            <li style="margin-bottom: 1rem;">
+                <strong>Provide required documents</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0.25rem 0 0;">
+                    Customs may require: Commercial Invoice, Aadhaar/ID, Proof of payment.
+                </p>
+            </li>
+            <li style="margin-bottom: 1rem;">
+                <strong>Pay applicable duties</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0.25rem 0 0;">
+                    Import duties are the receiver's responsibility. Pay promptly to avoid delays.
+                </p>
+            </li>
+            <li>
+                <strong>Schedule redelivery</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0.25rem 0 0;">
+                    Once cleared, arrange delivery with the carrier.
+                </p>
+            </li>
+        </ol>
+    </div>
+</div>
+
+<!-- Download Documents -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h3>📄 Your Shipment Documents</h3>
+    </div>
+    <div class="card-body">
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+            Download these documents from your shipment details page:
+        </p>
+        <ul style="margin: 1rem 0 0 1rem; font-size: 0.9rem;">
+            <li>Commercial Invoice</li>
+            <li>Customs Declaration</li>
+            <li>Packing List</li>
+        </ul>
+        <a href="{% url 'shipments:list' %}" class="btn btn-primary" style="margin-top: 1rem;">
+            Go to My Shipments
+        </a>
+    </div>
+</div>
+
+<!-- Escalation -->
+<div class="card">
+    <div class="card-header">
+        <h3>🚨 Need More Help?</h3>
+    </div>
+    <div class="card-body">
+        <p style="font-size: 0.9rem;">
+            If the carrier cannot resolve your issue, you can escalate:
+        </p>
+        <div style="margin-top: 1rem;">
+            <strong>DHL Escalation:</strong>
+            <a href="mailto:customs.usa@dhl.com">customs.usa@dhl.com</a>
+        </div>
+        <div style="margin-top: 0.5rem;">
+            <strong>UPS Escalation:</strong>
+            <a href="mailto:brokerage@ups.com">brokerage@ups.com</a>
+        </div>
+        <div style="margin-top: 0.5rem;">
+            <strong>FedEx Escalation:</strong>
+            <a href="mailto:customssupport@fedex.com">customssupport@fedex.com</a>
+        </div>
+
+        <hr style="margin: 1.5rem 0;">
+
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+            For Ruffleberry-related issues (documents, shipment info), contact us on WhatsApp.
+        </p>
+    </div>
+</div>
+{% endblock %}

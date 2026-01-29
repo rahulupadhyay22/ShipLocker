@@ -1,0 +1,284 @@
+{% extends 'public_base.html' %}
+
+{% block title %}Prohibited Items - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 style="font-size: 2rem; font-weight: 700; color: #111827; letter-spacing: -0.025em; margin-bottom: 0.5rem;">
+        Prohibited Items</h1>
+    <p style="color: #6B7280; font-size: 1.05rem;">Items that cannot be shipped internationally through Ruffleberry.</p>
+</div>
+
+<!-- Warning Banner -->
+<div class="modern-card warning mb-8">
+    <div class="card-icon warning">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+    </div>
+    <div class="card-content">
+        <h3 class="text-lg font-bold text-red-900 mb-1">Important Compliance Notice</h3>
+        <p class="text-sm text-red-700">
+            Shipping prohibited items is a violation of international laws and may result in accurate seizure, fines, or
+            legal action.
+            Ruffleberry strictly adheres to carrier regulations and reserves the right to refuse or discard any
+            non-compliant items.
+        </p>
+    </div>
+</div>
+
+{% if page %}
+{% if page.sections.exists %}
+<div class="content-grid">
+    {% for section in page.sections.all %}
+    <div class="modern-card {% if section.width == 'full' %}full-width{% endif %}">
+        <div class="card-header-clean bg-{{ section.color }}-50">
+            <div class="header-icon {{ section.color }}">
+                {% if section.icon == 'warning' %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {% elif section.icon == 'info' %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {% elif section.icon == 'ban' %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+                {% elif section.icon == 'check' %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {% endif %}
+            </div>
+            <h3>{{ section.title }}</h3>
+        </div>
+        <div class="card-body-clean">
+            <div class="feature-list {{ section.color }}">
+                {{ section.content|safe }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+
+<style>
+    .page-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .mb-8 {
+        margin-bottom: 2rem;
+    }
+
+    .mt-4 {
+        margin-top: 1rem;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+
+    /* Modern Card */
+    .modern-card {
+        background: white;
+        border: 1px solid #E5E7EB;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .modern-card.warning {
+        background: #FEF2F2;
+        border-color: #FECACA;
+        display: flex;
+        padding: 1.5rem;
+        gap: 1rem;
+    }
+
+    .card-icon.warning {
+        color: #DC2626;
+        flex-shrink: 0;
+        padding-top: 2px;
+    }
+
+    .card-header-clean {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .card-header-clean.bg-red-50 {
+        background: #FEF2F2;
+        color: #991B1B;
+    }
+
+    .card-header-clean.bg-yellow-50 {
+        background: #FFFBEB;
+        color: #92400E;
+    }
+
+    .card-header-clean.bg-blue-50 {
+        background: #EFF6FF;
+        color: #1E40AF;
+    }
+
+    .header-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.6);
+    }
+
+    .header-icon.red {
+        color: #DC2626;
+    }
+
+    .header-icon.yellow {
+        color: #D97706;
+    }
+
+    .header-icon.blue {
+        color: #2563EB;
+    }
+
+    .card-header-clean h3 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .card-body-clean {
+        padding: 1.5rem;
+    }
+
+    /* Feature Lists */
+    .feature-list {
+        margin: 0;
+        padding: 0;
+        /* list-style: none; Remove this from wrapper */
+    }
+
+    .feature-list ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .feature-list li {
+        position: relative;
+        padding-left: 1.5rem;
+        margin-bottom: 0.75rem;
+        color: #4B5563;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .feature-list li::before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        font-weight: bold;
+        font-size: 1.25rem;
+        line-height: 1rem;
+    }
+
+    .feature-list.red li::before {
+        color: #EF4444;
+    }
+
+    .feature-list.yellow li::before {
+        color: #F59E0B;
+    }
+
+    .feature-list.blue li::before {
+        color: #3B82F6;
+    }
+
+    .feature-list.grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .feature-list.grid-2 li {
+        margin-bottom: 0;
+    }
+
+    /* Utilities */
+    .text-lg {
+        font-size: 1.125rem;
+    }
+
+    .font-bold {
+        font-weight: 700;
+    }
+
+    .text-sm {
+        font-size: 0.875rem;
+    }
+
+    .text-xs {
+        font-size: 0.75rem;
+    }
+
+    .text-red-900 {
+        color: #7F1D1D;
+    }
+
+    .text-red-700 {
+        color: #B91C1C;
+    }
+
+    .mb-1 {
+        margin-bottom: 0.25rem;
+    }
+
+    .p-3 {
+        padding: 0.75rem;
+    }
+
+    .rounded-lg {
+        border-radius: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .feature-list.grid-2 {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}

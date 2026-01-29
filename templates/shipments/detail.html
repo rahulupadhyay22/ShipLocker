@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+
+{% block title %}Shipment #{{ shipment.id|slice:":8"|upper }} - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header" style="align-items: flex-start; flex-direction: column; gap: 1rem;">
+    <a href="{% url 'shipments:list' %}" class="btn btn-secondary btn-sm" style="align-self: flex-start;">
+        ← Back to Shipments
+    </a>
+    <div
+        style="width: 100%; display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 class="page-title" style="display: flex; align-items: center; gap: 1rem;">
+                Shipment #{{ shipment.id|slice:":8"|upper }}
+                <span class="status-badge 
+                    {% if shipment.status == 'delivered' %}status-delivered
+                    {% elif shipment.status == 'dispatched' or shipment.status == 'in_transit' %}status-transit
+                    {% elif shipment.status == 'declaration_pending' %}status-pending
+                    {% else %}status-pending{% endif %}" style="font-size: 0.85rem;">
+                    {{ shipment.get_status_display }}
+                </span>
+            </h1>
+            <p class="page-subtitle">
+                {{ shipment.get_shipment_type_display }} • {{ shipment.city }}, {{ shipment.country }}
+            </p>
+        </div>
+
+        {% if shipment.tracking_url %}
+        <a href="{{ shipment.tracking_url }}" target="_blank" class="btn btn-primary">
+            Track on {{ shipment.get_carrier_display }} &rarr;
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if shipment.status == 'declaration_pending' %}
+<div class="modern-alert" style="background: var(--warning-bg); border: 1px solid #FCD34D;">
+    <div style="font-size: 1.5rem;">📄</div>
+    <div>
+        <strong>Declaration Approval Pending</strong>
+        <p style="color: var(--warning-text); margin-top: 0.25rem;">Your customs declaration is being reviewed. We'll
+            notify you once approved and packing begins.</p>
+    </div>
+</div>
+{% endif %}
+
+<div style="display: grid; grid-template-columns: 1fr 360px; gap: 2rem; align-items: start;" class="detail-grid">
+    <!-- Left Column -->
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
+
+        <!-- Tracking Timeline -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Tracking History</h3>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <!-- Packing -->
+                    <div
+                        class="timeline-item {% if shipment.status != 'draft' and shipment.status != 'pending_payment' %}active{% endif %}">
+                        <div class="timeline-icon">📦</div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Packing</div>
+                            <div class="timeline-desc">Your items are being prepared.</div>
+                        </div>
+                    </div>
+
+                    <!-- Dispatched -->
+                    <div
+                        class="timeline-item {% if shipment.status == 'dispatched' or shipment.status == 'in_transit' or shipment.status == 'customs' or shipment.status == 'out_for_delivery' or shipment.status == 'delivered' %}active{% endif %}">
+                        <div class="timeline-icon">✈️</div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Dispatched</div>
+                            <div class="timeline-desc">Handed over to carrier ({{ shipment.get_carrier_display }}).
+                            </div>
+                            {% if shipment.dispatched_at %}
+                            <div class="timeline-date">{{ shipment.dispatched_at|date:"M d, Y" }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Delivered -->
+                    <div class="timeline-item {% if shipment.status == 'delivered' %}active{% endif %}">
+                        <div class="timeline-icon">✅</div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Delivered</div>
+                            <div class="timeline-desc">Package arrived at destination.</div>
+                            {% if shipment.delivered_at %}
+                            <div class="timeline-date">{{ shipment.delivered_at|date:"M d, Y" }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if shipment.tracking_number %}
+                <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--surface-100);">
+                    <span class="stat-label">TRACKING NUMBER</span>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem;">
+                        <span
+                            style="font-family: monospace; font-size: 1.1rem; color: var(--text-main); background: var(--surface-50); padding: 4px 10px; border-radius: 8px;">
+                            {{shipment.tracking_number }}
+                        </span>
+                        <button onclick="navigator.clipboard.writeText('{{ shipment.tracking_number }}')"
+                            class="btn btn-secondary btn-sm">Copy</button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Items -->
+        <div>
+            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Items in this Shipment ({{ shipment.items.count}})</h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for item in shipment.items.all %}
+                <div class="card" style="margin-bottom: 0; display: flex; flex-direction: row;">
+                    <div
+                        style="width: 100px; background: var(--surface-50); border-right: 1px solid var(--surface-100); display: flex; align-items: center; justify-content: center;">
+                        {% if item.parcel.images.first %}
+                        <img src="{{ item.parcel.images.first.image_url }}" alt="Product"
+                            style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                        <div style="font-size: 2rem;">📦</div>
+                        {% endif %}
+                    </div>
+                    <div class="card-body"
+                        style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="font-size: 1rem; margin-bottom: 0.25rem;">
+                                {{item.parcel.item_name|default:item.parcel.tracking_number }}</h4>
+                            <span class="status-badge status-pending"
+                                style="font-size: 0.7rem; background: var(--surface-100); color: var(--text-secondary);">
+                                {{ item.parcel.get_category_display }}
+                            </span>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 600;">{{ item.parcel.item_currency }} {{ item.parcel.item_price}}
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">Declared Value</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+        <!-- Address Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Delivery Address</h3>
+            </div>
+            <div class="card-body">
+                <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">{{ shipment.recipient_name }}
+                </div>
+                <div style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
+                    {{ shipment.address_line1 }}<br>
+                    {% if shipment.address_line2 %}{{ shipment.address_line2 }}<br>{% endif %}
+                    {{ shipment.city }}, {{ shipment.state }} {{ shipment.postal_code }}<br>
+                    {{ shipment.country }}
+                </div>
+                <div style="padding-top: 1rem; border-top: 1px solid var(--surface-100); font-size: 0.9rem;">
+                    <div style="margin-bottom: 0.5rem;"><span style="color: var(--text-muted);">Phone:</span>
+                        {{shipment.recipient_phone }}</div>
+                    {% if shipment.recipient_email %}<div><span style="color: var(--text-muted);">Email:</span>
+                        {{shipment.recipient_email }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Summary</h3>
+            </div>
+            <div class="card-body">
+                <div
+                    style="display: flex; justify-content: space-between; padding-bottom: 0.75rem; border-bottom: 1px solid var(--surface-50); margin-bottom: 0.75rem;">
+                    <span style="color: var(--text-secondary);">Carrier</span>
+                    <span style="font-weight: 500;">{{ shipment.get_carrier_display|default:"Pending" }}</span>
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; padding-bottom: 0.75rem; border-bottom: 1px solid var(--surface-50); margin-bottom: 0.75rem;">
+                    <span style="color: var(--text-secondary);">Total Weight</span>
+                    <span style="font-weight: 500;">{{ shipment.total_weight_kg}} kg</span>
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; padding-top: 0.75rem; border-top: 2px solid var(--surface-100); margin-top: 0.5rem;">
+                    <span style="font-weight: 600;">Shipping Cost</span>
+                    <span style="font-weight: 700; font-size: 1.1rem;">{{ shipment.currency }} {{ shipment.shipping_cost}}</span>
+                </div>
+                <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+                    Created on {{ shipment.created_at|date:"M d, Y" }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents -->
+        {% if shipment.status != 'declaration_pending' and shipment.documents.all %}
+        <div class="card">
+            <div class="card-header">
+                <h3>Documents</h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    {% for doc in shipment.documents.all %}
+                    <a href="{{ doc.signed_url }}" target="_blank" class="btn btn-secondary"
+                        style="justify-content: space-between; width: 100%;">
+                        <span>📄 {{ doc.get_document_type_display }}</span>
+                        <span>↓</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Support -->
+        <div class="modern-alert"
+            style="background: var(--primary-light); flex-direction: column; text-align: center; gap: 0.5rem;">
+            <strong style="color: var(--primary);">Need Help?</strong>
+            <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">Package stuck or delayed?</p>
+            <a href="{% url 'shipments:customs_help' %}" class="btn btn-secondary btn-sm"
+                style="width: 100%; margin-top: 0.5rem;">Get Customs Help</a>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* Timeline Styles */
+    .timeline {
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .timeline-item {
+        display: flex;
+        gap: 1.5rem;
+        padding-bottom: 2.5rem;
+        position: relative;
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 24px;
+        top: 48px;
+        bottom: 0;
+        width: 2px;
+        background: var(--surface-100);
+    }
+
+    .timeline-item:last-child::before {
+        display: none;
+    }
+
+    .timeline-item.active::before {
+        background: var(--success-bg);
+    }
+
+    .timeline-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--surface-50);
+        border: 2px solid var(--surface-200);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        z-index: 1;
+        transition: 0.2s;
+    }
+
+    .timeline-item.active .timeline-icon {
+        background: var(--success-bg);
+        border-color: var(--success-text);
+        color: var(--success-text);
+    }
+
+    .timeline-content {
+        padding-top: 0.25rem;
+    }
+
+    .timeline-title {
+        font-weight: 700;
+        color: var(--text-main);
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .timeline-desc {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .timeline-date {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        font-weight: 500;
+    }
+
+    @media (max-width: 900px) {
+        .detail-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+{% endblock %}

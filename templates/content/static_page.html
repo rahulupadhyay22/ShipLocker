@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page.title }} - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ page.title }}</h1>
+</div>
+
+<div class="card">
+    <div class="card-body static-content">
+        {{ page.content|safe|linebreaks }}
+    </div>
+</div>
+
+<style>
+    /* Styling for admin-entered content */
+    .static-content h1,
+    .static-content h2,
+    .static-content h3 {
+        color: var(--text-primary);
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .static-content h1:first-child,
+    .static-content h2:first-child,
+    .static-content h3:first-child {
+        margin-top: 0;
+    }
+
+    .static-content ul,
+    .static-content ol {
+        margin: 1rem 0;
+        padding-left: 1.5rem;
+    }
+
+    .static-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .static-content p {
+        margin-bottom: 1rem;
+        line-height: 1.6;
+    }
+
+    .static-content strong {
+        color: var(--text-primary);
+    }
+
+    .static-content a {
+        color: var(--primary);
+    }
+
+    .static-content blockquote {
+        border-left: 4px solid var(--primary);
+        padding-left: 1rem;
+        margin: 1rem 0;
+        color: var(--text-secondary);
+    }
+</style>
+{% endblock %}

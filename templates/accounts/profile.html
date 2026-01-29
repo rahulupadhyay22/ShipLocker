@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">My Profile</h1>
+        <p class="page-subtitle">Manage your account settings and preferences.</p>
+    </div>
+    {% if user.is_staff %}
+    <a href="/admin/" class="btn btn-secondary">
+        Admin Panel
+    </a>
+    {% endif %}
+</div>
+
+{% if messages %}
+<div class="messages" style="margin-bottom: 2rem;">
+    {% for message in messages %}
+    <div class="modern-alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="dashboard-layout">
+    <!-- Left Column: Virtual ID Card -->
+    <div>
+        <div class="virtual-card" style="margin-bottom: 2rem;">
+            <!-- Header -->
+            <div
+                style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; position: relative; z-index: 2;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700;">RUFFLEBERRY VIP</h3>
+                    <p style="margin: 0.25rem 0 0; font-size: 0.85rem; opacity: 0.8;">Global Shipping Membership</p>
+                </div>
+                <div
+                    style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; backdrop-filter: blur(4px);">
+                    ACTIVE
+                </div>
+            </div>
+
+            <!-- Locker ID -->
+            <div style="position: relative; z-index: 2; margin-bottom: 2rem;">
+                <label
+                    style="display: block; font-size: 0.75rem; opacity: 0.8; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-weight: 600;">YOUR
+                    LOCKER ID</label>
+                <div
+                    style="font-family: 'Courier New', monospace; font-size: 2rem; font-weight: 700; letter-spacing: 0.05em; background: rgba(0,0,0,0.2); display: inline-block; padding: 0.5rem 1rem; border-radius: 8px;">
+                    {{ locker.locker_id }}
+                </div>
+            </div>
+
+            <!-- Address Fields -->
+            <div style="position: relative; z-index: 2; margin-bottom: 1.5rem;">
+                <label
+                    style="display: block; font-size: 0.75rem; opacity: 0.8; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-weight: 600;">SHIPPING
+                    ADDRESS (Your Warehouse)</label>
+                <div style="font-size: 0.95rem; line-height: 1.6; opacity: 0.95;">
+                    <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.25rem;">{{ user.full_name|default:"Your Name" }}</strong>
+                    {% if locker.address %}
+                    {{ locker.address|linebreaksbr }}
+                    {% else %}
+                    Reference Code: {{ locker.locker_id }}<br>
+                    Ruffleberry Warehouse<br>
+                    Plot No 123, Export Zone<br>
+                    Hyderabad, Telangana 500081<br>
+                    India
+                    {% endif %}
+                </div>
+            </div>
+
+            <div
+                style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 1.5rem; display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9; position: relative; z-index: 2;">
+                <span>📞 {{ locker.phone }}</span>
+                <span>Use this for all deliveries</span>
+            </div>
+        </div>
+
+        <!-- Account Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Account Details</h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div
+                        style="width: 64px; height: 64px; background: var(--surface-100); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: var(--primary);">
+                        {{ user.first_name|first|default:user.email|first|upper }}
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 1.1rem;">{{ user.email }}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Member since {{ user.date_joined|date:"M Y" }}</div>
+                    </div>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid var(--surface-100); margin: 1.5rem 0;">
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary);">Security</span>
+                    <a href="{% url 'accounts:logout' %}"
+                        style="color: var(--danger-text); font-weight: 500; font-size: 0.9rem;">
+                        Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Edit Profile -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3>Edit Profile</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="full_name" class="form-control" value="{{ user.full_name }}"
+                            placeholder="e.g. Alex Morris">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" name="phone" class="form-control" value="{{ user.phone }}"
+                            placeholder="+91 99999 99999">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">WhatsApp Number</label>
+                        <input type="tel" name="whatsapp_number" class="form-control" value="{{ user.whatsapp_number }}"
+                            placeholder="+91 99999 99999">
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                            Used for urgent shipment updates and notifications.
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 2rem;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Need Help -->
+        <div class="card" style="background: var(--surface-50); border-style: dashed;">
+            <div class="card-body" style="text-align: center;">
+                <h3 style="margin-bottom: 0.5rem;">Need Help?</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Our support team is available 7AM - 7PM
+                    IST</p>
+                <a href="https://wa.me/917337257774" target="_blank" class="btn btn-secondary"
+                    style="width: 100%; border-color: #25D366; color: #15803d; background: white;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                        viewBox="0 0 16 16" style="margin-right: 0.5rem;">
+                        <path
+                            d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z" />
+                    </svg>
+                    Chat on WhatsApp
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

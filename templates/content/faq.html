@@ -1,0 +1,185 @@
+{% extends 'public_base.html' %}
+
+{% block title %}FAQ - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 style="font-size: 2rem; font-weight: 700; color: #111827; letter-spacing: -0.025em; margin-bottom: 0.5rem;">
+        Frequently Asked Questions</h1>
+    <p style="color: #6B7280; font-size: 1.05rem;">Everything you need to know about shopping in India and shipping
+        globally.</p>
+</div>
+
+<div class="faq-container">
+    <!-- General -->
+    <div class="faq-section">
+        <h2 class="section-title">General</h2>
+
+        <div class="faq-item">
+            <button class="faq-question">What is Ruffleberry?</button>
+            <div class="faq-answer">
+                <p>Ruffleberry provides you with a free virtual address in India. You can use this address to shop from
+                    any Indian online store (like Amazon India, Myntra, Flipkart). We receive your packages, consolidate
+                    them into one shipment, and forward them to your doorstep anywhere in the world.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">How much does it cost to sign up?</button>
+            <div class="faq-answer">
+                <p>It's completely free to sign up and get your Indian address! There are no monthly membership fees.
+                    You only pay for shipping and any optional services you request.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shipping & Consolidation -->
+    <div class="faq-section">
+        <h2 class="section-title">Shipping & Consolidation</h2>
+
+        <div class="faq-item">
+            <button class="faq-question">What is consolidation and how does it save money?</button>
+            <div class="faq-answer">
+                <p>Consolidation is the process of combining multiple packages into a single shipment. International
+                    shipping carriers charge a base rate for the first 0.5kg. By combining packages, you only pay this
+                    base rate once, which can save you up to 80% compared to shipping each package individually.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">Do you ship to my country?</button>
+            <div class="faq-answer">
+                <p>Yes! We ship to over 220 countries and territories worldwide, including the USA, UK, Canada,
+                    Australia, UAE, and all of Europe.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">How is shipping weight calculated?</button>
+            <div class="faq-answer">
+                <p>International shipping is charged based on the higher of Actual Weight or Volumetric Weight.
+                    Volumetric weight is calculated as (Length x Width x Height in cm) / 5000. Our teams always try to
+                    repack items to minimize volumetric weight.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Storage & Services -->
+    <div class="faq-section">
+        <h2 class="section-title">Storage & Services</h2>
+
+        <div class="faq-item">
+            <button class="faq-question">How long can I store my items?</button>
+            <div class="faq-answer">
+                <p>We offer 30 days of free storage from the date your package arrives at our warehouse. This gives you
+                    plenty of time to shop from multiple stores. After 30 days, a small daily storage fee applies.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question">Can you check if my items are damaged?</button>
+            <div class="faq-answer">
+                <p>Yes, we inspect every incoming package for external damage. You can also request detailed photos or a
+                    "Detailed Inspection" service where we verify the contents against your invoice.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        margin-bottom: 3rem;
+        text-align: center;
+    }
+
+    .faq-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .faq-section {
+        margin-bottom: 3rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #E5E7EB;
+    }
+
+    .faq-item {
+        margin-bottom: 1rem;
+        border: 1px solid #E5E7EB;
+        border-radius: 12px;
+        overflow: hidden;
+        background: white;
+    }
+
+    .faq-question {
+        width: 100%;
+        padding: 1.25rem;
+        text-align: left;
+        background: none;
+        border: none;
+        font-weight: 600;
+        font-size: 1.05rem;
+        color: #1F2937;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .faq-question:hover {
+        background: #F9FAFB;
+    }
+
+    .faq-question::after {
+        content: '+';
+        font-size: 1.5rem;
+        font-weight: 400;
+        color: #6B7280;
+        transition: transform 0.3s;
+    }
+
+    .faq-question.active::after {
+        transform: rotate(45deg);
+    }
+
+    .faq-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+        background: #F9FAFB;
+    }
+
+    .faq-answer p {
+        padding: 1.25rem;
+        margin: 0;
+        color: #4B5563;
+        line-height: 1.6;
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.faq-question').forEach(button => {
+        button.addEventListener('click', () => {
+            const answer = button.nextElementSibling;
+            button.classList.toggle('active');
+
+            if (button.classList.contains('active')) {
+                answer.style.maxHeight = answer.scrollHeight + 'px';
+            } else {
+                answer.style.maxHeight = 0;
+            }
+        });
+    });
+</script>
+{% endblock %}

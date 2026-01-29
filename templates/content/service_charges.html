@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}Service Charges - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 style="font-size: 2rem; font-weight: 700; color: #111827; letter-spacing: -0.025em; margin-bottom: 0.5rem;">
+        Service Charges</h1>
+    <p style="color: #6B7280; font-size: 1.05rem;">Transparent pricing for all our logistical services.</p>
+</div>
+
+<!-- Service Charges Grid -->
+<div class="modern-card mb-8">
+    <div class="card-header-clean">
+        <div class="header-icon green">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+        <h3>Standard Charges</h3>
+    </div>
+
+    <div class="pricing-grid">
+        {% if charges %}
+        {% for charge in charges %}
+        <div class="pricing-row">
+            <div class="pricing-info">
+                <strong>{{ charge.name }}</strong>
+                {% if charge.description %}
+                <span class="pricing-desc">{{ charge.description }}</span>
+                {% endif %}
+            </div>
+            <div class="pricing-cost">
+                {{ charge.currency }} {{ charge.amount }}
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- Important Notes -->
+<div class="modern-card bg-gray-50">
+    <div class="card-body-clean flex-row">
+        <div class="icon-circle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+        <div>
+            <h3 class="text-base font-bold text-gray-900 mb-2">Important Notes</h3>
+            <ul class="note-list">
+                <li>All charges are listed in Indian Rupees (₹).</li>
+                <li>International shipping costs are separate and vary by destination, weight, and carrier.</li>
+                <li>Import duties and taxes are the receiver's responsibility and are collected by the carrier.</li>
+                <li>Prices are subject to change. Active subscriptions will be notified of any changes.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .mb-8 {
+        margin-bottom: 2rem;
+    }
+
+    .mb-2 {
+        margin-bottom: 0.5rem;
+    }
+
+    .modern-card {
+        background: white;
+        border: 1px solid #E5E7EB;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .modern-card.bg-gray-50 {
+        background: #F9FAFB;
+        border: none;
+        box-shadow: none;
+    }
+
+    .card-header-clean {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #F3F4F6;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .header-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    .header-icon.green {
+        color: #059669;
+    }
+
+    .card-header-clean h3 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 0;
+        color: #111827;
+    }
+
+    .card-body-clean {
+        padding: 1.5rem;
+    }
+
+    .card-body-clean.flex-row {
+        display: flex;
+        gap: 1rem;
+    }
+
+    /* Pricing Grid */
+    .pricing-grid {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pricing-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #F3F4F6;
+        transition: background 0.2s;
+    }
+
+    .pricing-row:last-child {
+        border-bottom: none;
+    }
+
+    .pricing-row:hover {
+        background: #F9FAFB;
+    }
+
+    .pricing-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .pricing-info strong {
+        color: #111827;
+        font-weight: 600;
+    }
+
+    .pricing-desc {
+        color: #6B7280;
+        font-size: 0.85rem;
+    }
+
+    .pricing-cost {
+        font-weight: 700;
+        color: #111827;
+        font-size: 1.1rem;
+        font-family: 'SF Mono', 'Roboto Mono', monospace;
+    }
+
+    .pricing-cost.free {
+        color: #059669;
+        background: #ECFDF5;
+        padding: 0.25rem 0.75rem;
+        border-radius: 99px;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+    }
+
+    .pricing-cost.danger {
+        color: #DC2626;
+    }
+
+    /* Notes */
+    .icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #E5E7EB;
+        color: #4B5563;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .text-base {
+        font-size: 1rem;
+    }
+
+    .text-gray-900 {
+        color: #111827;
+    }
+
+    .note-list {
+        margin: 0;
+        padding-left: 1.25rem;
+        color: #4B5563;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    .note-list li {
+        margin-bottom: 0.25rem;
+    }
+
+    @media (max-width: 640px) {
+        .pricing-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .pricing-cost {
+            align-self: flex-end;
+        }
+    }
+</style>
+{% endblock %}

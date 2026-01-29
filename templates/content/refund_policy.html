@@ -1,0 +1,277 @@
+{% extends 'public_base.html' %}
+
+{% block title %}Refund Policy - Ruffleberry{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 style="font-size: 2rem; font-weight: 700; color: #111827; letter-spacing: -0.025em; margin-bottom: 0.5rem;">
+        Refund Policy</h1>
+    <p style="color: #6B7280; font-size: 1.05rem;">Our commitments to fairness and transparency in cancellations and
+        refunds.</p>
+</div>
+
+{% if page.sections.exists %}
+<div class="policy-grid">
+    {% for section in page.sections.all %}
+    <div class="modern-card">
+        <div class="card-header-clean">
+            <!-- Icon Logic -->
+            <div
+                class="header-icon {% if section.color == 'blue' %}purple{% elif section.color == 'yellow' %}orange{% elif section.color == 'red' %}red{% else %}blue{% endif %}">
+                {% if section.icon == 'shipping' %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                {% elif section.icon == 'document' %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {% elif section.icon == 'info' %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {% elif section.icon == 'warning' %}
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {% else %}
+                <!-- Default Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {% endif %}
+            </div>
+            <h3>{{ section.title }}</h3>
+        </div>
+        <div class="card-body-clean">
+            <div class="policy-content">
+                {{ section.content|safe }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="modern-card">
+    <div class="card-body-clean policy-content">
+        {{ page.content|safe }}
+    </div>
+</div>
+{% endif %}
+
+
+<style>
+    .page-header {
+        margin-bottom: 2.5rem;
+    }
+
+    .mb-6 {
+        margin-bottom: 1.5rem;
+    }
+
+    .mb-4 {
+        margin-bottom: 1rem;
+    }
+
+    .text-sm {
+        font-size: 0.875rem;
+    }
+
+    .text-xs {
+        font-size: 0.75rem;
+    }
+
+    .policy-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .modern-card {
+        background: white;
+        border: 1px solid #E5E7EB;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        height: 100%;
+    }
+
+    .card-header-clean {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #F3F4F6;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .header-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #F3F4F6;
+        color: #4B5563;
+    }
+
+    .header-icon.purple {
+        background: #EEF2FF;
+        color: #6366F1;
+    }
+
+    .header-icon.orange {
+        background: #FFF7ED;
+        color: #F97316;
+    }
+
+    .header-icon.blue {
+        background: #EFF6FF;
+        color: #3B82F6;
+    }
+
+    .header-icon.red {
+        background: #FEF2F2;
+        color: #EF4444;
+    }
+
+    .card-header-clean h3 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 0;
+        color: #111827;
+    }
+
+    .card-body-clean {
+        padding: 1.5rem;
+    }
+
+    .policy-subtitle {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    .text-green-700 {
+        color: #047857;
+    }
+
+    .text-red-700 {
+        color: #B91C1C;
+    }
+
+    .text-gray-600 {
+        color: #4B5563;
+    }
+
+    /* Lists */
+    .check-list,
+    .bullet-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .check-list li {
+        position: relative;
+        padding-left: 1.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+        color: #374151;
+    }
+
+    .check-list li::before {
+        position: absolute;
+        left: 0;
+        font-weight: bold;
+    }
+
+    .check-list.green li::before {
+        content: "✓";
+        color: #059669;
+    }
+
+    .check-list.red li::before {
+        content: "✕";
+        color: #DC2626;
+    }
+
+    .bullet-list li {
+        position: relative;
+        padding-left: 1rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+        color: #374151;
+        line-height: 1.5;
+    }
+
+    .bullet-list li::before {
+        content: "•";
+        position: absolute;
+        left: 0;
+        color: #9CA3AF;
+        font-weight: bold;
+    }
+
+    /* Steps */
+    .step-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .step-list li {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .step-list li:last-child {
+        margin-bottom: 0;
+    }
+
+    .step-num {
+        width: 24px;
+        height: 24px;
+        background: #111827;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .step-text {
+        font-size: 0.95rem;
+        color: #374151;
+        line-height: 1.5;
+    }
+
+    .policy-content {
+        line-height: 1.7;
+        color: #374151;
+    }
+
+    @media (max-width: 640px) {
+        .policy-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
