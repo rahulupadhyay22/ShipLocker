@@ -208,18 +208,28 @@ TEMPLATES = [
 WSGI_APPLICATION = 'indiabox.wsgi.application'
 
 # Database - Supabase PostgreSQL
-DATABASE_URL = os.getenv('DATABASE_URL', '')
+DATABASE_URL = os.getenv('DATABASE_URL', '').strip()
+DATABASE_POOLER_URL = os.getenv('DATABASE_POOLER_URL', '').strip() or os.getenv('SUPABASE_POOLER_URL', '').strip()
+SELECTED_DATABASE_URL = DATABASE_POOLER_URL or DATABASE_URL
 
-if DATABASE_URL:
+if SELECTED_DATABASE_URL:
     import dj_database_url
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
+        'default': dj_database_url.parse(SELECTED_DATABASE_URL, conn_max_age=600)
     }
-    # Ensure SSL is enabled for production database
-    if not DEBUG and DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
-        DATABASES['default']['OPTIONS'] = {
-            'sslmode': 'require',
-        }
+
+    if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
+        db_options = DATABASES['default'].setdefault('OPTIONS', {})
+        db_options.setdefault('connect_timeout', int(os.getenv('DB_CONNECT_TIMEOUT', '10')))
+
+        # Optional: force IPv4 when provider network cannot reach IPv6 addresses.
+        database_hostaddr = os.getenv('DATABASE_HOSTADDR', '').strip()
+        if database_hostaddr:
+            db_options['hostaddr'] = database_hostaddr
+
+        # Ensure SSL is enabled for production database.
+        if not DEBUG:
+            db_options.setdefault('sslmode', 'require')
 else:
     # Fallback to SQLite for development without Supabase
     DATABASES = {

@@ -57,6 +57,19 @@ A modern Django-based platform for international parcel forwarding, locker manag
 
 ---
 
+## 🚂 Railway Deploy Notes
+
+If deploy logs show `psycopg2.OperationalError` with `Network is unreachable` for a Supabase host, use a pooled/IPv4-safe URL.
+
+- Set `DATABASE_POOLER_URL` in Railway to your Supabase pooler connection string.
+- Keep `DATABASE_URL` as fallback if you want local compatibility.
+- Optional: set `DATABASE_HOSTADDR` to a known IPv4 address if your provider cannot route IPv6.
+- Optional: set `DB_CONNECT_TIMEOUT` (default: `10`).
+
+The app now prefers `DATABASE_POOLER_URL` over `DATABASE_URL` automatically.
+
+---
+
 ## 🔒 Security Highlights
 - All sensitive endpoints rate-limited
 - OTP login (no passwords stored)
