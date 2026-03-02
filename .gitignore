@@ -76,3 +76,7 @@ htmlcov/
 
 # Ignore admin static
 static/admin/
+
+.venv/
+package.json
+package-lock.json
