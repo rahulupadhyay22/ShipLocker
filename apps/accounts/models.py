@@ -30,12 +30,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     """Custom User model with Supabase Auth integration."""
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    supabase_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    supabase_id = models.CharField(max_length=255, unique=True, null=True, blank=True, db_index=True)
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255, blank=True)
-    phone = models.CharField(max_length=20, blank=True)
+    phone = models.CharField(max_length=20, blank=True, db_index=True)
     whatsapp_number = models.CharField(max_length=20, blank=True)
     whatsapp_verified = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=False, help_text="Whether user's email has been verified")
     
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -63,10 +64,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 def generate_locker_id():
-    """Generate a unique locker ID like RB-12345."""
-    prefix = "RB"
-    number = ''.join(random.choices(string.digits, k=5))
-    return f"{prefix}-{number}"
+    """Generate a unique locker ID like RB-12345 with collision retry."""
+    from apps.accounts.models import Locker
+    for _ in range(10):
+        number = ''.join(random.choices(string.digits, k=5))
+        new_id = f"RB-{number}"
+        if not Locker.objects.filter(locker_id=new_id).exists():
+            return new_id
+    raise ValueError("Unable to generate unique locker ID after 10 attempts")
 
 
 class Locker(models.Model):
@@ -75,6 +80,7 @@ class Locker(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='locker')
     locker_id = models.CharField(max_length=20, unique=True, default=generate_locker_id)
+    is_active = models.BooleanField(default=True, help_text="Whether this locker is active")
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -86,7 +92,14 @@ class Locker(models.Model):
     
     @property
     def address(self):
-        """Return the common locker address from settings."""
+        """Return the common locker address from AppSettings (admin-editable)."""
+        try:
+            from apps.notifications.models import AppSettings
+            app_settings = AppSettings.get_settings()
+            if app_settings.warehouse_address:
+                return app_settings.warehouse_address
+        except Exception:
+            pass
         return settings.LOCKER_ADDRESS
     
     @property
@@ -96,8 +109,15 @@ class Locker(models.Model):
     
     @property
     def phone(self):
-        """Return warehouse contact phone."""
-        return "+91 9876543210"  # Configure in settings
+        """Return warehouse contact phone from AppSettings (admin-editable)."""
+        try:
+            from apps.notifications.models import AppSettings
+            app_settings = AppSettings.get_settings()
+            if app_settings.support_phone:
+                return app_settings.support_phone
+        except Exception:
+            pass
+        return "+91 9876543210"
 
 
 class KYCDocument(models.Model):
@@ -119,9 +139,14 @@ class KYCDocument(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='kyc_documents')
     document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPES)
     document_url = models.CharField(max_length=500)  # Supabase Storage file path
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='reviewed_kyc_documents',
+        help_text="Admin who reviewed this document"
+    )
     notes = models.TextField(blank=True)
     
     class Meta:
@@ -135,3 +160,50 @@ class KYCDocument(models.Model):
     @property
     def is_approved(self):
         return self.status == 'approved'
+
+
+class SavedAddress(models.Model):
+    """Saved shipping addresses for quick reuse across shipments."""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_addresses')
+    
+    label = models.CharField(
+        max_length=50, blank=True,
+        help_text="A friendly name like 'Home', 'Office', 'Mom's Place'"
+    )
+    is_default = models.BooleanField(default=False, help_text="Use as default shipping address")
+    
+    # Recipient
+    recipient_name = models.CharField(max_length=255)
+    recipient_phone = models.CharField(max_length=20)
+    recipient_email = models.EmailField(blank=True)
+    
+    # Address
+    address_line1 = models.CharField(max_length=255)
+    address_line2 = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=20)
+    country = models.CharField(max_length=100, default='India')
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Saved Address'
+        verbose_name_plural = 'Saved Addresses'
+        ordering = ['-is_default', '-updated_at']
+    
+    def __str__(self):
+        label_str = f" ({self.label})" if self.label else ""
+        return f"{self.recipient_name}{label_str} — {self.city}, {self.country}"
+    
+    def save(self, *args, **kwargs):
+        # If this is set as default, unset other defaults for this user
+        if self.is_default:
+            SavedAddress.objects.filter(
+                user=self.user, is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)

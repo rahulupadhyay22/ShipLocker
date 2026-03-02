@@ -1,11 +1,11 @@
 import uuid
-from django.db import models
+from django.db import models, transaction
 from apps.accounts.models import User
 from apps.locker.models import Parcel
 
 
 def generate_shipment_id(user):
-    """Generate sequential shipment ID: RB-12345-S001"""
+    """Generate sequential shipment ID: RB-12345-S001 (race-condition safe)."""
     from apps.shipments.models import Shipment
     try:
         locker = user.locker
@@ -13,16 +13,44 @@ def generate_shipment_id(user):
     except:
         locker_id = f"U{str(user.id)[:6].upper()}"
     
-    count = Shipment.objects.filter(user=user).count() + 1
-    return f"{locker_id}-S{count:03d}"
+    with transaction.atomic():
+        last = (
+            Shipment.objects
+            .select_for_update()
+            .filter(user=user)
+            .order_by('-created_at')
+            .first()
+        )
+        if last and last.display_id:
+            try:
+                num = int(last.display_id.rsplit('-S', 1)[1]) + 1
+            except (ValueError, IndexError):
+                num = Shipment.objects.filter(user=user).count() + 1
+        else:
+            num = 1
+    return f"{locker_id}-S{num:03d}"
 
 
 def generate_shipment_doc_id(shipment):
-    """Generate sequential shipment document ID: RB-12345-S001-D001"""
+    """Generate sequential shipment document ID: RB-12345-S001-D001 (race-condition safe)."""
     from apps.shipments.models import ShipmentDocument
     shipment_id = shipment.display_id
-    count = ShipmentDocument.objects.filter(shipment=shipment).count() + 1
-    return f"{shipment_id}-D{count:03d}"
+    with transaction.atomic():
+        last = (
+            ShipmentDocument.objects
+            .select_for_update()
+            .filter(shipment=shipment)
+            .order_by('-uploaded_at')
+            .first()
+        )
+        if last and last.display_id:
+            try:
+                num = int(last.display_id.rsplit('-D', 1)[1]) + 1
+            except (ValueError, IndexError):
+                num = ShipmentDocument.objects.filter(shipment=shipment).count() + 1
+        else:
+            num = 1
+    return f"{shipment_id}-D{num:03d}"
 
 
 class Shipment(models.Model):
@@ -51,10 +79,18 @@ class Shipment(models.Model):
         ('dhl', 'DHL Express'),
         ('fedex', 'FedEx'),
         ('ups', 'UPS'),
+        ('aramex', 'Aramex'),
         ('bluedart', 'BlueDart'),
         ('dtdc', 'DTDC'),
         ('delhivery', 'Delhivery'),
         ('other', 'Other'),
+    ]
+    
+    PAYMENT_STATUS_CHOICES = [
+        ('unpaid', 'Unpaid'),
+        ('partial', 'Partially Paid'),
+        ('paid', 'Paid'),
+        ('refunded', 'Refunded'),
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -66,11 +102,18 @@ class Shipment(models.Model):
     shipment_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     
     # Status
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='draft', db_index=True)
+    
+    # Payment
+    payment_status = models.CharField(
+        max_length=20, choices=PAYMENT_STATUS_CHOICES, default='unpaid', db_index=True,
+        help_text="Payment status for this shipment"
+    )
+    paid_at = models.DateTimeField(null=True, blank=True)
     
     # Carrier & tracking
     carrier = models.CharField(max_length=50, choices=CARRIER_CHOICES, blank=True)
-    tracking_number = models.CharField(max_length=100, blank=True)
+    tracking_number = models.CharField(max_length=100, blank=True, db_index=True)
     tracking_url = models.URLField(blank=True)
     
     # Destination
@@ -91,11 +134,21 @@ class Shipment(models.Model):
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=3, default='INR')
     
+    # Estimated delivery
+    estimated_delivery_date = models.DateField(
+        null=True, blank=True,
+        help_text="Estimated delivery date shown to customer"
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     dispatched_at = models.DateTimeField(null=True, blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
+    
+    # Cancellation tracking
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_reason = models.CharField(max_length=255, blank=True)
     
     # Notes
     admin_notes = models.TextField(blank=True)
@@ -104,6 +157,11 @@ class Shipment(models.Model):
         verbose_name = 'Shipment'
         verbose_name_plural = 'Shipments'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status'], name='idx_shipment_user_status'),
+            models.Index(fields=['status', 'created_at'], name='idx_shipment_status_date'),
+            models.Index(fields=['carrier', 'tracking_number'], name='idx_shipment_carrier_track'),
+        ]
     
     def save(self, *args, **kwargs):
         if not self.display_id:
@@ -205,6 +263,9 @@ class TrackingEvent(models.Model):
         verbose_name = 'Tracking Event'
         verbose_name_plural = 'Tracking Events'
         ordering = ['-event_timestamp', '-created_at']
+        indexes = [
+            models.Index(fields=['shipment', 'event_timestamp'], name='idx_tracking_shipment_time'),
+        ]
     
     def __str__(self):
         return f"{self.shipment.display_id} - {self.status}"

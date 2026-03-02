@@ -26,11 +26,24 @@ class LoginView(View):
             messages.error(request, 'Please enter your email address.')
             return render(request, self.template_name)
         
+        # Validate email format
+        from ruffleberry.validators import validate_email
+        from django.core.exceptions import ValidationError
+        try:
+            validate_email(email)
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return render(request, self.template_name)
+        
         # Send OTP via Supabase
         try:
             auth = SupabaseAuth()
             auth.sign_in_with_otp(email)
             request.session['pending_email'] = email
+            # H5: Generate a session-bound token for OTP verification
+            import secrets
+            otp_session_token = secrets.token_urlsafe(32)
+            request.session['otp_session_token'] = otp_session_token
             messages.success(request, f'OTP sent to {email}. Please check your inbox.')
             return redirect('accounts:verify_otp')
         except Exception as e:
@@ -64,15 +77,23 @@ class VerifyOTPView(View):
         if 'pending_email' not in request.session:
             return redirect('accounts:login')
         return render(request, self.template_name, {
-            'email': request.session.get('pending_email')
+            'email': request.session.get('pending_email'),
+            'otp_session_token': request.session.get('otp_session_token', ''),
         })
     
     def post(self, request):
         email = request.session.get('pending_email')
         otp = request.POST.get('otp', '').strip()
+        submitted_token = request.POST.get('otp_session_token', '')
+        stored_token = request.session.get('otp_session_token', '')
         
         if not email or not otp:
             messages.error(request, 'Invalid request.')
+            return redirect('accounts:login')
+        
+        # H5: Verify the session token matches
+        if not stored_token or submitted_token != stored_token:
+            messages.error(request, 'Session expired. Please request a new OTP.')
             return redirect('accounts:login')
         
         try:
@@ -96,26 +117,34 @@ class VerifyOTPView(View):
             
             # Login user
             login(request, user)
-            del request.session['pending_email']
+            # Clean up session tokens
+            request.session.pop('pending_email', None)
+            request.session.pop('otp_session_token', None)
             
             messages.success(request, 'Welcome back!' if not created else 'Account created successfully!')
             return redirect('accounts:dashboard')
             
         except Exception as e:
             messages.error(request, f'Invalid OTP: {str(e)}')
-            return render(request, self.template_name, {'email': email})
+            return render(request, self.template_name, {
+                'email': email,
+                'otp_session_token': stored_token,
+            })
 
 
 class LogoutView(View):
-    """Handle logout."""
+    """Handle logout — POST only to prevent CSRF-based logout."""
     
-    def get(self, request):
+    def post(self, request):
         logout(request)
         messages.success(request, 'You have been logged out.')
         return redirect('accounts:login')
     
-    def post(self, request):
-        return self.get(request)
+    def get(self, request):
+        # Redirect GET requests to dashboard (don't log out on GET)
+        if request.user.is_authenticated:
+            return redirect('accounts:dashboard')
+        return redirect('accounts:login')
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -177,10 +206,30 @@ class ProfileView(LoginRequiredMixin, View):
         })
     
     def post(self, request):
+        from ruffleberry.validators import validate_phone, sanitize_text_input
+        from django.core.exceptions import ValidationError
+        
         user = request.user
-        user.full_name = request.POST.get('full_name', user.full_name)
-        user.phone = request.POST.get('phone', user.phone)
-        user.whatsapp_number = request.POST.get('whatsapp_number', user.whatsapp_number)
+        user.full_name = sanitize_text_input(request.POST.get('full_name', user.full_name), max_length=255)
+        
+        phone = request.POST.get('phone', user.phone)
+        if phone:
+            try:
+                validate_phone(phone)
+                user.phone = phone
+            except ValidationError as e:
+                messages.error(request, str(e))
+                return redirect('accounts:profile')
+        
+        whatsapp = request.POST.get('whatsapp_number', user.whatsapp_number)
+        if whatsapp:
+            try:
+                validate_phone(whatsapp)
+                user.whatsapp_number = whatsapp
+            except ValidationError as e:
+                messages.error(request, str(e))
+                return redirect('accounts:profile')
+        
         user.save()
         
         messages.success(request, 'Profile updated successfully.')

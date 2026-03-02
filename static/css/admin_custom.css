@@ -1,0 +1,120 @@
+/* ===================================
+   Ruffleberry Admin – Custom Styles
+   =================================== */
+
+/* ---- Status Badge Pills ---- */
+.badge-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+/* Parcel statuses */
+.badge-pending        { background: #FEF3C7; color: #92400E; }
+.badge-action-required { background: #FEE2E2; color: #991B1B; }
+.badge-approved       { background: #D1FAE5; color: #065F46; }
+.badge-shipped        { background: #DBEAFE; color: #1E40AF; }
+.badge-returned       { background: #FCE7F3; color: #9D174D; }
+.badge-discarded      { background: #F3F4F6; color: #6B7280; }
+
+/* Shipment statuses */
+.badge-draft          { background: #F3F4F6; color: #6B7280; }
+.badge-declaration    { background: #FEF3C7; color: #92400E; }
+.badge-pending-pay    { background: #FDE68A; color: #78350F; }
+.badge-packing        { background: #E0E7FF; color: #3730A3; }
+.badge-dispatched     { background: #DBEAFE; color: #1E40AF; }
+.badge-in-transit     { background: #CFFAFE; color: #155E75; }
+.badge-customs        { background: #FEF3C7; color: #92400E; }
+.badge-out-delivery   { background: #D1FAE5; color: #065F46; }
+.badge-delivered      { background: #A7F3D0; color: #064E3B; }
+.badge-cancelled      { background: #FEE2E2; color: #991B1B; }
+
+/* KYC statuses */
+.badge-kyc-pending    { background: #FEF3C7; color: #92400E; }
+.badge-kyc-approved   { background: #D1FAE5; color: #065F46; }
+.badge-kyc-rejected   { background: #FEE2E2; color: #991B1B; }
+
+/* Announcement severity */
+.badge-info           { background: #DBEAFE; color: #1E40AF; }
+.badge-notice         { background: #FEF3C7; color: #92400E; }
+.badge-important      { background: #FED7AA; color: #9A3412; }
+.badge-urgent         { background: #FEE2E2; color: #991B1B; }
+
+/* Request statuses */
+.badge-requested      { background: #FEF3C7; color: #92400E; }
+.badge-processing     { background: #DBEAFE; color: #1E40AF; }
+.badge-completed      { background: #D1FAE5; color: #065F46; }
+.badge-confirmed      { background: #E0E7FF; color: #3730A3; }
+
+/* ---- Integration status cards for AppSettings ---- */
+.integration-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 0;
+}
+.integration-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.chip-enabled  { background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
+.chip-disabled { background: #F9FAFB; color: #9CA3AF; border: 1px solid #E5E7EB; }
+
+/* ---- Better table aesthetics ---- */
+#changelist-form .results table tbody tr:hover td {
+    background: #F8FAFC;
+}
+
+#changelist-form .results table th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #64748B;
+}
+
+/* ---- Fieldset polish ---- */
+.module h2 {
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+}
+
+/* ---- Stats summary banner ---- */
+.admin-stats-banner {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1rem 0;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 12px 20px;
+    text-align: center;
+    min-width: 120px;
+}
+
+.stat-card .stat-number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1E293B;
+}
+
+.stat-card .stat-label {
+    font-size: 0.75rem;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}

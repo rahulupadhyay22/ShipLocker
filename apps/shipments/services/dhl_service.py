@@ -68,7 +68,16 @@ class DHLService:
     }
     
     def __init__(self):
-        self.api_key = os.environ.get('DHL_API_KEY', '')
+        self.api_key = ''
+        try:
+            from apps.notifications.models import AppSettings
+            app_settings = AppSettings.get_settings()
+            if app_settings.dhl_enabled and app_settings.dhl_api_key:
+                self.api_key = app_settings.dhl_api_key
+        except Exception:
+            pass
+        if not self.api_key:
+            self.api_key = os.environ.get('DHL_API_KEY', '')
         if not self.api_key:
             logger.warning("DHL_API_KEY not set. DHL tracking will not work.")
     

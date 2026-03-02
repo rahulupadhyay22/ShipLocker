@@ -1,13 +1,24 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from .models import Announcement, StaticPage, ServiceCharge, AdminLog, PageSection, ShippingZone, ShippingRate
+
+
+# ---- Announcement severity colors ----
+SEVERITY_COLORS = {
+    'info': ('badge-info', 'ℹ️'),
+    'notice': ('badge-notice', '📢'),
+    'important': ('badge-important', '⚠️'),
+    'urgent': ('badge-urgent', '🚨'),
+}
 
 
 @admin.register(Announcement)
 class AnnouncementAdmin(admin.ModelAdmin):
-    list_display = ['title', 'severity', 'text_size', 'is_active', 'created_at']
+    list_display = ['title', 'severity_badge', 'text_size', 'is_active', 'created_at']
     list_filter = ['severity', 'text_size', 'is_active', 'is_dismissible']
     search_fields = ['title', 'content']
     list_editable = ['is_active', 'text_size']
+    date_hierarchy = 'created_at'
     fieldsets = (
         (None, {
             'fields': ('title', 'content', 'severity', 'text_size')
@@ -20,6 +31,16 @@ class AnnouncementAdmin(admin.ModelAdmin):
             'fields': ('is_active', 'is_dismissible', 'expires_at')
         }),
     )
+    
+    def severity_badge(self, obj):
+        css_class, icon = SEVERITY_COLORS.get(obj.severity, ('badge-info', '❓'))
+        label = obj.get_severity_display()
+        return format_html(
+            '<span class="badge-status {}">{} {}</span>',
+            css_class, icon, label
+        )
+    severity_badge.short_description = 'Severity'
+    severity_badge.admin_order_field = 'severity'
 
 
 class PageSectionInline(admin.StackedInline):
@@ -48,15 +69,22 @@ class StaticPageAdmin(admin.ModelAdmin):
     inlines = [PageSectionInline]
     
     def section_count(self, obj):
-        return obj.sections.count()
+        count = obj.sections.count()
+        return format_html('<strong>{}</strong>', count)
     section_count.short_description = 'Sections'
 
 
 @admin.register(ServiceCharge)
 class ServiceChargeAdmin(admin.ModelAdmin):
-    list_display = ['name', 'amount', 'currency', 'is_active']
+    list_display = ['name', 'formatted_amount', 'currency', 'is_active']
     list_filter = ['is_active', 'currency']
-    list_editable = ['amount', 'is_active']
+    list_editable = ['is_active']
+    
+    def formatted_amount(self, obj):
+        symbol = '₹' if obj.currency == 'INR' else obj.currency
+        return format_html('<strong>{} {}</strong>', symbol, obj.amount)
+    formatted_amount.short_description = 'Amount'
+    formatted_amount.admin_order_field = 'amount'
 
 
 @admin.register(AdminLog)
@@ -65,6 +93,7 @@ class AdminLogAdmin(admin.ModelAdmin):
     list_filter = ['created_at']
     search_fields = ['user__email', 'action', 'details']
     readonly_fields = ['id', 'user', 'action', 'details', 'ip_address', 'created_at']
+    date_hierarchy = 'created_at'
     
     def has_add_permission(self, request):
         return False
@@ -82,20 +111,41 @@ class ShippingRateInline(admin.TabularInline):
 
 @admin.register(ShippingZone)
 class ShippingZoneAdmin(admin.ModelAdmin):
-    list_display = ['name', 'countries', 'rate_count', 'is_active', 'order']
+    list_display = ['name', 'country_count', 'countries', 'rate_count', 'is_active', 'order']
     list_filter = ['is_active']
     list_editable = ['is_active', 'order']
     search_fields = ['name', 'countries']
     inlines = [ShippingRateInline]
     
     def rate_count(self, obj):
-        return obj.rates.count()
+        count = obj.rates.count()
+        return format_html('<strong>{}</strong>', count)
     rate_count.short_description = 'Rates'
+    
+    def country_count(self, obj):
+        count = len(obj.get_countries_list())
+        return format_html('<span class="badge-status badge-info">{} countries</span>', count)
+    country_count.short_description = 'Countries'
 
 
 @admin.register(ShippingRate)
 class ShippingRateAdmin(admin.ModelAdmin):
-    list_display = ['zone', 'min_weight', 'max_weight', 'rate_type', 'price', 'delivery_days_min', 'delivery_days_max', 'is_active']
+    list_display = ['zone', 'weight_range', 'rate_type', 'formatted_price', 'delivery_range', 'is_active']
     list_filter = ['zone', 'rate_type', 'is_active']
-    list_editable = ['price', 'is_active']
+    list_editable = ['is_active']
     ordering = ['zone', 'min_weight']
+    
+    def weight_range(self, obj):
+        return format_html('{}–{} kg', obj.min_weight, obj.max_weight)
+    weight_range.short_description = 'Weight Range'
+    weight_range.admin_order_field = 'min_weight'
+    
+    def formatted_price(self, obj):
+        prefix = 'Per kg' if obj.rate_type == 'per_kg' else 'Fixed'
+        return format_html('<strong>₹{}</strong> <small>({})</small>', obj.price, prefix)
+    formatted_price.short_description = 'Price'
+    formatted_price.admin_order_field = 'price'
+    
+    def delivery_range(self, obj):
+        return format_html('{}–{} days', obj.delivery_days_min, obj.delivery_days_max)
+    delivery_range.short_description = 'Delivery'

@@ -73,6 +73,7 @@
 
                 <form method="post" action="{% url 'accounts:verify_otp' %}">
                     {% csrf_token %}
+                    <input type="hidden" name="otp_session_token" value="{{ otp_session_token }}"
 
                     <div class="form-group">
                         <div

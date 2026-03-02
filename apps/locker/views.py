@@ -4,6 +4,7 @@ from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils import timezone
+from django.db import transaction
 
 from .models import Parcel, ParcelImage, ReturnRequest, DiscardRequest
 
@@ -25,6 +26,7 @@ class ActionRequiredView(LoginRequiredMixin, ListView):
     """Items requiring user action/approval."""
     template_name = 'locker/action_required.html'
     context_object_name = 'parcels'
+    paginate_by = 20
     
     def get_queryset(self):
         return Parcel.objects.filter(
@@ -46,6 +48,7 @@ class ReadyToShipView(LoginRequiredMixin, ListView):
     """Items approved and ready to ship."""
     template_name = 'locker/ready_to_ship.html'
     context_object_name = 'parcels'
+    paginate_by = 20
     
     def get_queryset(self):
         return Parcel.objects.filter(
@@ -70,6 +73,7 @@ class ReturnsView(LoginRequiredMixin, ListView):
     """Return requests."""
     template_name = 'locker/returns.html'
     context_object_name = 'return_requests'
+    paginate_by = 20
     
     def get_queryset(self):
         return ReturnRequest.objects.filter(
@@ -90,6 +94,7 @@ class DiscardsView(LoginRequiredMixin, ListView):
     """Discard requests."""
     template_name = 'locker/discards.html'
     context_object_name = 'discard_requests'
+    paginate_by = 20
     
     def get_queryset(self):
         return DiscardRequest.objects.filter(
@@ -127,29 +132,39 @@ class ApproveParcelView(LoginRequiredMixin, View):
             messages.error(request, 'This parcel cannot be approved.')
             return redirect('locker:parcel_detail', pk=pk)
         
-        # Update parcel with user's declaration
-        parcel.item_name = request.POST.get('item_name', parcel.item_name)
-        parcel.item_price = request.POST.get('item_price') or parcel.item_price
-        parcel.category = request.POST.get('category', parcel.category)
-        parcel.customs_description = request.POST.get('customs_description', parcel.customs_description)
-        
-        # Handle invoice upload
-        invoice_file = request.FILES.get('invoice')
-        if invoice_file:
-            try:
-                from .utils import upload_invoice
-                invoice_url = upload_invoice(
-                    file=invoice_file,
-                    locker_id=str(request.user.locker.locker_id),
-                    parcel_display_id=parcel.display_id
-                )
-                parcel.invoice_url = invoice_url
-            except Exception as e:
-                messages.warning(request, f'Invoice upload failed: {str(e)}. Parcel still approved.')
-        
-        parcel.status = 'approved'
-        parcel.approved_at = timezone.now()
-        parcel.save()
+        with transaction.atomic():
+            # Update parcel with user's declaration
+            parcel.item_name = request.POST.get('item_name', parcel.item_name)
+            parcel.item_price = request.POST.get('item_price') or parcel.item_price
+            parcel.category = request.POST.get('category', parcel.category)
+            parcel.customs_description = request.POST.get('customs_description', parcel.customs_description)
+            
+            # Handle invoice upload
+            invoice_file = request.FILES.get('invoice')
+            if invoice_file:
+                # Validate file upload
+                from ruffleberry.validators import validate_file_upload
+                from django.core.exceptions import ValidationError
+                try:
+                    validate_file_upload(invoice_file)
+                except ValidationError as e:
+                    messages.error(request, str(e))
+                    return redirect('locker:parcel_detail', pk=pk)
+                
+                try:
+                    from .utils import upload_invoice
+                    invoice_url = upload_invoice(
+                        file=invoice_file,
+                        locker_id=str(request.user.locker.locker_id),
+                        parcel_display_id=parcel.display_id
+                    )
+                    parcel.invoice_url = invoice_url
+                except Exception as e:
+                    messages.warning(request, f'Invoice upload failed: {str(e)}. Parcel still approved.')
+            
+            parcel.status = 'approved'
+            parcel.approved_at = timezone.now()
+            parcel.save()
         
         messages.success(request, f'Parcel {parcel.tracking_number} approved and ready to ship!')
         return redirect('locker:ready_to_ship')
@@ -166,9 +181,10 @@ class RequestReturnView(LoginRequiredMixin, View):
             messages.error(request, 'Return cannot be requested for this parcel.')
             return redirect('locker:parcel_detail', pk=pk)
         
-        ReturnRequest.objects.create(parcel=parcel, reason=reason)
-        parcel.status = 'return_requested'
-        parcel.save()
+        with transaction.atomic():
+            ReturnRequest.objects.create(parcel=parcel, reason=reason)
+            parcel.status = 'return_requested'
+            parcel.save()
         
         messages.success(request, 'Return request submitted.')
         return redirect('locker:returns')
@@ -185,9 +201,10 @@ class RequestDiscardView(LoginRequiredMixin, View):
             messages.error(request, 'Discard cannot be requested for this parcel.')
             return redirect('locker:parcel_detail', pk=pk)
         
-        DiscardRequest.objects.create(parcel=parcel, reason=reason)
-        parcel.status = 'discard_requested'
-        parcel.save()
+        with transaction.atomic():
+            DiscardRequest.objects.create(parcel=parcel, reason=reason)
+            parcel.status = 'discard_requested'
+            parcel.save()
         
         messages.warning(request, 'Discard request submitted. This action is irreversible once confirmed.')
         return redirect('locker:discards')

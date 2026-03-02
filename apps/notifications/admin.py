@@ -28,7 +28,7 @@ class AppSettingsAdmin(admin.ModelAdmin):
                 'whatsapp_business_account_id',
             ),
             'description': 'Configure WhatsApp notifications via Meta Cloud API. Get credentials from developers.facebook.com',
-            'classes': ('collapse',),  # Collapsible by default
+            'classes': ('collapse',),
         }),
         ('📱 WhatsApp Message Templates', {
             'fields': (
@@ -108,11 +108,37 @@ class AppSettingsAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
         ('ℹ️ Status', {
-            'fields': ('updated_at',),
+            'fields': ('integration_dashboard', 'updated_at',),
         }),
     )
     
-    readonly_fields = ('updated_at',)
+    readonly_fields = ('updated_at', 'integration_dashboard')
+    
+    def integration_dashboard(self, obj):
+        """Show a visual dashboard of integration statuses."""
+        integrations = [
+            ('WhatsApp', obj.whatsapp_enabled, '💬'),
+            ('DHL Express', obj.dhl_enabled, '📦'),
+            ('FedEx', obj.fedex_enabled, '📦'),
+            ('Aramex', obj.aramex_enabled, '📦'),
+            ('BlueDart', obj.bluedart_enabled, '🚚'),
+            ('Razorpay', obj.razorpay_enabled, '💳'),
+        ]
+        
+        supabase_configured = bool(obj.supabase_url and obj.supabase_service_role_key)
+        integrations.append(('Supabase', supabase_configured, '☁️'))
+        
+        chips = []
+        for name, enabled, icon in integrations:
+            css = 'chip-enabled' if enabled else 'chip-disabled'
+            dot = '🟢' if enabled else '⚪'
+            chips.append(f'<span class="integration-chip {css}">{icon} {dot} {name}</span>')
+        
+        return format_html(
+            '<div class="integration-status">{}</div>',
+            format_html(''.join(chips))
+        )
+    integration_dashboard.short_description = 'Integration Status'
     
     def has_add_permission(self, request):
         # Only allow one instance (singleton)
@@ -144,21 +170,3 @@ class AppSettingsAdmin(admin.ModelAdmin):
             if field_name in form.base_fields:
                 form.base_fields[field_name].widget.attrs['type'] = 'password'
         return form
-    
-    def status_indicator(self, obj):
-        """Show quick status of enabled integrations."""
-        icons = []
-        if obj.whatsapp_enabled:
-            icons.append('💬')
-        if obj.dhl_enabled:
-            icons.append('📦 DHL')
-        if obj.fedex_enabled:
-            icons.append('📦 FedEx')
-        if obj.aramex_enabled:
-            icons.append('📦 Aramex')
-        if obj.bluedart_enabled:
-            icons.append('🚚 BlueDart')
-        if obj.razorpay_enabled:
-            icons.append('💳')
-        return format_html(' | '.join(icons) if icons else '<span style="color: #999;">No integrations enabled</span>')
-    status_indicator.short_description = 'Active Integrations'

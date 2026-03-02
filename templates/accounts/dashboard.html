@@ -143,7 +143,7 @@
                         ID</label>
                     <div style="font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 1rem;">
                         #{{ locker.locker_id }}
-                        <button onclick="copyToClipboard('{{ locker.locker_id }}', this)"
+                        <button onclick="copyToClipboard('{{ locker.locker_id|escapejs }}', this)"
                             style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: 0.2s;">COPY</button>
                     </div>
                 </div>
@@ -153,7 +153,8 @@
                         style="display: block; font-size: 0.75rem; opacity: 0.8; margin-bottom: 0.25rem; letter-spacing: 0.05em;">ADDRESS</label>
                     <div style="font-size: 1.1rem; line-height: 1.4; display: flex; align-items: start; gap: 1rem;">
                         <span>{{ locker.locker_id }}, {{ locker.address }}</span>
-                        <button onclick="copyToClipboard('{{ locker.locker_id }}, {{ locker.address }}', this)"
+                        <button
+                            onclick="copyToClipboard('{{ locker.locker_id|escapejs }}, {{ locker.address|escapejs }}', this)"
                             style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">COPY</button>
                     </div>
                 </div>
@@ -163,7 +164,7 @@
                         style="display: block; font-size: 0.75rem; opacity: 0.8; margin-bottom: 0.25rem; letter-spacing: 0.05em;">PHONE</label>
                     <div style="font-size: 1.1rem; display: flex; align-items: center; gap: 1rem;">
                         {{ locker.phone }}
-                        <button onclick="copyToClipboard('{{ locker.phone }}', this)"
+                        <button onclick="copyToClipboard('{{ locker.phone|escapejs }}', this)"
                             style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">COPY</button>
                     </div>
                 </div>
@@ -218,7 +219,8 @@
                 <div style="font-weight: 600; margin-bottom: 0.5rem;">Need Help?</div>
                 <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">Our team is available
                     7AM - 7PM IST</p>
-                <a href="https://wa.me/918851222222" target="_blank" class="btn btn-primary" style="width: 100%;">
+                <a href="https://wa.me/{{ whatsapp_link }}" target="_blank" class="btn btn-primary"
+                    style="width: 100%;">
                     Chat on WhatsApp
                 </a>
             </div>

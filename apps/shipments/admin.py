@@ -4,6 +4,22 @@ from django import forms
 from .models import Shipment, ShipmentItem, ShipmentDocument, TrackingEvent
 
 
+# ---- Shipment status color map ----
+SHIPMENT_STATUS_COLORS = {
+    'draft':              ('badge-draft',       '📝'),
+    'declaration_pending': ('badge-declaration', '📄'),
+    'pending_payment':    ('badge-pending-pay',  '💳'),
+    'packing':            ('badge-packing',      '📦'),
+    'dispatched':         ('badge-dispatched',   '🚀'),
+    'in_transit':         ('badge-in-transit',   '✈️'),
+    'customs':            ('badge-customs',      '🛃'),
+    'out_for_delivery':   ('badge-out-delivery', '🚚'),
+    'delivered':          ('badge-delivered',     '✅'),
+    'returned':           ('badge-returned',     '↩️'),
+    'cancelled':          ('badge-cancelled',    '❌'),
+}
+
+
 class ShipmentItemInline(admin.TabularInline):
     model = ShipmentItem
     extra = 1
@@ -17,7 +33,12 @@ class ShipmentDocumentForm(forms.ModelForm):
     
     class Meta:
         model = ShipmentDocument
-        fields = ['shipment', 'document_type', 'document_url']
+        fields = ['document_type', 'document_url']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make document_url optional — it can be auto-filled from file upload
+        self.fields['document_url'].required = False
     
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -65,18 +86,34 @@ class ShipmentDocumentInline(admin.TabularInline):
     document_link.short_description = "View"
 
 
+class TrackingEventInline(admin.TabularInline):
+    """Inline for viewing tracking events in Shipment admin."""
+    model = TrackingEvent
+    extra = 0
+    readonly_fields = ['status', 'description', 'location', 'event_timestamp', 'created_at']
+    ordering = ['-event_timestamp']
+    
+    def has_add_permission(self, request, obj=None):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Shipment)
 class ShipmentAdmin(admin.ModelAdmin):
-    list_display = ['display_id', 'user', 'shipment_type', 'status', 'carrier', 'tracking_number', 'created_at']
+    list_display = ['display_id', 'user', 'shipment_type', 'status_badge', 'payment_badge', 'carrier', 'tracking_number', 'item_count_display', 'created_at']
     list_filter = ['status', 'shipment_type', 'carrier', 'created_at']
     search_fields = ['display_id', 'user__email', 'tracking_number', 'recipient_name']
-    readonly_fields = ['display_id', 'created_at', 'updated_at']
+    readonly_fields = ['display_id', 'created_at', 'updated_at', 'paid_at', 'cancelled_at']
     raw_id_fields = ['user']
-    inlines = [ShipmentItemInline, ShipmentDocumentInline]
+    inlines = [ShipmentItemInline, ShipmentDocumentInline, TrackingEventInline]
+    date_hierarchy = 'created_at'
+    list_per_page = 25
     
     fieldsets = (
         ('Shipment Info', {
-            'fields': ('user', 'shipment_type', 'status')
+            'fields': ('user', 'shipment_type', 'status', 'payment_status')
         }),
         ('Carrier & Tracking', {
             'fields': ('carrier', 'tracking_number', 'tracking_url')
@@ -86,10 +123,14 @@ class ShipmentAdmin(admin.ModelAdmin):
                       'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country')
         }),
         ('Weight & Cost', {
-            'fields': ('total_weight_kg', 'shipping_cost', 'currency')
+            'fields': ('total_weight_kg', 'shipping_cost', 'currency', 'estimated_delivery_date')
         }),
         ('Timestamps', {
-            'fields': ('created_at', 'updated_at', 'dispatched_at', 'delivered_at'),
+            'fields': ('created_at', 'updated_at', 'dispatched_at', 'delivered_at', 'paid_at'),
+            'classes': ('collapse',)
+        }),
+        ('Cancellation', {
+            'fields': ('cancelled_at', 'cancelled_reason'),
             'classes': ('collapse',)
         }),
         ('Notes', {
@@ -98,19 +139,54 @@ class ShipmentAdmin(admin.ModelAdmin):
         }),
     )
     
-    actions = ['approve_declaration', 'mark_dispatched', 'mark_delivered']
+    actions = ['approve_declaration', 'mark_packing', 'mark_dispatched', 'mark_delivered']
+    
+    def status_badge(self, obj):
+        css_class, icon = SHIPMENT_STATUS_COLORS.get(obj.status, ('badge-draft', '❓'))
+        label = obj.get_status_display()
+        return format_html(
+            '<span class="badge-status {}">{} {}</span>',
+            css_class, icon, label
+        )
+    status_badge.short_description = 'Status'
+    status_badge.admin_order_field = 'status'
+    
+    def payment_badge(self, obj):
+        colors = {
+            'unpaid': ('badge-cancelled', '💳'),
+            'partial': ('badge-pending', '💳'),
+            'paid': ('badge-delivered', '✅'),
+            'refunded': ('badge-returned', '↩️'),
+        }
+        css_class, icon = colors.get(obj.payment_status, ('badge-draft', '❓'))
+        label = obj.get_payment_status_display()
+        return format_html(
+            '<span class="badge-status {}">{} {}</span>',
+            css_class, icon, label
+        )
+    payment_badge.short_description = 'Payment'
+    payment_badge.admin_order_field = 'payment_status'
+    
+    def item_count_display(self, obj):
+        count = obj.items.count()
+        return format_html('<strong>{}</strong> item{}', count, 's' if count != 1 else '')
+    item_count_display.short_description = 'Items'
     
     @admin.action(description='✅ Approve Declaration (→ Packing)')
     def approve_declaration(self, request, queryset):
         updated = queryset.filter(status='declaration_pending').update(status='packing')
         self.message_user(request, f'{updated} shipment(s) approved and moved to Packing.')
     
-    @admin.action(description='Mark as Dispatched')
+    @admin.action(description='📦 Mark as Packing')
+    def mark_packing(self, request, queryset):
+        queryset.update(status='packing')
+    
+    @admin.action(description='🚀 Mark as Dispatched')
     def mark_dispatched(self, request, queryset):
         from django.utils import timezone
         queryset.update(status='dispatched', dispatched_at=timezone.now())
     
-    @admin.action(description='Mark as Delivered')
+    @admin.action(description='✅ Mark as Delivered')
     def mark_delivered(self, request, queryset):
         from django.utils import timezone
         queryset.update(status='delivered', delivered_at=timezone.now())
@@ -128,10 +204,10 @@ class DeclarationPendingShipment(Shipment):
 @admin.register(DeclarationPendingShipment)
 class DeclarationApprovalAdmin(admin.ModelAdmin):
     """Admin view specifically for approving declarations."""
-    list_display = ['shipment_id', 'user', 'recipient_name', 'city', 'country', 'declaration_link', 'created_at']
+    list_display = ['display_id', 'user', 'recipient_name', 'city', 'country', 'declaration_link', 'created_at']
     list_filter = ['created_at']
-    search_fields = ['id', 'user__email', 'recipient_name']
-    readonly_fields = ['id', 'user', 'shipment_type', 'recipient_name', 'address_line1', 'address_line2', 
+    search_fields = ['display_id', 'user__email', 'recipient_name']
+    readonly_fields = ['display_id', 'user', 'shipment_type', 'recipient_name', 'address_line1', 'address_line2', 
                        'city', 'state', 'postal_code', 'country', 'recipient_phone', 'recipient_email',
                        'created_at', 'declaration_document']
     actions = ['approve_declaration']
@@ -139,10 +215,6 @@ class DeclarationApprovalAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Only show shipments with declaration_pending status."""
         return super().get_queryset(request).filter(status='declaration_pending')
-    
-    def shipment_id(self, obj):
-        return f"SHP-{str(obj.id)[:8].upper()}"
-    shipment_id.short_description = "Shipment ID"
     
     def declaration_link(self, obj):
         """Show link to view the declaration document."""
@@ -182,7 +254,7 @@ class DeclarationApprovalAdmin(admin.ModelAdmin):
             'description': 'Review the uploaded declaration form below before approving.'
         }),
         ('Shipment Info', {
-            'fields': ('id', 'user', 'shipment_type', 'created_at')
+            'fields': ('display_id', 'user', 'shipment_type', 'created_at')
         }),
         ('Recipient Details', {
             'fields': ('recipient_name', 'recipient_phone', 'recipient_email',
@@ -229,29 +301,15 @@ class ShipmentDocumentAdmin(admin.ModelAdmin):
     document_link.short_description = "View"
 
 
-class TrackingEventInline(admin.TabularInline):
-    """Inline for viewing tracking events in Shipment admin."""
-    model = TrackingEvent
-    extra = 0
-    readonly_fields = ['status', 'description', 'location', 'event_timestamp', 'created_at']
-    ordering = ['-event_timestamp']
-    
-    def has_add_permission(self, request, obj=None):
-        return False
-    
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(TrackingEvent)
 class TrackingEventAdmin(admin.ModelAdmin):
     """Admin for viewing all tracking events."""
     list_display = ['shipment', 'status', 'location', 'event_timestamp', 'created_at']
     list_filter = ['status', 'created_at']
-    search_fields = ['shipment__tracking_number', 'status', 'location']
+    search_fields = ['shipment__tracking_number', 'shipment__display_id', 'status', 'location']
     readonly_fields = ['shipment', 'status', 'description', 'location', 'event_timestamp', 'created_at', 'raw_data']
     ordering = ['-event_timestamp']
+    date_hierarchy = 'event_timestamp'
     
     def has_add_permission(self, request):
         return False  # Events are created by sync command only
-

@@ -22,6 +22,15 @@
                     <span
                         style="color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Delivered</span>
                 </div>
+                {% if closed_count %}
+                <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
+                <div>
+                    <span
+                        style="font-size: 2.5rem; font-weight: 700; display: block; line-height: 1; color: #f87171;">{{closed_count}}</span>
+                    <span
+                        style="color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Closed</span>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -46,6 +55,12 @@
         style="padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 500; font-size: 0.95rem; color: var(--text-secondary); text-decoration: none; transition: 0.2s;">
         Delivered History
     </a>
+    {% if closed_count %}
+    <a href="{% url 'shipments:closed' %}" class="nav-tab {% if tab == 'closed' %}active{% endif %}"
+        style="padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 500; font-size: 0.95rem; color: var(--text-secondary); text-decoration: none; transition: 0.2s;">
+        Closed ({{closed_count}})
+    </a>
+    {% endif %}
 </div>
 
 <style>
@@ -115,7 +130,7 @@
             <ol style="padding-left: 1.25rem; font-size: 0.95rem; margin-bottom: 1.5rem;">
                 <li style="margin-bottom: 0.5rem;">Once service charges are paid, you will need to schedule pickup from
                     Locker address.</li>
-                <li style="margin-bottom: 0.5rem;"><strong>Pickup Address:</strong> 
+                <li style="margin-bottom: 0.5rem;"><strong>Pickup Address:</strong>
                     {{ request.user.locker.address|default:"Locker Address" }} - {{ request.user.locker.pk }}</li>
                 <li style="margin-bottom: 0.5rem;"><strong>Pickup Time:</strong> 10 AM to 5 PM IST</li>
                 <li>
@@ -179,13 +194,13 @@
         <div style="flex: 1; padding: 1.5rem; display: flex; flex-direction: column; justify-content: center;">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                 <div>
-                    <h3 style="font-size: 1.1rem; margin-bottom: 0.25rem;">Shipment #{{ shipment.id|slice:":8"|upper }}
+                    <h3 style="font-size: 1.1rem; margin-bottom: 0.25rem;">Shipment {{ shipment.display_id }}
                     </h3>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Created on 
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Created on
                         {{ shipment.created_at|date:"M d, Y" }}</div>
                 </div>
                 <span
-                    class="status-badge {{ shipment.status }} {% if shipment.status == 'delivered' %}status-approved{% else %}status-pending{% endif %}">
+                    class="status-badge {{ shipment.status }} {% if shipment.status == 'delivered' %}status-approved{% elif shipment.status == 'returned' or shipment.status == 'cancelled' %}status-action{% else %}status-pending{% endif %}">
                     {{ shipment.get_status_display }}
                 </span>
             </div>

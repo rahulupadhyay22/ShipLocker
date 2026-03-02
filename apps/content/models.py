@@ -31,7 +31,7 @@ class Announcement(models.Model):
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='info')
     text_size = models.CharField(max_length=20, choices=TEXT_SIZE_CHOICES, default='normal', help_text="Text size for the announcement content")
     text_bold = models.CharField(max_length=20, choices=TEXT_BOLD_CHOICES, default='normal', help_text="Text bold for the announcement content")
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     is_dismissible = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -126,6 +126,7 @@ class ServiceCharge(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='INR')
     is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         verbose_name = 'Service Charge'

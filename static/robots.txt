@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /accounts/
+Disallow: /locker/
+Disallow: /shipments/
+Disallow: /kyc/
+Disallow: /payments/
+Disallow: /manage-rb-panel/
+Disallow: /admin/
+
+Sitemap: https://ruffleberry.com/sitemap.xml

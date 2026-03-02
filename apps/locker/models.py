@@ -1,39 +1,94 @@
 import uuid
-from django.db import models
+from django.db import models, transaction
 from apps.accounts.models import Locker
 
 
 def generate_parcel_id(locker):
-    """Generate sequential parcel ID: RB-12345-P001"""
+    """Generate sequential parcel ID: RB-12345-P001 (race-condition safe)."""
     from apps.locker.models import Parcel
     locker_id = locker.locker_id
-    # Get count of existing parcels for this locker
-    count = Parcel.objects.filter(locker=locker).count() + 1
-    return f"{locker_id}-P{count:03d}"
+    with transaction.atomic():
+        last = (
+            Parcel.objects
+            .select_for_update()
+            .filter(locker=locker)
+            .order_by('-created_at')
+            .first()
+        )
+        if last and last.display_id:
+            try:
+                num = int(last.display_id.rsplit('-P', 1)[1]) + 1
+            except (ValueError, IndexError):
+                num = Parcel.objects.filter(locker=locker).count() + 1
+        else:
+            num = 1
+    return f"{locker_id}-P{num:03d}"
 
 
 def generate_parcel_image_id(parcel):
-    """Generate sequential parcel image ID: RB-12345-P001-I001"""
+    """Generate sequential parcel image ID: RB-12345-P001-I001 (race-condition safe)."""
     from apps.locker.models import ParcelImage
     parcel_id = parcel.display_id
-    count = ParcelImage.objects.filter(parcel=parcel).count() + 1
-    return f"{parcel_id}-I{count:03d}"
+    with transaction.atomic():
+        last = (
+            ParcelImage.objects
+            .select_for_update()
+            .filter(parcel=parcel)
+            .order_by('-uploaded_at')
+            .first()
+        )
+        if last and last.display_id:
+            try:
+                num = int(last.display_id.rsplit('-I', 1)[1]) + 1
+            except (ValueError, IndexError):
+                num = ParcelImage.objects.filter(parcel=parcel).count() + 1
+        else:
+            num = 1
+    return f"{parcel_id}-I{num:03d}"
 
 
 def generate_return_request_id(parcel):
-    """Generate sequential return request ID: RB-12345-P001-R001"""
+    """Generate sequential return request ID: RB-12345-P001-R001 (race-condition safe)."""
     from apps.locker.models import ReturnRequest
     parcel_id = parcel.display_id
-    count = ReturnRequest.objects.filter(parcel=parcel).count() + 1
-    return f"{parcel_id}-R{count:03d}"
+    with transaction.atomic():
+        last = (
+            ReturnRequest.objects
+            .select_for_update()
+            .filter(parcel=parcel)
+            .order_by('-requested_at')
+            .first()
+        )
+        if last and last.display_id:
+            try:
+                num = int(last.display_id.rsplit('-R', 1)[1]) + 1
+            except (ValueError, IndexError):
+                num = ReturnRequest.objects.filter(parcel=parcel).count() + 1
+        else:
+            num = 1
+    return f"{parcel_id}-R{num:03d}"
 
 
 def generate_discard_request_id(parcel):
-    """Generate sequential discard request ID: RB-12345-P001-D001"""
+    """Generate sequential discard request ID: RB-12345-P001-D001 (race-condition safe)."""
     from apps.locker.models import DiscardRequest
     parcel_id = parcel.display_id
-    count = DiscardRequest.objects.filter(parcel=parcel).count() + 1
-    return f"{parcel_id}-D{count:03d}"
+    with transaction.atomic():
+        last = (
+            DiscardRequest.objects
+            .select_for_update()
+            .filter(parcel=parcel)
+            .order_by('-requested_at')
+            .first()
+        )
+        if last and last.display_id:
+            try:
+                num = int(last.display_id.rsplit('-D', 1)[1]) + 1
+            except (ValueError, IndexError):
+                num = DiscardRequest.objects.filter(parcel=parcel).count() + 1
+        else:
+            num = 1
+    return f"{parcel_id}-D{num:03d}"
 
 
 class Parcel(models.Model):
@@ -80,16 +135,30 @@ class Parcel(models.Model):
     inspection_notes = models.TextField(blank=True)
     weight_kg = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     
+    # Dimensions for volumetric weight calculation (L x W x H in cm)
+    length_cm = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        help_text="Length in cm"
+    )
+    width_cm = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        help_text="Width in cm"
+    )
+    height_cm = models.DecimalField(
+        max_digits=6, decimal_places=1, null=True, blank=True,
+        help_text="Height in cm"
+    )
+    
     # Declaration info (set by user)
     item_name = models.CharField(max_length=255, blank=True)
     item_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     item_currency = models.CharField(max_length=3, default='INR')
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, blank=True)
     customs_description = models.TextField(blank=True)
-    invoice_url = models.URLField(blank=True)  # Supabase Storage
+    invoice_url = models.CharField(max_length=500, blank=True)  # Supabase Storage path
     
     # Status
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending', db_index=True)
     approved_at = models.DateTimeField(null=True, blank=True)
     
     # Timestamps
@@ -100,6 +169,10 @@ class Parcel(models.Model):
         verbose_name = 'Parcel'
         verbose_name_plural = 'Parcels'
         ordering = ['-received_at']
+        indexes = [
+            models.Index(fields=['locker', 'status'], name='idx_parcel_locker_status'),
+            models.Index(fields=['status', 'received_at'], name='idx_parcel_status_received'),
+        ]
     
     def save(self, *args, **kwargs):
         if not self.display_id:
@@ -136,6 +209,21 @@ class Parcel(models.Model):
     def is_storage_overdue(self):
         return self.days_remaining_free == 0
 
+    @property
+    def volumetric_weight_kg(self):
+        """Calculate volumetric weight: (L x W x H) / 5000 (industry standard)."""
+        if self.length_cm and self.width_cm and self.height_cm:
+            vol = float(self.length_cm) * float(self.width_cm) * float(self.height_cm)
+            return round(vol / 5000, 2)
+        return None
+
+    @property
+    def billable_weight_kg(self):
+        """Carriers charge by whichever is greater: actual or volumetric weight."""
+        actual = float(self.weight_kg) if self.weight_kg else 0
+        volumetric = self.volumetric_weight_kg or 0
+        return max(actual, volumetric)
+
 
 class ParcelImage(models.Model):
     """Inspection images for a parcel."""
@@ -166,8 +254,11 @@ class ParcelImage(models.Model):
     def image_url(self):
         """Get signed URL for the image (for backward compatibility)."""
         if self.image_path:
-            from .utils import get_signed_parcel_image_url
-            return get_signed_parcel_image_url(self.image_path)
+            try:
+                from .utils import get_signed_parcel_image_url
+                return get_signed_parcel_image_url(self.image_path)
+            except Exception:
+                return ''
         return ''
 
 
@@ -187,7 +278,7 @@ class ReturnRequest(models.Model):
     
     parcel = models.ForeignKey(Parcel, on_delete=models.CASCADE, related_name='return_requests')
     reason = models.TextField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested', db_index=True)
     
     # Return tracking
     return_tracking_number = models.CharField(max_length=100, blank=True)
@@ -195,6 +286,7 @@ class ReturnRequest(models.Model):
     
     # Timestamps
     requested_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     
@@ -228,9 +320,10 @@ class DiscardRequest(models.Model):
     
     parcel = models.ForeignKey(Parcel, on_delete=models.CASCADE, related_name='discard_requests')
     reason = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested', db_index=True)
     
     requested_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     discarded_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:

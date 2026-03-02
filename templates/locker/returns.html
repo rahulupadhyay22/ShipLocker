@@ -50,8 +50,8 @@
     <a href="{% url 'locker:action_required' %}" class="btn btn-secondary" style="border-radius: 100px;">
         Action Required
         {% if action_count > 0 %}<span
-            style="background: var(--danger-bg); color: var(--danger-text); padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 0.5rem;">{{
-            action_count }}</span>{% endif %}
+            style="background: var(--danger-bg); color: var(--danger-text); padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 0.5rem;">
+            {{ action_count }}</span>{% endif %}
     </a>
     <a href="{% url 'locker:returns' %}" class="btn btn-primary"
         style="border-radius: 100px; background: #2563EB; border-color: #2563EB;">

@@ -199,9 +199,12 @@ def get_signed_url(bucket_name: str, file_path: str, expires_in: int = 3600) -> 
     """
     if not file_path:
         return ''
-    storage = SupabaseStorage()
-    result = storage.get_signed_url(bucket_name, file_path, expires_in)
-    return result.get('signedURL', '') if isinstance(result, dict) else str(result)
+    try:
+        storage = SupabaseStorage()
+        result = storage.get_signed_url(bucket_name, file_path, expires_in)
+        return result.get('signedURL', '') if isinstance(result, dict) else str(result)
+    except Exception:
+        return ''
 
 
 def get_signed_invoice_url(file_path: str, expires_in: int = SEVEN_DAYS) -> str:
@@ -211,9 +214,12 @@ def get_signed_invoice_url(file_path: str, expires_in: int = SEVEN_DAYS) -> str:
     """
     if not file_path:
         return ''
-    storage = SupabaseStorage()
-    result = storage.get_signed_url('invoices', file_path, expires_in)
-    return result.get('signedURL', '') if isinstance(result, dict) else str(result)
+    try:
+        storage = SupabaseStorage()
+        result = storage.get_signed_url('invoices', file_path, expires_in)
+        return result.get('signedURL', '') if isinstance(result, dict) else str(result)
+    except Exception:
+        return ''
 
 
 def get_signed_parcel_image_url(file_path: str, expires_in: int = SEVEN_DAYS) -> str:
@@ -223,9 +229,12 @@ def get_signed_parcel_image_url(file_path: str, expires_in: int = SEVEN_DAYS) ->
     """
     if not file_path:
         return ''
-    storage = SupabaseStorage()
-    result = storage.get_signed_url('parcel-images', file_path, expires_in)
-    return result.get('signedURL', '') if isinstance(result, dict) else str(result)
+    try:
+        storage = SupabaseStorage()
+        result = storage.get_signed_url('parcel-images', file_path, expires_in)
+        return result.get('signedURL', '') if isinstance(result, dict) else str(result)
+    except Exception:
+        return ''
 
 
 def get_signed_kyc_url(file_path: str, expires_in: int = TWENTY_FOUR_HOURS) -> str:
@@ -235,9 +244,12 @@ def get_signed_kyc_url(file_path: str, expires_in: int = TWENTY_FOUR_HOURS) -> s
     """
     if not file_path:
         return ''
-    storage = SupabaseStorage()
-    result = storage.get_signed_url('kyc-documents', file_path, expires_in)
-    return result.get('signedURL', '') if isinstance(result, dict) else str(result)
+    try:
+        storage = SupabaseStorage()
+        result = storage.get_signed_url('kyc-documents', file_path, expires_in)
+        return result.get('signedURL', '') if isinstance(result, dict) else str(result)
+    except Exception:
+        return ''
 
 
 def get_signed_shipment_doc_url(file_path: str, expires_in: int = SEVEN_DAYS) -> str:
@@ -247,6 +259,9 @@ def get_signed_shipment_doc_url(file_path: str, expires_in: int = SEVEN_DAYS) ->
     """
     if not file_path:
         return ''
-    storage = SupabaseStorage()
-    result = storage.get_signed_url('invoices', file_path, expires_in)
-    return result.get('signedURL', '') if isinstance(result, dict) else str(result)
+    try:
+        storage = SupabaseStorage()
+        result = storage.get_signed_url('invoices', file_path, expires_in)
+        return result.get('signedURL', '') if isinstance(result, dict) else str(result)
+    except Exception:
+        return ''

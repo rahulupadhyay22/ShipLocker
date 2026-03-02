@@ -18,6 +18,9 @@ class ShipmentStatsMixin:
         context['delivered_count'] = Shipment.objects.filter(
             user=user, status='delivered'
         ).count()
+        context['closed_count'] = Shipment.objects.filter(
+            user=user, status__in=['returned', 'cancelled']
+        ).count()
         return context
 
 
@@ -25,6 +28,7 @@ class ShipmentsListView(LoginRequiredMixin, ShipmentStatsMixin, ListView):
     """Main shipments page - defaults to Active."""
     template_name = 'shipments/list.html'
     context_object_name = 'shipments'
+    paginate_by = 20
     
     def get_queryset(self):
         # Default to showing active shipments
@@ -43,6 +47,7 @@ class ActiveShipmentsView(LoginRequiredMixin, ShipmentStatsMixin, ListView):
     """Active shipments tab."""
     template_name = 'shipments/active.html'
     context_object_name = 'shipments'
+    paginate_by = 20
     
     def get_queryset(self):
         return Shipment.objects.filter(
@@ -60,6 +65,7 @@ class DeliveredShipmentsView(LoginRequiredMixin, ShipmentStatsMixin, ListView):
     """Delivered shipments tab."""
     template_name = 'shipments/delivered.html'
     context_object_name = 'shipments'
+    paginate_by = 20
     
     def get_queryset(self):
         return Shipment.objects.filter(
@@ -70,6 +76,24 @@ class DeliveredShipmentsView(LoginRequiredMixin, ShipmentStatsMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['tab'] = 'delivered'
+        return context
+
+
+class ClosedShipmentsView(LoginRequiredMixin, ShipmentStatsMixin, ListView):
+    """Returned & Cancelled shipments tab."""
+    template_name = 'shipments/closed.html'
+    context_object_name = 'shipments'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        return Shipment.objects.filter(
+            user=self.request.user,
+            status__in=['returned', 'cancelled']
+        ).order_by('-created_at')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tab'] = 'closed'
         return context
 
 
@@ -114,6 +138,7 @@ class CustomsHelpView(LoginRequiredMixin, TemplateView):
 from django.shortcuts import redirect
 from django.views import View
 from django.contrib import messages
+from django.db import transaction
 from apps.locker.models import Parcel
 from .models import ShipmentItem
 
@@ -135,9 +160,14 @@ class CreateShipmentView(LoginRequiredMixin, View):
         # Check if user has approved KYC
         has_kyc = request.user.kyc_documents.filter(status='approved').exists()
         
+        # Get active shipping zones for country dropdown
+        from apps.content.models import ShippingZone
+        zones = ShippingZone.objects.filter(is_active=True).order_by('order')
+        
         return render(request, self.template_name, {
             'parcels': available_parcels,
             'has_kyc': has_kyc,
+            'zones': zones,
         })
     
     def post(self, request):
@@ -155,6 +185,29 @@ class CreateShipmentView(LoginRequiredMixin, View):
             messages.error(request, 'Please upload the signed declaration form.')
             return redirect('shipments:create')
         
+        # Validate declaration file
+        from ruffleberry.validators import validate_file_upload
+        from django.core.exceptions import ValidationError
+        try:
+            validate_file_upload(declaration_file)
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('shipments:create')
+        
+        # Validate address fields
+        from ruffleberry.validators import validate_address
+        try:
+            address_data = validate_address({
+                'recipient_name': request.POST.get('recipient_name', ''),
+                'address_line1': request.POST.get('address_line1', ''),
+                'city': request.POST.get('city', ''),
+                'postal_code': request.POST.get('postal_code', ''),
+                'country': request.POST.get('country', ''),
+            })
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('shipments:create')
+        
         # Validate parcels belong to user
         locker = request.user.locker
         parcels = Parcel.objects.filter(
@@ -167,48 +220,49 @@ class CreateShipmentView(LoginRequiredMixin, View):
             messages.error(request, 'Invalid parcel selection.')
             return redirect('shipments:create')
         
-        # Create shipment with declaration_pending status
-        shipment = Shipment.objects.create(
-            user=request.user,
-            shipment_type=shipment_type,
-            status='declaration_pending',
-            recipient_name=request.POST.get('recipient_name', ''),
-            address_line1=request.POST.get('address_line1', ''),
-            address_line2=request.POST.get('address_line2', ''),
-            city=request.POST.get('city', ''),
-            state=request.POST.get('state', ''),
-            postal_code=request.POST.get('postal_code', ''),
-            country=request.POST.get('country', ''),
-            recipient_phone=request.POST.get('recipient_phone', ''),
-            recipient_email=request.POST.get('recipient_email', ''),
-        )
-        
-        # Upload declaration file to Supabase Storage
-        from apps.locker.utils import upload_shipment_document, get_user_locker_id
-        try:
-            # Reset file pointer to beginning
-            declaration_file.seek(0)
-            locker_id = get_user_locker_id(request.user)
-            declaration_path = upload_shipment_document(
-                declaration_file,
-                locker_id,
-                shipment.display_id, 
-                'declaration'
+        with transaction.atomic():
+            # Create shipment with declaration_pending status
+            shipment = Shipment.objects.create(
+                user=request.user,
+                shipment_type=shipment_type,
+                status='declaration_pending',
+                recipient_name=address_data.get('recipient_name', ''),
+                address_line1=address_data.get('address_line1', ''),
+                address_line2=request.POST.get('address_line2', ''),
+                city=address_data.get('city', ''),
+                state=request.POST.get('state', ''),
+                postal_code=address_data.get('postal_code', ''),
+                country=address_data.get('country', ''),
+                recipient_phone=request.POST.get('recipient_phone', ''),
+                recipient_email=request.POST.get('recipient_email', ''),
             )
-            # Create document record with the file path
-            ShipmentDocument.objects.create(
-                shipment=shipment,
-                document_type='customs',
-                document_url=declaration_path  # This is the file path in storage
-            )
-        except Exception as e:
-            messages.warning(request, f'Declaration upload failed: {str(e)}. Shipment created without document.')
-        
-        # Add parcels to shipment
-        for parcel in parcels:
-            ShipmentItem.objects.create(shipment=shipment, parcel=parcel)
-            parcel.status = 'shipped'
-            parcel.save()
+            
+            # Upload declaration file to Supabase Storage
+            from apps.locker.utils import upload_shipment_document, get_user_locker_id
+            try:
+                # Reset file pointer to beginning
+                declaration_file.seek(0)
+                locker_id = get_user_locker_id(request.user)
+                declaration_path = upload_shipment_document(
+                    declaration_file,
+                    locker_id,
+                    shipment.display_id, 
+                    'declaration'
+                )
+                # Create document record with the file path
+                ShipmentDocument.objects.create(
+                    shipment=shipment,
+                    document_type='customs',
+                    document_url=declaration_path  # This is the file path in storage
+                )
+            except Exception as e:
+                messages.warning(request, f'Declaration upload failed: {str(e)}. Shipment created without document.')
+            
+            # Add parcels to shipment
+            for parcel in parcels:
+                ShipmentItem.objects.create(shipment=shipment, parcel=parcel)
+                parcel.status = 'shipped'
+                parcel.save()
         
         messages.success(request, 'Shipment created! Your declaration is pending approval.')
         return redirect('shipments:detail', pk=shipment.pk)

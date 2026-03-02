@@ -59,7 +59,8 @@
                     style="display: block; font-size: 0.75rem; opacity: 0.8; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-weight: 600;">SHIPPING
                     ADDRESS (Your Warehouse)</label>
                 <div style="font-size: 0.95rem; line-height: 1.6; opacity: 0.95;">
-                    <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.25rem;">{{ user.full_name|default:"Your Name" }}</strong>
+                    <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.25rem;">
+                    {{ user.full_name|default:"Your Name" }}</strong>
                     {% if locker.address %}
                     {{ locker.address|linebreaksbr }}
                     {% else %}
@@ -100,10 +101,13 @@
 
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="color: var(--text-secondary);">Security</span>
-                    <a href="{% url 'accounts:logout' %}"
-                        style="color: var(--danger-text); font-weight: 500; font-size: 0.9rem;">
-                        Sign Out
-                    </a>
+                    <form method="post" action="{% url 'accounts:logout' %}" style="margin: 0; display: inline;">
+                        {% csrf_token %}
+                        <button type="submit"
+                            style="color: var(--danger-text); font-weight: 500; font-size: 0.9rem; background: none; border: none; cursor: pointer; font-family: inherit;">
+                            Sign Out
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -155,7 +159,7 @@
                 <h3 style="margin-bottom: 0.5rem;">Need Help?</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Our support team is available 7AM - 7PM
                     IST</p>
-                <a href="https://wa.me/917337257774" target="_blank" class="btn btn-secondary"
+                <a href="https://wa.me/{{ whatsapp_link }}" target="_blank" class="btn btn-secondary"
                     style="width: 100%; border-color: #25D366; color: #15803d; background: white;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
                         viewBox="0 0 16 16" style="margin-right: 0.5rem;">

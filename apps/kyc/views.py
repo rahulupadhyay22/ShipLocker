@@ -12,6 +12,7 @@ class KYCListView(LoginRequiredMixin, ListView):
     """List user's KYC documents."""
     template_name = 'kyc/list.html'
     context_object_name = 'documents'
+    paginate_by = 20
     
     def get_queryset(self):
         return KYCDocument.objects.filter(user=self.request.user)

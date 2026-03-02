@@ -50,8 +50,20 @@ class BlueDartService:
     }
     
     def __init__(self):
-        self.license_key = os.environ.get('BLUEDART_LICENSE_KEY', '')
-        self.login_id = os.environ.get('BLUEDART_LOGIN_ID', '')
+        self.license_key = ''
+        self.login_id = ''
+        try:
+            from apps.notifications.models import AppSettings
+            app_settings = AppSettings.get_settings()
+            if app_settings.bluedart_enabled:
+                self.license_key = app_settings.bluedart_license_key or ''
+                self.login_id = app_settings.bluedart_login_id or ''
+        except Exception:
+            pass
+        if not self.license_key:
+            self.license_key = os.environ.get('BLUEDART_LICENSE_KEY', '')
+        if not self.login_id:
+            self.login_id = os.environ.get('BLUEDART_LOGIN_ID', '')
         
         if not self.license_key or not self.login_id:
             logger.warning("BlueDart credentials not set. BlueDart tracking will not work.")

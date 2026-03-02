@@ -4,6 +4,7 @@ WhatsApp Notification Signals
 Automatically sends WhatsApp messages when key events occur.
 """
 import logging
+from django.core.cache import cache
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.conf import settings
@@ -53,11 +54,8 @@ def send_notification(user, template_name, components):
 
 
 # ============================================================================
-# PARCEL SIGNALS
+# PARCEL SIGNALS — uses Django cache instead of module-level dict (M9 fix)
 # ============================================================================
-
-# Track status changes
-_parcel_status_cache = {}
 
 
 @receiver(pre_save, sender='locker.Parcel')
@@ -66,7 +64,7 @@ def cache_parcel_status(sender, instance, **kwargs):
     if instance.pk:
         try:
             old_instance = sender.objects.get(pk=instance.pk)
-            _parcel_status_cache[instance.pk] = old_instance.status
+            cache.set(f'parcel_old_status:{instance.pk}', old_instance.status, timeout=60)
         except sender.DoesNotExist:
             pass
 
@@ -78,7 +76,8 @@ def notify_parcel_events(sender, instance, created, **kwargs):
     1. Parcel Added (new parcel created)
     2. Parcel Action Required (needs user review)
     """
-    old_status = _parcel_status_cache.pop(instance.pk, None)
+    old_status = cache.get(f'parcel_old_status:{instance.pk}')
+    cache.delete(f'parcel_old_status:{instance.pk}')
     user = instance.locker.user
     parcel_name = instance.item_name or "Your package"
     parcel_id = instance.display_id or str(instance.id)[:8]
@@ -115,10 +114,8 @@ def notify_parcel_events(sender, instance, created, **kwargs):
 
 
 # ============================================================================
-# SHIPMENT SIGNALS
+# SHIPMENT SIGNALS — uses Django cache instead of module-level dict (M9 fix)
 # ============================================================================
-
-_shipment_status_cache = {}
 
 
 @receiver(pre_save, sender='shipments.Shipment')
@@ -127,7 +124,7 @@ def cache_shipment_status(sender, instance, **kwargs):
     if instance.pk:
         try:
             old_instance = sender.objects.get(pk=instance.pk)
-            _shipment_status_cache[instance.pk] = old_instance.status
+            cache.set(f'shipment_old_status:{instance.pk}', old_instance.status, timeout=60)
         except sender.DoesNotExist:
             pass
 
@@ -139,7 +136,8 @@ def notify_shipment_events(sender, instance, created, **kwargs):
     1. Shipment Created (new shipment request)
     2. Shipment Updated (status changed)
     """
-    old_status = _shipment_status_cache.pop(instance.pk, None)
+    old_status = cache.get(f'shipment_old_status:{instance.pk}')
+    cache.delete(f'shipment_old_status:{instance.pk}')
     user = instance.user
     shipment_id = instance.display_id or str(instance.id)[:8]
     tracking = instance.tracking_number or "Pending"

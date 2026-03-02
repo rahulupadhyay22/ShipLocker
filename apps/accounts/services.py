@@ -7,12 +7,38 @@ from django.conf import settings
 
 def get_supabase_client() -> Client:
     """Get Supabase client instance."""
-    return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+    url = ''
+    key = ''
+    try:
+        from apps.notifications.models import AppSettings
+        app_settings = AppSettings.get_settings()
+        url = app_settings.supabase_url or ''
+        key = app_settings.supabase_service_role_key or ''
+    except Exception:
+        pass
+    if not url:
+        url = settings.SUPABASE_URL
+    if not key:
+        key = settings.SUPABASE_KEY
+    return create_client(url, key)
 
 
 def get_supabase_anon_client() -> Client:
     """Get Supabase client with anon key (for frontend auth)."""
-    return create_client(settings.SUPABASE_URL, settings.SUPABASE_ANON_KEY)
+    url = ''
+    key = ''
+    try:
+        from apps.notifications.models import AppSettings
+        app_settings = AppSettings.get_settings()
+        url = app_settings.supabase_url or ''
+        key = app_settings.supabase_anon_key or ''
+    except Exception:
+        pass
+    if not url:
+        url = settings.SUPABASE_URL
+    if not key:
+        key = settings.SUPABASE_ANON_KEY
+    return create_client(url, key)
 
 
 class SupabaseAuth:
