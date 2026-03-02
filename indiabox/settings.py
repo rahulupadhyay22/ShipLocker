@@ -5,6 +5,7 @@ Django settings for IndiaBox Global Locker project.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 # Load environment variables
 load_dotenv()
@@ -18,7 +19,21 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+allowed_hosts_env = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') if host.strip()]
+
+# Railway provides this automatically for public services.
+railway_public_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', '').strip()
+if railway_public_domain:
+    allowed_hosts_env.append(railway_public_domain)
+
+# Optional support if a full URL is provided via env.
+railway_static_url = os.getenv('RAILWAY_STATIC_URL', '').strip()
+if railway_static_url:
+    parsed_domain = urlparse(railway_static_url).netloc.strip() or railway_static_url
+    if parsed_domain:
+        allowed_hosts_env.append(parsed_domain)
+
+ALLOWED_HOSTS = list(dict.fromkeys(allowed_hosts_env))
 
 # =========================================
 # JAZZMIN ADMIN UI CONFIGURATION

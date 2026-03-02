@@ -65,8 +65,10 @@ If deploy logs show `psycopg2.OperationalError` with `Network is unreachable` fo
 - Keep `DATABASE_URL` as fallback if you want local compatibility.
 - Optional: set `DATABASE_HOSTADDR` to a known IPv4 address if your provider cannot route IPv6.
 - Optional: set `DB_CONNECT_TIMEOUT` (default: `10`).
+- Set `ALLOWED_HOSTS` to include your domains (for example: `localhost,127.0.0.1,web-production-d1c948.up.railway.app`).
 
 The app now prefers `DATABASE_POOLER_URL` over `DATABASE_URL` automatically.
+It also auto-adds `RAILWAY_PUBLIC_DOMAIN` when available.
 
 ---
 
