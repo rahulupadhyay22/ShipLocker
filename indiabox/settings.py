@@ -343,6 +343,26 @@ ALLOWED_UPLOAD_TYPES = [
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 
 # Logging Configuration
+_log_handlers = {
+    'console': {
+        'class': 'logging.StreamHandler',
+        'formatter': 'verbose',
+    },
+}
+_active_handlers = ['console']
+
+# Only add file handler in local dev (when logs/ dir can exist)
+import os as _os
+_log_dir = BASE_DIR / 'logs'
+if _os.path.isdir(_log_dir):
+    _log_handlers['file'] = {
+        'level': 'WARNING',
+        'class': 'logging.FileHandler',
+        'filename': _log_dir / 'security.log',
+        'formatter': 'verbose',
+    }
+    _active_handlers.append('file')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -352,26 +372,15 @@ LOGGING = {
             'style': '{',
         },
     },
-    'handlers': {
-        'file': {
-            'level': 'WARNING',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'security.log',
-            'formatter': 'verbose',
-        },
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-    },
+    'handlers': _log_handlers,
     'loggers': {
         'security': {
-            'handlers': ['file', 'console'],
+            'handlers': _active_handlers,
             'level': 'INFO',
             'propagate': True,
         },
         'django.security': {
-            'handlers': ['file', 'console'],
+            'handlers': _active_handlers,
             'level': 'WARNING',
             'propagate': True,
         },
