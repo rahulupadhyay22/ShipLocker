@@ -1,5 +1,5 @@
 """
-Django settings for Ruffleberry Global Locker project.
+Django settings for IndiaBox Global Locker project.
 """
 
 import os
@@ -25,13 +25,13 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 # =========================================
 JAZZMIN_SETTINGS = {
     # Title & Branding
-    "site_title": "Ruffleberry Admin",
-    "site_header": "Ruffleberry",
-    "site_brand": "Ruffleberry",
+    "site_title": "IndiaBox Admin",
+    "site_header": "IndiaBox",
+    "site_brand": "IndiaBox",
     "site_logo": None,
     "login_logo": None,
-    "welcome_sign": "Welcome to Ruffleberry Admin",
-    "copyright": "Ruffleberry Global Locker",
+    "welcome_sign": "Welcome to IndiaBox Admin",
+    "copyright": "IndiaBox Global Locker",
     
     # User Menu
     "user_avatar": None,
@@ -181,12 +181,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Custom Security Middleware
-    'ruffleberry.middleware.RateLimitMiddleware',
-    'ruffleberry.middleware.SecurityHeadersMiddleware',
-    'ruffleberry.middleware.LoginAttemptMiddleware',
+    'indiabox.middleware.RateLimitMiddleware',
+    'indiabox.middleware.SecurityHeadersMiddleware',
+    'indiabox.middleware.LoginAttemptMiddleware',
 ]
 
-ROOT_URLCONF = 'ruffleberry.urls'
+ROOT_URLCONF = 'indiabox.urls'
 
 TEMPLATES = [
     {
@@ -199,13 +199,13 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'ruffleberry.context_processors.app_settings',
+                'indiabox.context_processors.app_settings',
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'ruffleberry.wsgi.application'
+WSGI_APPLICATION = 'indiabox.wsgi.application'
 
 # Database - Supabase PostgreSQL
 DATABASE_URL = os.getenv('DATABASE_URL', '')
@@ -385,14 +385,14 @@ from django.templatetags.static import static
 from django.urls import reverse_lazy
 
 UNFOLD = {
-    "SITE_TITLE": "Ruffleberry Admin",
-    "SITE_HEADER": "Ruffleberry",
+    "SITE_TITLE": "IndiaBox Admin",
+    "SITE_HEADER": "IndiaBox",
     "SITE_SYMBOL": "package",  # Material icon
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "SHOW_SEARCH": False,  # Disable search modal
     "SHOW_SPOTLIGHT": False,  # Disable spotlight search to fix ESC issue
-    "ENVIRONMENT": "ruffleberry.environment.environment_callback",
+    "ENVIRONMENT": "indiabox.environment.environment_callback",
     "SCRIPTS": [
         lambda request: static("unfold/fix-search.js"),  # ESC key fix
     ],

@@ -27,7 +27,7 @@ class LoginView(View):
             return render(request, self.template_name)
         
         # Validate email format
-        from ruffleberry.validators import validate_email
+        from indiabox.validators import validate_email
         from django.core.exceptions import ValidationError
         try:
             validate_email(email)
@@ -206,7 +206,7 @@ class ProfileView(LoginRequiredMixin, View):
         })
     
     def post(self, request):
-        from ruffleberry.validators import validate_phone, sanitize_text_input
+        from indiabox.validators import validate_phone, sanitize_text_input
         from django.core.exceptions import ValidationError
         
         user = request.user

@@ -105,7 +105,7 @@ class Locker(models.Model):
     @property
     def email(self):
         """Return formatted locker email."""
-        return f"{self.locker_id.lower()}@ruffleberry.com"
+        return f"{self.locker_id.lower()}@indiabox.com"
     
     @property
     def phone(self):

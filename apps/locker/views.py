@@ -143,7 +143,7 @@ class ApproveParcelView(LoginRequiredMixin, View):
             invoice_file = request.FILES.get('invoice')
             if invoice_file:
                 # Validate file upload
-                from ruffleberry.validators import validate_file_upload
+                from indiabox.validators import validate_file_upload
                 from django.core.exceptions import ValidationError
                 try:
                     validate_file_upload(invoice_file)

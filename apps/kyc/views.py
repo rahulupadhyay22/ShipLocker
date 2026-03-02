@@ -27,7 +27,7 @@ class KYCUploadView(LoginRequiredMixin, View):
     
     def post(self, request):
         from django.core.exceptions import ValidationError
-        from ruffleberry.validators import validate_file_upload, sanitize_filename
+        from indiabox.validators import validate_file_upload, sanitize_filename
         import logging
         
         security_logger = logging.getLogger('security')

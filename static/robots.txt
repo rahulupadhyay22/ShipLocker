@@ -8,4 +8,4 @@ Disallow: /payments/
 Disallow: /manage-rb-panel/
 Disallow: /admin/
 
-Sitemap: https://ruffleberry.com/sitemap.xml
+Sitemap: https://indiabox.com/sitemap.xml

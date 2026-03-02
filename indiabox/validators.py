@@ -1,4 +1,4 @@
-"""Security validators for Ruffleberry."""
+"""Security validators for IndiaBox."""
 
 import re
 import os

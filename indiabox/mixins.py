@@ -1,4 +1,4 @@
-"""Security mixins for Ruffleberry views."""
+"""Security mixins for IndiaBox views."""
 
 import logging
 from django.core.exceptions import PermissionDenied

@@ -1,4 +1,4 @@
-"""Security middleware for Ruffleberry."""
+"""Security middleware for IndiaBox."""
 
 import logging
 from django.core.cache import cache

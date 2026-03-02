@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 (
                     "site_name",
                     models.CharField(
-                        default="Ruffleberry",
+                        default="IndiaBox",
                         help_text="Your company/site name",
                         max_length=100,
                     ),
@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                 (
                     "support_email",
                     models.EmailField(
-                        default="support@ruffleberry.com",
+                        default="support@indiabox.com",
                         help_text="Support email address",
                         max_length=254,
                     ),

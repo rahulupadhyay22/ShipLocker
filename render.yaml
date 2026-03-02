@@ -3,10 +3,10 @@
 
 services:
   - type: web
-    name: ruffleberry
+    name: indiabox
     env: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn ruffleberry.wsgi:application"
+    startCommand: "gunicorn indiabox.wsgi:application"
     envVars:
       - key: DEBUG
         value: "False"

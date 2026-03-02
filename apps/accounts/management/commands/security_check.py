@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = 'Check security configuration of the application'
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.MIGRATE_HEADING('\n🔐 RUFFLEBERRY SECURITY AUDIT\n'))
+        self.stdout.write(self.style.MIGRATE_HEADING('\n🔐 INDIABOX SECURITY AUDIT\n'))
         self.stdout.write('=' * 50)
         
         issues = []
@@ -68,9 +68,9 @@ class Command(BaseCommand):
             'django.middleware.security.SecurityMiddleware': 'Security',
             'django.middleware.csrf.CsrfViewMiddleware': 'CSRF',
             'django.middleware.clickjacking.XFrameOptionsMiddleware': 'Clickjacking',
-            'ruffleberry.middleware.RateLimitMiddleware': 'Rate Limiting',
-            'ruffleberry.middleware.SecurityHeadersMiddleware': 'Security Headers',
-            'ruffleberry.middleware.LoginAttemptMiddleware': 'Login Tracking',
+            'indiabox.middleware.RateLimitMiddleware': 'Rate Limiting',
+            'indiabox.middleware.SecurityHeadersMiddleware': 'Security Headers',
+            'indiabox.middleware.LoginAttemptMiddleware': 'Login Tracking',
         }
         for middleware, name in security_checks.items():
             if middleware in middlewares:

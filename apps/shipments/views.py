@@ -186,7 +186,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
             return redirect('shipments:create')
         
         # Validate declaration file
-        from ruffleberry.validators import validate_file_upload
+        from indiabox.validators import validate_file_upload
         from django.core.exceptions import ValidationError
         try:
             validate_file_upload(declaration_file)
@@ -195,7 +195,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
             return redirect('shipments:create')
         
         # Validate address fields
-        from ruffleberry.validators import validate_address
+        from indiabox.validators import validate_address
         try:
             address_data = validate_address({
                 'recipient_name': request.POST.get('recipient_name', ''),

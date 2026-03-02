@@ -13,16 +13,16 @@ class AppSettings(models.Model):
     # ===========================
     site_name = models.CharField(
         max_length=100,
-        default="Ruffleberry",
+        default="IndiaBox",
         help_text="Your company/site name"
     )
     support_email = models.EmailField(
-        default="support@ruffleberry.com",
+        default="support@indiabox.com",
         help_text="Support email address"
     )
     support_phone = models.CharField(
         max_length=20,
-        default="+91 7337257774",
+        default="+91 123456789",
         help_text="Support phone number (WhatsApp enabled)"
     )
     warehouse_address = models.TextField(
