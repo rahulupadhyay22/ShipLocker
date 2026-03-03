@@ -121,32 +121,32 @@
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
                         <input type="text" name="recipient_name" class="form-control" required
-                            placeholder="Receiver Name">
+                            placeholder="Receiver Name" value="{{ default_address.recipient_name|default:'' }}">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Address</label>
                         <input type="text" name="address_line1" class="form-control" required
-                            placeholder="Receiver Address">
+                            placeholder="Receiver Address" value="{{ default_address.address_line1|default:'' }}">
                         <input type="text" name="address_line2" class="form-control" style="margin-top: 0.5rem;"
-                            placeholder="Apt, Suite, Unit (Optional)">
+                            placeholder="Apt, Suite, Unit (Optional)" value="{{ default_address.address_line2|default:'' }}">
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">City</label>
-                            <input type="text" name="city" class="form-control" required>
+                            <input type="text" name="city" class="form-control" required value="{{ default_address.city|default:'' }}">
                         </div>
                         <div class="form-group">
                             <label class="form-label">State</label>
-                            <input type="text" name="state" class="form-control" required>
+                            <input type="text" name="state" class="form-control" required value="{{ default_address.state|default:'' }}">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">ZIP / Postal Code</label>
-                            <input type="text" name="postal_code" class="form-control" required>
+                            <input type="text" name="postal_code" class="form-control" required value="{{ default_address.postal_code|default:'' }}">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Country</label>
@@ -154,7 +154,7 @@
                                 <option value="">Select...</option>
                                 {% for zone in zones %}
                                 {% for country_code in zone.get_countries_list %}
-                                <option value="{{ country_code }}">{{ country_code }}</option>
+                                <option value="{{ country_code }}" {% if default_address and default_address.country == country_code %}selected{% endif %}>{{ country_code }}</option>
                                 {% endfor %}
                                 {% endfor %}    
                             </select>
@@ -165,13 +165,22 @@
                         <label class="form-label">Phone Number</label>
                         <input type="tel" name="recipient_phone" class="form-control" required
                             placeholder="+1 234 567 8900" pattern="[+]?[0-9\s\-]{7,20}"
-                            title="Enter a valid phone number">
+                            title="Enter a valid phone number" value="{{ default_address.recipient_phone|default:'' }}">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Email</label>
                         <input type="email" name="recipient_email" class="form-control" required
-                            placeholder="For tracking updates">
+                            placeholder="For tracking updates" value="{{ default_address.recipient_email|default:'' }}">
+                    </div>
+
+                    <div class="form-group" style="border: 1px solid var(--surface-200); border-radius: 10px; padding: 0.9rem;">
+                        <label style="display: flex; align-items: center; gap: 0.6rem; margin: 0; cursor: pointer;">
+                            <input type="checkbox" name="save_address" {% if default_address %}checked{% endif %}>
+                            <span style="font-weight: 600;">Save this address for next shipments</span>
+                        </label>
+                        <input type="text" name="address_label" class="form-control" style="margin-top: 0.6rem;"
+                            placeholder="Label (e.g. Home, Office)" value="{{ default_address.label|default:'' }}">
                     </div>
 
                     <!-- Declaration -->

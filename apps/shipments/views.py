@@ -140,6 +140,7 @@ from django.views import View
 from django.contrib import messages
 from django.db import transaction
 from apps.locker.models import Parcel
+from apps.accounts.models import SavedAddress
 from .models import ShipmentItem
 
 
@@ -163,11 +164,17 @@ class CreateShipmentView(LoginRequiredMixin, View):
         # Get active shipping zones for country dropdown
         from apps.content.models import ShippingZone
         zones = ShippingZone.objects.filter(is_active=True).order_by('order')
+
+        # Prefill form with user's default saved address (if any)
+        default_address = request.user.saved_addresses.filter(is_default=True).first()
+        if not default_address:
+            default_address = request.user.saved_addresses.first()
         
         return render(request, self.template_name, {
             'parcels': available_parcels,
             'has_kyc': has_kyc,
             'zones': zones,
+            'default_address': default_address,
         })
     
     def post(self, request):
@@ -236,6 +243,30 @@ class CreateShipmentView(LoginRequiredMixin, View):
                 recipient_phone=request.POST.get('recipient_phone', ''),
                 recipient_email=request.POST.get('recipient_email', ''),
             )
+
+            # Optionally save as default address for quick reuse
+            if request.POST.get('save_address') == 'on':
+                default_saved = request.user.saved_addresses.filter(is_default=True).first()
+                address_payload = {
+                    'label': request.POST.get('address_label', '').strip(),
+                    'recipient_name': address_data.get('recipient_name', ''),
+                    'recipient_phone': request.POST.get('recipient_phone', ''),
+                    'recipient_email': request.POST.get('recipient_email', ''),
+                    'address_line1': address_data.get('address_line1', ''),
+                    'address_line2': request.POST.get('address_line2', ''),
+                    'city': address_data.get('city', ''),
+                    'state': request.POST.get('state', ''),
+                    'postal_code': address_data.get('postal_code', ''),
+                    'country': address_data.get('country', ''),
+                    'is_default': True,
+                }
+
+                if default_saved:
+                    for field, value in address_payload.items():
+                        setattr(default_saved, field, value)
+                    default_saved.save()
+                else:
+                    SavedAddress.objects.create(user=request.user, **address_payload)
             
             # Upload declaration file to Supabase Storage
             from apps.locker.utils import upload_shipment_document, get_user_locker_id
