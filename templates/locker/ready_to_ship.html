@@ -215,9 +215,6 @@
 
         <!-- Body -->
         <div class="card-body" style="flex: 1; display: flex; flex-direction: column;">
-            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem; font-family: monospace;">
-                Parcel ID: {{ parcel.display_id|default:'--' }}
-            </div>
             <h3 style="font-size: 1.1rem; margin-bottom: 1rem; line-height: 1.4;">
                 {{ parcel.item_name|default:"UnnamedItem" }}</h3>
 
@@ -236,6 +233,8 @@
                         left</span>
                     {% endif %}
                 </div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem; font-family: monospace;">
+                Parcel ID: {{ parcel.display_id|default:'--' }}</div>
                 <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 0.5rem;">
                     <span style="color: var(--text-secondary);">Received</span>
                     <span style="font-weight: 500; font-family: monospace;">{{ parcel.received_at|date:"d-m-Y" }}</span>
