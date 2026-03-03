@@ -225,7 +225,26 @@ WSGI_APPLICATION = 'indiabox.wsgi.application'
 # Database - Supabase PostgreSQL
 DATABASE_URL = os.getenv('DATABASE_URL', '').strip()
 DATABASE_POOLER_URL = os.getenv('DATABASE_POOLER_URL', '').strip() or os.getenv('SUPABASE_POOLER_URL', '').strip()
-SELECTED_DATABASE_URL = DATABASE_POOLER_URL or DATABASE_URL
+
+
+def _normalize_supabase_pooler_url(raw_url: str) -> str:
+    if not raw_url:
+        return raw_url
+    parsed = urlparse(raw_url)
+    hostname = (parsed.hostname or '').lower()
+    if hostname.endswith('pooler.supabase.com') and (parsed.port in (None, 5432)):
+        auth = ''
+        if parsed.username:
+            auth = parsed.username
+            if parsed.password:
+                auth = f"{auth}:{parsed.password}"
+            auth = f"{auth}@"
+        corrected_netloc = f"{auth}{hostname}:6543"
+        return parsed._replace(netloc=corrected_netloc).geturl()
+    return raw_url
+
+
+SELECTED_DATABASE_URL = _normalize_supabase_pooler_url(DATABASE_POOLER_URL) or DATABASE_URL
 
 if SELECTED_DATABASE_URL:
     import dj_database_url
