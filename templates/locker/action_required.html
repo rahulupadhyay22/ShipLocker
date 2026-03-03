@@ -109,7 +109,7 @@
     <div class="card" style="display: flex; flex-direction: column; margin-bottom: 0;">
         <!-- Image Header -->
         <div
-            style="height: 200px; background: var(--surface-50); position: relative; border-bottom: 1px solid var(--surface-100);">
+            style="aspect-ratio: 3 / 4; background: var(--surface-50); position: relative; border-bottom: 1px solid var(--surface-100);">
             {% if parcel.images.first %}
             <img src="{{ parcel.images.first.image_url }}" alt="Item"
                 style="width: 100%; height: 100%; object-fit: cover;">
@@ -129,6 +129,10 @@
         <div class="card-body" style="flex: 1; display: flex; flex-direction: column;">
             <div style="margin-bottom: 0.75rem;">
                 <span class="status-badge status-action" style="font-size: 0.7rem;">Review Needed</span>
+            </div>
+
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem; font-family: monospace;">
+                Parcel ID: {{ parcel.display_id|default:'--' }}
             </div>
 
             <h3 style="font-size: 1.1rem; margin-bottom: 1rem; line-height: 1.4;">

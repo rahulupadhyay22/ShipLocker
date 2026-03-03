@@ -88,7 +88,7 @@
     <div class="card" style="display: flex; flex-direction: column; margin-bottom: 0;">
         <!-- Image Header -->
         <div
-            style="height: 200px; background: var(--surface-50); position: relative; border-bottom: 1px solid var(--surface-100);">
+            style="aspect-ratio: 3 / 4; background: var(--surface-50); position: relative; border-bottom: 1px solid var(--surface-100);">
             {% if request.parcel.images.first %}
             <img src="{{ request.parcel.images.first.image_url }}" alt="Item"
                 style="width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%);">
@@ -109,6 +109,9 @@
 
         <!-- Body -->
         <div class="card-body" style="flex: 1; display: flex; flex-direction: column;">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem; font-family: monospace;">
+                Parcel ID: {{ request.parcel.display_id|default:'--' }}
+            </div>
             <h3
                 style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.4; text-decoration: line-through;">
                 {{ request.parcel.item_name|default:request.parcel.tracking_number }}</h3>
