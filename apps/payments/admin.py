@@ -105,7 +105,16 @@ class StorageFeeAdmin(admin.ModelAdmin):
     raw_id_fields = ['parcel', 'payment']
     readonly_fields = ['created_at', 'paid_at']
 
-    actions = ['waive_fees']
+    actions = ['waive_fees', 'remove_fees']
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        shipment_id = request.GET.get('shipment_id')
+        if shipment_id:
+            queryset = queryset.filter(
+                parcel__shipment_items__shipment_id=shipment_id
+            ).distinct()
+        return queryset
 
     def status_badge(self, obj):
         css_class, icon = STORAGE_STATUS_COLORS.get(obj.status, ('badge-draft', '❓'))
@@ -128,3 +137,8 @@ class StorageFeeAdmin(admin.ModelAdmin):
         queryset.filter(status='pending').update(
             status='waived', waived_reason='Waived by admin'
         )
+
+    @admin.action(description='🗑️ Remove selected storage fees')
+    def remove_fees(self, request, queryset):
+        deleted_count, _ = queryset.delete()
+        self.message_user(request, f'Removed {deleted_count} storage fee record(s).')

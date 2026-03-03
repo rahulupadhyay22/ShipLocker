@@ -2,6 +2,7 @@
 
 import json
 import logging
+from decimal import Decimal
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.views import View
@@ -10,12 +11,45 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Sum
 
-from .models import Payment
+from .models import Payment, StorageFee
 from .services import RazorpayService
 from apps.shipments.models import Shipment
 
 logger = logging.getLogger('security')
+
+
+def _get_pending_storage_fees_for_shipment(shipment):
+    return StorageFee.objects.filter(
+        parcel__shipment_items__shipment=shipment,
+        status='pending',
+    ).distinct()
+
+
+def _mark_storage_fees_paid(payment):
+    if not payment.shipment:
+        return
+
+    fee_ids = []
+    if payment.notes:
+        try:
+            notes_data = json.loads(payment.notes)
+            fee_ids = notes_data.get('storage_fee_ids', []) or []
+        except (TypeError, json.JSONDecodeError):
+            fee_ids = []
+
+    fees_qs = StorageFee.objects.filter(status='pending')
+    if fee_ids:
+        fees_qs = fees_qs.filter(id__in=fee_ids)
+    else:
+        fees_qs = fees_qs.filter(parcel__shipment_items__shipment=payment.shipment).distinct()
+
+    fees_qs.update(
+        status='paid',
+        payment=payment,
+        paid_at=timezone.now(),
+    )
 
 
 class CreatePaymentOrderView(LoginRequiredMixin, View):
@@ -26,32 +60,60 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
             Shipment, pk=shipment_pk, user=request.user
         )
 
-        if not shipment.shipping_cost:
+        if not shipment.shipping_cost and shipment.payment_status != 'paid':
             return JsonResponse({'error': 'Shipping cost not set'}, status=400)
 
         service = RazorpayService()
         if not service.is_enabled:
             return JsonResponse({'error': 'Payments not configured'}, status=503)
 
+        shipping_due = shipment.shipping_cost if shipment.payment_status != 'paid' else Decimal('0.00')
+
+        pending_fees_qs = _get_pending_storage_fees_for_shipment(shipment)
+        pending_storage_total = pending_fees_qs.aggregate(total=Sum('fee_amount'))['total'] or Decimal('0.00')
+        pending_storage_total = pending_storage_total.quantize(Decimal('0.01'))
+
+        total_due = (shipping_due + pending_storage_total).quantize(Decimal('0.01'))
+        if total_due <= 0:
+            return JsonResponse({'error': 'No pending charges for this shipment'}, status=400)
+
         # Amount in paise
-        amount_paise = int(shipment.shipping_cost * 100)
+        amount_paise = int(total_due * 100)
+
+        fee_ids = [str(fee_id) for fee_id in pending_fees_qs.values_list('id', flat=True)]
+        description_parts = []
+        if shipping_due > 0:
+            description_parts.append('shipping')
+        if pending_storage_total > 0:
+            description_parts.append('storage')
+        charge_label = ' + '.join(description_parts) if description_parts else 'charges'
 
         with transaction.atomic():
             payment = Payment.objects.create(
                 user=request.user,
                 shipment=shipment,
-                amount=shipment.shipping_cost,
+                amount=total_due,
                 currency=shipment.currency,
                 payment_method='razorpay',
                 status='pending',
-                description=f'Shipping for {shipment.display_id}',
+                description=f'{charge_label.title()} for {shipment.display_id}',
+                notes=json.dumps({
+                    'shipment_id': str(shipment.pk),
+                    'shipping_due': str(shipping_due),
+                    'storage_due': str(pending_storage_total),
+                    'storage_fee_ids': fee_ids,
+                }),
             )
 
             order = service.create_order(
                 amount_paise=amount_paise,
                 currency=shipment.currency,
                 receipt=payment.display_id,
-                notes={'shipment_id': str(shipment.pk)},
+                notes={
+                    'shipment_id': str(shipment.pk),
+                    'shipping_due': str(shipping_due),
+                    'storage_due': str(pending_storage_total),
+                },
             )
 
             if not order:
@@ -115,6 +177,8 @@ class VerifyPaymentView(LoginRequiredMixin, View):
             payment.paid_at = timezone.now()
             payment.save()
 
+            _mark_storage_fees_paid(payment)
+
             # Update shipment payment status
             if payment.shipment:
                 payment.shipment.payment_status = 'paid'
@@ -137,11 +201,17 @@ class RazorpayWebhookView(View):
         if not signature:
             return HttpResponseBadRequest('Missing signature')
 
-        # Webhook secret should be in AppSettings or env
+        # Webhook secret from AppSettings (preferred) or env fallback
         import os
-        webhook_secret = os.getenv('RAZORPAY_WEBHOOK_SECRET', '')
+        from apps.notifications.models import AppSettings
+
+        settings = AppSettings.load()
+        webhook_secret = (settings.razorpay_webhook_secret or '').strip() if settings else ''
         if not webhook_secret:
-            logger.error("RAZORPAY_WEBHOOK_SECRET not configured")
+            webhook_secret = os.getenv('RAZORPAY_WEBHOOK_SECRET', '').strip()
+
+        if not webhook_secret:
+            logger.error("Razorpay webhook secret not configured in AppSettings or env")
             return JsonResponse({'error': 'Webhook not configured'}, status=503)
 
         service = RazorpayService()
@@ -170,6 +240,7 @@ class RazorpayWebhookView(View):
                             payment.status = 'captured'
                             payment.paid_at = timezone.now()
                             payment.save()
+                            _mark_storage_fees_paid(payment)
                             if payment.shipment:
                                 payment.shipment.payment_status = 'paid'
                                 payment.shipment.paid_at = timezone.now()

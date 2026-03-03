@@ -94,6 +94,7 @@ class AppSettingsAdmin(admin.ModelAdmin):
                 'razorpay_test_mode',
                 'razorpay_key_id',
                 'razorpay_key_secret',
+                'razorpay_webhook_secret',
             ),
             'description': 'Razorpay payment integration. Get credentials from dashboard.razorpay.com',
             'classes': ('collapse',),
@@ -152,7 +153,7 @@ class AppSettingsAdmin(admin.ModelAdmin):
         # Auto-redirect to the single settings instance
         obj, created = AppSettings.objects.get_or_create(pk=1)
         from django.shortcuts import redirect
-        return redirect(f'/admin/notifications/appsettings/{obj.pk}/change/')
+        return redirect(f'/manage-rb-panel/notifications/appsettings/{obj.pk}/change/')
     
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -164,6 +165,7 @@ class AppSettingsAdmin(admin.ModelAdmin):
             'aramex_password',
             'bluedart_license_key',
             'razorpay_key_secret',
+            'razorpay_webhook_secret',
             'supabase_service_role_key',
         ]
         for field_name in sensitive_fields:

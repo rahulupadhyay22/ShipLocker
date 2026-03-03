@@ -23,7 +23,6 @@ def robots_txt(request):
         "Disallow: /kyc/",
         "Disallow: /payments/",
         "Disallow: /manage-rb-panel/",
-        "Disallow: /admin/",
         "",
     ]
     return HttpResponse("\\n".join(lines), content_type="text/plain")

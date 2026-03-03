@@ -107,6 +107,43 @@ class ShipmentDetailView(LoginRequiredMixin, DetailView):
             user=self.request.user
         ).prefetch_related('items__parcel', 'documents')
 
+    def get_context_data(self, **kwargs):
+        from decimal import Decimal
+        from django.db.models import Sum
+        from apps.payments.models import StorageFee
+
+        context = super().get_context_data(**kwargs)
+        shipment = self.object
+
+        parcel_ids = list(shipment.items.values_list('parcel_id', flat=True))
+
+        if not parcel_ids:
+            context['storage_fee_pending'] = Decimal('0.00')
+            context['storage_fee_paid'] = Decimal('0.00')
+            context['storage_fee_total'] = Decimal('0.00')
+            return context
+
+        pending_total = StorageFee.objects.filter(
+            parcel_id__in=parcel_ids,
+            status='pending',
+        ).aggregate(total=Sum('fee_amount'))['total'] or Decimal('0.00')
+
+        paid_total = StorageFee.objects.filter(
+            parcel_id__in=parcel_ids,
+            status='paid',
+        ).aggregate(total=Sum('fee_amount'))['total'] or Decimal('0.00')
+
+        shipping_amount = Decimal(str(shipment.shipping_cost or 0))
+        storage_total = pending_total + paid_total
+
+        context['storage_fee_pending'] = pending_total
+        context['storage_fee_paid'] = paid_total
+        context['storage_fee_total'] = storage_total
+        context['shipping_amount'] = shipping_amount
+        context['shipment_total_amount'] = shipping_amount + storage_total
+        context['shipment_amount_due'] = pending_total + (shipping_amount if shipment.payment_status != 'paid' else Decimal('0.00'))
+        return context
+
 
 class CustomsHelpView(LoginRequiredMixin, TemplateView):
     """Customs help page with carrier contacts."""

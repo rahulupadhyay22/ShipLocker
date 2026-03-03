@@ -204,6 +204,11 @@ class AppSettings(models.Model):
         blank=True,
         help_text="Razorpay Key Secret"
     )
+    razorpay_webhook_secret = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Razorpay Webhook Secret"
+    )
     razorpay_test_mode = models.BooleanField(
         default=True,
         help_text="Use Razorpay test mode"

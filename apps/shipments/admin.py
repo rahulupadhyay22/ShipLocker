@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.utils.html import format_html, mark_safe
 from django import forms
+from decimal import Decimal
 from .models import Shipment, ShipmentItem, ShipmentDocument, TrackingEvent
+from apps.payments.models import StorageFee
+from apps.payments.services import _get_daily_storage_fee_amount
 
 
 # ---- Shipment status color map ----
@@ -100,8 +103,40 @@ class TrackingEventInline(admin.TabularInline):
         return False
 
 
+class ShipmentAdminForm(forms.ModelForm):
+    apply_storage_fee = forms.BooleanField(
+        required=False,
+        label='Apply storage fee on save',
+        help_text='Enable this and click Save to create or update a pending storage fee from this shipment page.'
+    )
+    manual_storage_fee_amount = forms.DecimalField(
+        required=False,
+        min_value=Decimal('0.01'),
+        decimal_places=2,
+        max_digits=10,
+        label='Storage fee amount override (optional)',
+        help_text='Leave blank to auto-calculate from Service Charges (daily storage rate × overdue days).'
+    )
+    manual_storage_fee_days = forms.IntegerField(
+        required=False,
+        min_value=1,
+        label='Overdue days',
+        help_text='Optional override. If blank, overdue days are auto-calculated per parcel (storage days - 30).'
+    )
+    apply_storage_fee_to_all_parcels = forms.BooleanField(
+        required=False,
+        label='Apply fee to all parcels (otherwise first parcel only)',
+        help_text='Checked: apply to all overdue parcels in this shipment. Unchecked: apply only to the first overdue parcel.'
+    )
+
+    class Meta:
+        model = Shipment
+        fields = '__all__'
+
+
 @admin.register(Shipment)
 class ShipmentAdmin(admin.ModelAdmin):
+    form = ShipmentAdminForm
     list_display = ['display_id', 'user', 'shipment_type', 'status_badge', 'payment_badge', 'carrier', 'tracking_number', 'item_count_display', 'created_at']
     list_filter = ['status', 'shipment_type', 'carrier', 'created_at']
     search_fields = ['display_id', 'user__email', 'tracking_number', 'recipient_name']
@@ -123,7 +158,11 @@ class ShipmentAdmin(admin.ModelAdmin):
                       'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country')
         }),
         ('Weight & Cost', {
-            'fields': ('total_weight_kg', 'shipping_cost', 'currency', 'estimated_delivery_date')
+            'fields': (
+                'total_weight_kg', 'shipping_cost', 'currency', 'estimated_delivery_date',
+                'apply_storage_fee', 'manual_storage_fee_amount', 'manual_storage_fee_days',
+                'apply_storage_fee_to_all_parcels'
+            )
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at', 'dispatched_at', 'delivered_at', 'paid_at'),
@@ -139,7 +178,78 @@ class ShipmentAdmin(admin.ModelAdmin):
         }),
     )
     
-    actions = ['approve_declaration', 'mark_packing', 'mark_dispatched', 'mark_delivered']
+    actions = [
+        'approve_declaration', 'mark_packing', 'mark_dispatched', 'mark_delivered',
+        'add_storage_fees'
+    ]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+
+        apply_storage_fee = form.cleaned_data.get('apply_storage_fee')
+        manual_fee_amount = form.cleaned_data.get('manual_storage_fee_amount')
+        manual_overdue_days = form.cleaned_data.get('manual_storage_fee_days')
+        apply_all = form.cleaned_data.get('apply_storage_fee_to_all_parcels')
+
+        if not apply_storage_fee:
+            return
+
+        shipment_items = list(obj.items.select_related('parcel').all())
+        if not shipment_items:
+            self.message_user(request, 'Storage fee not applied: no parcels in this shipment.', level='warning')
+            return
+
+        overdue_items = [
+            item for item in shipment_items
+            if item.parcel and item.parcel.storage_days > 30
+        ]
+        if not overdue_items:
+            self.message_user(
+                request,
+                'Storage fee not applied: no parcel has crossed 30 days free storage.',
+                level='warning'
+            )
+            return
+
+        target_items = overdue_items if apply_all else overdue_items[:1]
+        created_count = 0
+        updated_count = 0
+        currency = obj.currency or 'INR'
+        daily_fee = _get_daily_storage_fee_amount()
+
+        for item in target_items:
+            parcel = item.parcel
+            if not parcel:
+                continue
+
+            overdue_days = manual_overdue_days or max(parcel.storage_days - 30, 1)
+            fee_amount = manual_fee_amount or (Decimal(str(daily_fee)) * Decimal(overdue_days)).quantize(Decimal('0.01'))
+
+            pending_fee = StorageFee.objects.filter(parcel=parcel, status='pending').order_by('-created_at').first()
+            if pending_fee:
+                pending_fee.fee_amount = fee_amount
+                pending_fee.days_overdue = overdue_days
+                pending_fee.currency = currency
+                pending_fee.save(update_fields=['fee_amount', 'days_overdue', 'currency'])
+                updated_count += 1
+            else:
+                StorageFee.objects.create(
+                    parcel=parcel,
+                    fee_amount=fee_amount,
+                    currency=currency,
+                    days_overdue=overdue_days,
+                    status='pending',
+                )
+                created_count += 1
+
+        self.message_user(
+            request,
+            (
+                f'Storage fee applied from shipment form. Created: {created_count}, '
+                f'Updated: {updated_count}. '
+                f"Mode: {'manual amount override' if manual_fee_amount else 'auto from Service Charges'}"
+            ),
+        )
     
     def status_badge(self, obj):
         css_class, icon = SHIPMENT_STATUS_COLORS.get(obj.status, ('badge-draft', '❓'))
@@ -190,6 +300,45 @@ class ShipmentAdmin(admin.ModelAdmin):
     def mark_delivered(self, request, queryset):
         from django.utils import timezone
         queryset.update(status='delivered', delivered_at=timezone.now())
+
+    @admin.action(description='➕ Add Storage Fee (Pending)')
+    def add_storage_fees(self, request, queryset):
+        daily_fee = _get_daily_storage_fee_amount()
+        created_count = 0
+        skipped_count = 0
+
+        for shipment in queryset.prefetch_related('items__parcel'):
+            for item in shipment.items.all():
+                parcel = item.parcel
+                if not parcel:
+                    skipped_count += 1
+                    continue
+
+                if parcel.storage_days <= 30:
+                    skipped_count += 1
+                    continue
+
+                exists = StorageFee.objects.filter(parcel=parcel, status='pending').exists()
+                if exists:
+                    skipped_count += 1
+                    continue
+
+                overdue_days = max(parcel.storage_days - 30, 1)
+                fee_amount = (Decimal(str(daily_fee)) * Decimal(overdue_days)).quantize(Decimal('0.01'))
+
+                StorageFee.objects.create(
+                    parcel=parcel,
+                    fee_amount=fee_amount,
+                    currency=shipment.currency or 'INR',
+                    days_overdue=overdue_days,
+                    status='pending',
+                )
+                created_count += 1
+
+        self.message_user(
+            request,
+            f'Created {created_count} storage fee(s). Skipped {skipped_count} parcel(s) with existing pending fee.',
+        )
 
 
 # Proxy Model for Declaration Approvals

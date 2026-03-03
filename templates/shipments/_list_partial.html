@@ -131,7 +131,7 @@
                 <li style="margin-bottom: 0.5rem;">Once service charges are paid, you will need to schedule pickup from
                     Locker address.</li>
                 <li style="margin-bottom: 0.5rem;"><strong>Pickup Address:</strong>
-                    {{ request.user.locker.address|default:"Locker Address" }} - {{ request.user.locker.pk }}</li>
+                    {{ request.user.locker.locker_id }} - {{ request.user.locker.address|default:"Locker Address" }}</li>
                 <li style="margin-bottom: 0.5rem;"><strong>Pickup Time:</strong> 10 AM to 5 PM IST</li>
                 <li>
                     Schedule pickup using any available courier service in India, some examples:
@@ -226,9 +226,32 @@
                     </div>
                 </div>
                 {% endif %}
+                <div>
+                    <span class="stat-label">Payment</span>
+                    <div class="stat-value" style="font-size: 1rem;">
+                        {% if shipment.payment_status == 'paid' %}
+                        <span style="color: var(--success-text); font-weight: 700;">Paid</span>
+                        {% elif shipment.shipping_cost %}
+                        <span style="font-weight: 600;">{{ shipment.currency }} {{ shipment.shipping_cost }}</span>
+                        {% else %}
+                        <span style="color: var(--text-secondary);">Pending amount</span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                {% if shipment.shipping_cost and shipment.payment_status != 'paid' %}
+                <button class="btn btn-primary btn-sm js-pay-now"
+                    data-create-url="{% url 'payments:create_order' shipment.pk %}"
+                    data-verify-url="{% url 'payments:verify' %}">
+                    Pay Now
+                </button>
+                {% elif shipment.payment_status == 'paid' %}
+                <button class="btn btn-secondary btn-sm" style="background: #ECFDF5; border-color: #6EE7B7; color: #065F46;" disabled>
+                    Paid
+                </button>
+                {% endif %}
                 {% if shipment.tracking_number %}
                 <button
                     onclick="window.open('https://www.google.com/search?q=track+{{ shipment.carrier }}+{{ shipment.tracking_number }}', '_blank')"
@@ -277,3 +300,106 @@
         }
     }
 </style>
+
+{% if shipments %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    const listCsrfToken = '{{ csrf_token }}';
+
+    async function parseListJsonOrThrow(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+        const errorText = await response.text();
+        throw new Error(errorText || 'Unexpected server response.');
+    }
+
+    async function verifyListPayment(verifyUrl, payload) {
+        const response = await fetch(verifyUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': listCsrfToken,
+            },
+            body: JSON.stringify(payload),
+        });
+        return parseListJsonOrThrow(response);
+    }
+
+    document.querySelectorAll('.js-pay-now').forEach((button) => {
+        button.addEventListener('click', async function () {
+            const createUrl = this.dataset.createUrl;
+            const verifyUrl = this.dataset.verifyUrl;
+            const originalText = this.textContent;
+
+            this.disabled = true;
+            this.textContent = 'Preparing...';
+
+            try {
+                const createResponse = await fetch(createUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': listCsrfToken,
+                    },
+                });
+
+                const orderData = await parseListJsonOrThrow(createResponse);
+
+                if (!createResponse.ok) {
+                    throw new Error(orderData.error || 'Could not start payment.');
+                }
+
+                if (!window.Razorpay) {
+                    throw new Error('Razorpay checkout failed to load.');
+                }
+
+                const options = {
+                    key: orderData.key_id,
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: 'IndiaBox',
+                    description: 'Shipment payment',
+                    order_id: orderData.order_id,
+                    handler: async function (response) {
+                        try {
+                            const verifyResult = await verifyListPayment(verifyUrl, {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            });
+
+                            if (verifyResult.status === 'success') {
+                                window.location.reload();
+                                return;
+                            }
+                            alert(verifyResult.error || 'Payment verification failed.');
+                        } catch (error) {
+                            alert(error.message || 'Payment verification failed.');
+                        } finally {
+                            button.disabled = false;
+                            button.textContent = originalText;
+                        }
+                    },
+                    theme: {
+                        color: '#2563EB'
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            button.disabled = false;
+                            button.textContent = originalText;
+                        }
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+            } catch (error) {
+                alert(error.message || 'Unable to start payment.');
+                this.disabled = false;
+                this.textContent = originalText;
+            }
+        });
+    });
+</script>
+{% endif %}

@@ -6,6 +6,5 @@ Disallow: /shipments/
 Disallow: /kyc/
 Disallow: /payments/
 Disallow: /manage-rb-panel/
-Disallow: /admin/
 
 Sitemap: https://indiabox.com/sitemap.xml

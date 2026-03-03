@@ -192,9 +192,55 @@
                     <span style="font-weight: 600;">Shipping Cost</span>
                     <span style="font-weight: 700; font-size: 1.1rem;">{{ shipment.currency }} {{ shipment.shipping_cost}}</span>
                 </div>
+                <div
+                    style="display: flex; justify-content: space-between; padding-top: 0.75rem; margin-top: 0.25rem;">
+                    <span style="font-weight: 600;">Payment</span>
+                    {% if shipment.payment_status == 'paid' %}
+                    <span style="font-weight: 700; color: var(--success-text);">Paid</span>
+                    {% else %}
+                    <span style="font-weight: 600; color: var(--text-secondary);">{{ shipment.get_payment_status_display }}</span>
+                    {% endif %}
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; padding-top: 0.75rem; margin-top: 0.25rem;">
+                    <span style="font-weight: 600;">Storage Fee</span>
+                    {% if storage_fee_pending and storage_fee_pending > 0 %}
+                    <span style="font-weight: 700; color: var(--danger-text);">{{ shipment.currency }} {{ storage_fee_pending }} (Due)</span>
+                    {% elif storage_fee_paid and storage_fee_paid > 0 %}
+                    <span style="font-weight: 700; color: var(--success-text);">{{ shipment.currency }} {{ storage_fee_paid }} (Paid)</span>
+                    {% else %}
+                    <span style="font-weight: 600; color: var(--text-secondary);">None</span>
+                    {% endif %}
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; padding-top: 0.75rem; margin-top: 0.25rem; border-top: 1px solid var(--surface-100);">
+                    <span style="font-weight: 700;">Total Charges</span>
+                    <span style="font-weight: 700;">{{ shipment.currency }} {{ shipment_total_amount }}</span>
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; padding-top: 0.5rem; margin-top: 0.15rem;">
+                    <span style="font-weight: 600; color: var(--text-secondary);">Amount Due</span>
+                    {% if shipment_amount_due > 0 %}
+                    <span style="font-weight: 700; color: var(--danger-text);">{{ shipment.currency }} {{ shipment_amount_due }}</span>
+                    {% else %}
+                    <span style="font-weight: 700; color: var(--success-text);">{{ shipment.currency }} 0.00</span>
+                    {% endif %}
+                </div>
                 <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
                     Created on {{ shipment.created_at|date:"M d, Y" }}
                 </div>
+
+                {% if shipment.shipping_cost and shipment.payment_status != 'paid' %}
+                <button id="pay-now-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;"
+                    data-create-url="{% url 'payments:create_order' shipment.pk %}"
+                    data-verify-url="{% url 'payments:verify' %}">
+                    Pay Now
+                </button>
+                {% elif shipment.payment_status == 'paid' %}
+                <button class="btn btn-secondary" style="width: 100%; margin-top: 1rem; background: #ECFDF5; border-color: #6EE7B7; color: #065F46;" disabled>
+                    Paid
+                </button>
+                {% endif %}
             </div>
         </div>
 
@@ -316,4 +362,115 @@
         }
     }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+{% if shipment.shipping_cost and shipment.payment_status != 'paid' %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    const csrfToken = '{{ csrf_token }}';
+
+    async function parseJsonOrThrow(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+        const errorText = await response.text();
+        throw new Error(errorText || 'Unexpected server response.');
+    }
+
+    async function verifyPayment(verifyUrl, payload) {
+        const response = await fetch(verifyUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify(payload),
+        });
+        return parseJsonOrThrow(response);
+    }
+
+    const payNowBtn = document.getElementById('pay-now-btn');
+    if (payNowBtn) {
+        payNowBtn.addEventListener('click', async function () {
+            const createUrl = this.dataset.createUrl;
+            const verifyUrl = this.dataset.verifyUrl;
+            const originalText = this.textContent;
+
+            this.disabled = true;
+            this.textContent = 'Preparing payment...';
+
+            try {
+                const createResponse = await fetch(createUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    },
+                });
+                const orderData = await parseJsonOrThrow(createResponse);
+
+                if (!createResponse.ok) {
+                    throw new Error(orderData.error || 'Could not start payment.');
+                }
+
+                if (!window.Razorpay) {
+                    throw new Error('Razorpay checkout failed to load.');
+                }
+
+                const options = {
+                    key: orderData.key_id,
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: 'IndiaBox',
+                    description: 'Shipping payment for {{ shipment.display_id }}',
+                    order_id: orderData.order_id,
+                    handler: async function (response) {
+                        try {
+                            const verifyResult = await verifyPayment(verifyUrl, {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            });
+
+                            if (verifyResult.status === 'success') {
+                                window.location.reload();
+                                return;
+                            }
+                            alert(verifyResult.error || 'Payment verification failed.');
+                        } catch (error) {
+                            alert(error.message || 'Payment verification failed.');
+                        } finally {
+                            payNowBtn.disabled = false;
+                            payNowBtn.textContent = originalText;
+                        }
+                    },
+                    prefill: {
+                        name: '{{ shipment.recipient_name|escapejs }}',
+                        email: '{{ shipment.recipient_email|escapejs }}',
+                        contact: '{{ shipment.recipient_phone|escapejs }}'
+                    },
+                    theme: {
+                        color: '#2563EB'
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            payNowBtn.disabled = false;
+                            payNowBtn.textContent = originalText;
+                        }
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+            } catch (error) {
+                alert(error.message || 'Unable to start payment.');
+                this.disabled = false;
+                this.textContent = originalText;
+            }
+        });
+    }
+</script>
+{% endif %}
 {% endblock %}

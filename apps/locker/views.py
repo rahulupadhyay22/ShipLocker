@@ -9,10 +9,27 @@ from django.db import transaction
 from .models import Parcel, ParcelImage, ReturnRequest, DiscardRequest
 
 
+def _sync_overdue_storage_fees(user):
+    """Ensure storage fees are automatically created after 30 free days."""
+    from apps.payments.services import ensure_storage_fee_for_parcel
+
+    if not hasattr(user, 'locker'):
+        return
+
+    eligible_parcels = Parcel.objects.filter(
+        locker=user.locker,
+        status__in=['pending', 'action_required', 'approved', 'return_requested', 'return_approved', 'discard_requested'],
+    )
+    for parcel in eligible_parcels:
+        ensure_storage_fee_for_parcel(parcel)
+
+
 class MyLockerView(LoginRequiredMixin, View):
     """Main My Locker page - redirects to appropriate tab."""
     
     def get(self, request):
+        _sync_overdue_storage_fees(request.user)
+
         # Check if user has action required items first
         locker = request.user.locker
         action_count = Parcel.objects.filter(locker=locker, status='action_required').count()
@@ -36,6 +53,7 @@ class ActionRequiredView(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        _sync_overdue_storage_fees(self.request.user)
         locker = self.request.user.locker
         context['tab'] = 'action_required'
         context['ready_count'] = Parcel.objects.filter(locker=locker, status='approved').count()
@@ -58,6 +76,7 @@ class ReadyToShipView(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        _sync_overdue_storage_fees(self.request.user)
         locker = self.request.user.locker
         context['tab'] = 'ready_to_ship'
         context['action_count'] = Parcel.objects.filter(locker=locker, status='action_required').count()
@@ -82,6 +101,7 @@ class ReturnsView(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        _sync_overdue_storage_fees(self.request.user)
         locker = self.request.user.locker
         context['tab'] = 'returns'
         context['action_count'] = Parcel.objects.filter(locker=locker, status='action_required').count()
@@ -103,6 +123,7 @@ class DiscardsView(LoginRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        _sync_overdue_storage_fees(self.request.user)
         locker = self.request.user.locker
         context['tab'] = 'discards'
         context['action_count'] = Parcel.objects.filter(locker=locker, status='action_required').count()
@@ -120,6 +141,11 @@ class ParcelDetailView(LoginRequiredMixin, DetailView):
         return Parcel.objects.filter(
             locker=self.request.user.locker
         ).prefetch_related('images')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        _sync_overdue_storage_fees(self.request.user)
+        return context
 
 
 class ApproveParcelView(LoginRequiredMixin, View):
