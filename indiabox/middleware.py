@@ -78,8 +78,8 @@ class SecurityHeadersMiddleware:
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
             "img-src 'self' data: https: blob:; "
             "connect-src 'self' https://*.supabase.co https://api.razorpay.com; "
-            "frame-src https://api.razorpay.com https://checkout.razorpay.com; "
-            "frame-ancestors 'none';"
+            "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com; "
+            "frame-ancestors 'self';"
         )
         
         # Permissions Policy

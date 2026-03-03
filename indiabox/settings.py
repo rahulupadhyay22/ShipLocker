@@ -326,8 +326,8 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'  # Prevents CSRF via cross-site requests
 CSRF_COOKIE_HTTPONLY = True  # Prevent JS from reading CSRF token
 
-# Clickjacking Protection (always active, not just production)
-X_FRAME_OPTIONS = 'DENY'
+# Clickjacking Protection (allow same-origin admin modal/popup iframes)
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # Production Security (only when DEBUG is False)
 if not DEBUG:
