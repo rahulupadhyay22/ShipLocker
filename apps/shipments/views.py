@@ -1,26 +1,26 @@
 from django.shortcuts import render
 from django.views.generic import ListView, DetailView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Count, Q
 
 from .models import Shipment, ShipmentItem, ShipmentDocument
 
 
 class ShipmentStatsMixin:
-    """Mixin to provide shipment status counts."""
+    """Mixin to provide shipment status counts with single aggregate query."""
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        context['active_count'] = Shipment.objects.filter(
-            user=user,
-            status__in=['packing', 'dispatched', 'in_transit', 'customs', 'out_for_delivery', 'declaration_pending', 'pending_payment']
-        ).count()
-        context['delivered_count'] = Shipment.objects.filter(
-            user=user, status='delivered'
-        ).count()
-        context['closed_count'] = Shipment.objects.filter(
-            user=user, status__in=['returned', 'cancelled']
-        ).count()
+        counts = Shipment.objects.filter(user=user).aggregate(
+            active_count=Count('id', filter=Q(
+                status__in=['packing', 'dispatched', 'in_transit', 'customs',
+                            'out_for_delivery', 'declaration_pending', 'pending_payment']
+            )),
+            delivered_count=Count('id', filter=Q(status='delivered')),
+            closed_count=Count('id', filter=Q(status__in=['returned', 'cancelled'])),
+        )
+        context.update(counts)
         return context
 
 

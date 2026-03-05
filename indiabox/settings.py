@@ -338,6 +338,38 @@ LOGOUT_REDIRECT_URL = '/'
 # SECURITY SETTINGS
 # =============================================================================
 
+# =============================================================================
+# CACHE CONFIGURATION (Redis when available, LocMemCache fallback)
+# =============================================================================
+REDIS_URL = os.getenv('REDIS_URL', '').strip()
+
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'SOCKET_CONNECT_TIMEOUT': 5,
+                'SOCKET_TIMEOUT': 5,
+                'RETRY_ON_TIMEOUT': True,
+                'CONNECTION_POOL_KWARGS': {'max_connections': 20},
+            },
+            'KEY_PREFIX': 'indiabox',
+            'TIMEOUT': 300,  # Default 5-minute TTL
+        }
+    }
+    # Use Redis for sessions (much faster than DB-backed sessions)
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    SESSION_CACHE_ALIAS = 'default'
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'indiabox-locmem',
+        }
+    }
+
 # Session Security
 SESSION_COOKIE_AGE = 86400  # 24 hours
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False

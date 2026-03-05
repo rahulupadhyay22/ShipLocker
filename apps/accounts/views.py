@@ -5,9 +5,13 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.http import JsonResponse
+from django.db.models import Count, Q
+import logging
 
 from .models import User, Locker
 from .services import SupabaseAuth
+
+logger = logging.getLogger('security')
 
 
 class LoginView(View):
@@ -47,7 +51,8 @@ class LoginView(View):
             messages.success(request, f'OTP sent to {email}. Please check your inbox.')
             return redirect('accounts:verify_otp')
         except Exception as e:
-            messages.error(request, f'Failed to send OTP: {str(e)}')
+            logger.error(f'OTP send failed for {email}: {e}')
+            messages.error(request, 'Failed to send OTP. Please try again in a moment.')
             return render(request, self.template_name)
 
 
@@ -65,7 +70,8 @@ class GoogleLoginView(View):
             oauth_url = auth.sign_in_with_google(redirect_url)
             return redirect(oauth_url)
         except Exception as e:
-            messages.error(request, f'Google login failed: {str(e)}')
+            logger.error(f'Google login failed: {e}')
+            messages.error(request, 'Google login is temporarily unavailable. Please try email login.')
             return redirect('accounts:login')
 
 
@@ -125,7 +131,8 @@ class VerifyOTPView(View):
             return redirect('accounts:dashboard')
             
         except Exception as e:
-            messages.error(request, f'Invalid OTP: {str(e)}')
+            logger.error(f'OTP verification failed for {email}: {e}')
+            messages.error(request, 'Invalid or expired OTP. Please try again.')
             return render(request, self.template_name, {
                 'email': email,
                 'otp_session_token': stored_token,
@@ -165,17 +172,20 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         from apps.content.models import Announcement
         announcements = Announcement.objects.filter(is_active=True).order_by('-created_at')[:5]
         
-        # Get parcel counts
+        # Get parcel counts with single aggregate query (instead of 3 separate counts)
         from apps.locker.models import Parcel
+        parcel_counts = Parcel.objects.filter(locker=locker).aggregate(
+            action_required_count=Count('id', filter=Q(status='action_required')),
+            ready_to_ship_count=Count('id', filter=Q(status='approved')),
+        )
+        action_required_count = parcel_counts['action_required_count']
+        ready_to_ship_count = parcel_counts['ready_to_ship_count']
+        
+        # Urgent items queryset (only evaluated if template needs it)
         action_required_parcels = Parcel.objects.filter(
             locker=locker, 
             status='action_required'
         )
-        action_required_count = action_required_parcels.count()
-        ready_to_ship_count = Parcel.objects.filter(
-            locker=locker, 
-            status='approved'
-        ).count()
         
         # Get active shipments
         from apps.shipments.models import Shipment

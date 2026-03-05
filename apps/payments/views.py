@@ -2,6 +2,7 @@
 
 import json
 import logging
+from datetime import timedelta
 from decimal import Decimal
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
@@ -53,7 +54,11 @@ def _mark_storage_fees_paid(payment):
 
 
 class CreatePaymentOrderView(LoginRequiredMixin, View):
-    """Create a Razorpay order for a shipment payment."""
+    """Create a Razorpay order for a shipment payment.
+
+    Prevents duplicate orders by checking for a recent pending payment
+    before creating a new one (guards against double-click).
+    """
 
     def post(self, request, shipment_pk):
         shipment = get_object_or_404(
@@ -89,6 +94,27 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         charge_label = ' + '.join(description_parts) if description_parts else 'charges'
 
         with transaction.atomic():
+            # Prevent double payment: check for recent pending payment (last 30 min)
+            existing = Payment.objects.select_for_update().filter(
+                shipment=shipment,
+                user=request.user,
+                status='pending',
+                created_at__gte=timezone.now() - timedelta(minutes=30),
+            ).order_by('-created_at').first()
+
+            if existing and existing.razorpay_order_id:
+                logger.info(
+                    f"Returning existing payment order for {shipment.display_id}: "
+                    f"{existing.razorpay_order_id}"
+                )
+                return JsonResponse({
+                    'order_id': existing.razorpay_order_id,
+                    'amount': int(existing.amount * 100),
+                    'currency': existing.currency,
+                    'key_id': service.key_id,
+                    'payment_pk': str(existing.pk),
+                })
+
             payment = Payment.objects.create(
                 user=request.user,
                 shipment=shipment,

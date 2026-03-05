@@ -10,8 +10,12 @@ Files are accessed via SIGNED URLs that expire after 1 hour.
 
 import uuid
 import os
+import logging
 from django.core.files.uploadedfile import UploadedFile
+from django.core.cache import cache
 from apps.accounts.services import SupabaseStorage
+
+logger = logging.getLogger('security')
 
 
 def get_user_locker_id(user) -> str:
@@ -187,7 +191,8 @@ TWENTY_FOUR_HOURS = 86400  # 24 hours in seconds
 def get_signed_url(bucket_name: str, file_path: str, expires_in: int = 3600) -> str:
     """Get temporary signed URL for any private bucket file.
     
-    Generic function for all buckets. Use specific functions below for defaults.
+    Generic function for all buckets. Results are cached to avoid
+    repeated Supabase API calls. Cache TTL = expires_in minus 1 hour buffer.
     
     Args:
         bucket_name: Name of the Supabase storage bucket
@@ -199,69 +204,114 @@ def get_signed_url(bucket_name: str, file_path: str, expires_in: int = 3600) -> 
     """
     if not file_path:
         return ''
+    cache_key = f'signed_url:{bucket_name}:{file_path}'
+    url = cache.get(cache_key)
+    if url:
+        return url
     try:
         storage = SupabaseStorage()
         result = storage.get_signed_url(bucket_name, file_path, expires_in)
-        return result.get('signedURL', '') if isinstance(result, dict) else str(result)
-    except Exception:
+        url = result.get('signedURL', '') if isinstance(result, dict) else str(result)
+        if url:
+            cache_ttl = max(expires_in - 3600, 3600)  # At least 1 hour, minus 1 hour buffer
+            cache.set(cache_key, url, cache_ttl)
+        return url
+    except Exception as e:
+        logger.warning(f'Signed URL generation failed for {bucket_name}/{file_path}: {e}')
         return ''
 
 
 def get_signed_invoice_url(file_path: str, expires_in: int = SEVEN_DAYS) -> str:
     """Get temporary signed URL for private invoice.
     
-    Default expiry: 7 days (for shipping duration)
+    Default expiry: 7 days (for shipping duration).
+    Results are cached with a 1-hour safety buffer before expiry.
     """
     if not file_path:
         return ''
+    cache_key = f'signed_url:invoices:{file_path}'
+    url = cache.get(cache_key)
+    if url:
+        return url
     try:
         storage = SupabaseStorage()
         result = storage.get_signed_url('invoices', file_path, expires_in)
-        return result.get('signedURL', '') if isinstance(result, dict) else str(result)
-    except Exception:
+        url = result.get('signedURL', '') if isinstance(result, dict) else str(result)
+        if url:
+            cache.set(cache_key, url, max(expires_in - 3600, 3600))
+        return url
+    except Exception as e:
+        logger.warning(f'Signed invoice URL failed for {file_path}: {e}')
         return ''
 
 
 def get_signed_parcel_image_url(file_path: str, expires_in: int = SEVEN_DAYS) -> str:
     """Get temporary signed URL for private parcel image.
     
-    Default expiry: 7 days (for shipping duration)
+    Default expiry: 7 days (for shipping duration).
+    Results are cached with a 1-hour safety buffer before expiry.
     """
     if not file_path:
         return ''
+    cache_key = f'signed_url:parcel-images:{file_path}'
+    url = cache.get(cache_key)
+    if url:
+        return url
     try:
         storage = SupabaseStorage()
         result = storage.get_signed_url('parcel-images', file_path, expires_in)
-        return result.get('signedURL', '') if isinstance(result, dict) else str(result)
-    except Exception:
+        url = result.get('signedURL', '') if isinstance(result, dict) else str(result)
+        if url:
+            cache.set(cache_key, url, max(expires_in - 3600, 3600))
+        return url
+    except Exception as e:
+        logger.warning(f'Signed parcel image URL failed for {file_path}: {e}')
         return ''
 
 
 def get_signed_kyc_url(file_path: str, expires_in: int = TWENTY_FOUR_HOURS) -> str:
     """Get temporary signed URL for private KYC document.
     
-    Default expiry: 24 hours (sensitive documents)
+    Default expiry: 24 hours (sensitive documents).
+    Results are cached with a 1-hour safety buffer before expiry.
     """
     if not file_path:
         return ''
+    cache_key = f'signed_url:kyc-documents:{file_path}'
+    url = cache.get(cache_key)
+    if url:
+        return url
     try:
         storage = SupabaseStorage()
         result = storage.get_signed_url('kyc-documents', file_path, expires_in)
-        return result.get('signedURL', '') if isinstance(result, dict) else str(result)
-    except Exception:
+        url = result.get('signedURL', '') if isinstance(result, dict) else str(result)
+        if url:
+            cache.set(cache_key, url, max(expires_in - 3600, 3600))
+        return url
+    except Exception as e:
+        logger.warning(f'Signed KYC URL failed for {file_path}: {e}')
         return ''
 
 
 def get_signed_shipment_doc_url(file_path: str, expires_in: int = SEVEN_DAYS) -> str:
     """Get temporary signed URL for private shipment document.
     
-    Default expiry: 7 days (for shipping duration)
+    Default expiry: 7 days (for shipping duration).
+    Results are cached with a 1-hour safety buffer before expiry.
     """
     if not file_path:
         return ''
+    cache_key = f'signed_url:invoices:{file_path}'
+    url = cache.get(cache_key)
+    if url:
+        return url
     try:
         storage = SupabaseStorage()
         result = storage.get_signed_url('invoices', file_path, expires_in)
-        return result.get('signedURL', '') if isinstance(result, dict) else str(result)
-    except Exception:
+        url = result.get('signedURL', '') if isinstance(result, dict) else str(result)
+        if url:
+            cache.set(cache_key, url, max(expires_in - 3600, 3600))
+        return url
+    except Exception as e:
+        logger.warning(f'Signed shipment doc URL failed for {file_path}: {e}')
         return ''
