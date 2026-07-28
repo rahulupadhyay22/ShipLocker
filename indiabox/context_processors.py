@@ -18,4 +18,5 @@ def app_settings(request):
     return {
         'app_settings': settings,
         'whatsapp_link': whatsapp_number,
+        'base_template': 'base.html' if request.user.is_authenticated else 'public_base.html',
     }

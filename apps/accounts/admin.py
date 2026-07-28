@@ -1,11 +1,17 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin, StackedInline
+from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
+from unfold.decorators import display
 from .models import User, Locker, KYCDocument, SavedAddress
 
 
 @admin.register(User)
-class UserAdmin(BaseUserAdmin):
+class UserAdmin(BaseUserAdmin, ModelAdmin):
+    form = UserChangeForm
+    add_form = UserCreationForm
+    change_password_form = AdminPasswordChangeForm
     list_display = ['email', 'full_name', 'phone', 'locker_id_display', 'is_active', 'is_staff', 'date_joined']
     list_filter = ['is_active', 'is_staff', 'date_joined']
     search_fields = ['email', 'full_name', 'phone']
@@ -34,14 +40,14 @@ class UserAdmin(BaseUserAdmin):
     locker_id_display.short_description = 'Locker ID'
 
 
-class LockerInline(admin.StackedInline):
+class LockerInline(StackedInline):
     model = Locker
     can_delete = False
     readonly_fields = ['locker_id', 'created_at']
 
 
 @admin.register(Locker)
-class LockerAdmin(admin.ModelAdmin):
+class LockerAdmin(ModelAdmin):
     list_display = ['locker_id', 'user', 'parcel_count', 'created_at']
     search_fields = ['locker_id', 'user__email']
     readonly_fields = ['locker_id', 'created_at']
@@ -61,7 +67,7 @@ KYC_STATUS_COLORS = {
 
 
 @admin.register(KYCDocument)
-class KYCDocumentAdmin(admin.ModelAdmin):
+class KYCDocumentAdmin(ModelAdmin):
     list_display = ['user', 'document_type', 'status_badge', 'uploaded_at', 'reviewed_at']
     list_filter = ['document_type', 'status']
     search_fields = ['user__email']
@@ -71,15 +77,17 @@ class KYCDocumentAdmin(admin.ModelAdmin):
     
     actions = ['approve_documents', 'reject_documents']
     
+    @display(
+        description='Status',
+        ordering='status',
+        label={
+            'pending': 'warning',
+            'approved': 'success',
+            'rejected': 'danger',
+        }
+    )
     def status_badge(self, obj):
-        css_class, icon = KYC_STATUS_COLORS.get(obj.status, ('badge-draft', '❓'))
-        label = obj.get_status_display()
-        return format_html(
-            '<span class="badge-status {}">{} {}</span>',
-            css_class, icon, label
-        )
-    status_badge.short_description = 'Status'
-    status_badge.admin_order_field = 'status'
+        return obj.status
     
     @admin.action(description='✅ Approve selected documents')
     def approve_documents(self, request, queryset):
@@ -93,7 +101,7 @@ class KYCDocumentAdmin(admin.ModelAdmin):
 
 
 @admin.register(SavedAddress)
-class SavedAddressAdmin(admin.ModelAdmin):
+class SavedAddressAdmin(ModelAdmin):
     list_display = ['user', 'label', 'recipient_name', 'city', 'country', 'is_default', 'updated_at']
     list_filter = ['country', 'is_default']
     search_fields = ['user__email', 'recipient_name', 'city', 'label']

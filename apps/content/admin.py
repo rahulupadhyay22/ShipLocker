@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin, StackedInline, TabularInline
+from unfold.decorators import display
 from .models import Announcement, StaticPage, ServiceCharge, AdminLog, PageSection, ShippingZone, ShippingRate
 
 
@@ -13,7 +15,7 @@ SEVERITY_COLORS = {
 
 
 @admin.register(Announcement)
-class AnnouncementAdmin(admin.ModelAdmin):
+class AnnouncementAdmin(ModelAdmin):
     list_display = ['title', 'severity_badge', 'text_size', 'is_active', 'created_at']
     list_filter = ['severity', 'text_size', 'is_active', 'is_dismissible']
     search_fields = ['title', 'content']
@@ -32,18 +34,21 @@ class AnnouncementAdmin(admin.ModelAdmin):
         }),
     )
     
+    @display(
+        description='Severity',
+        ordering='severity',
+        label={
+            'info': 'info',
+            'notice': 'info',
+            'important': 'warning',
+            'urgent': 'danger',
+        }
+    )
     def severity_badge(self, obj):
-        css_class, icon = SEVERITY_COLORS.get(obj.severity, ('badge-info', '❓'))
-        label = obj.get_severity_display()
-        return format_html(
-            '<span class="badge-status {}">{} {}</span>',
-            css_class, icon, label
-        )
-    severity_badge.short_description = 'Severity'
-    severity_badge.admin_order_field = 'severity'
+        return obj.severity
 
 
-class PageSectionInline(admin.StackedInline):
+class PageSectionInline(StackedInline):
     """Inline editor for page sections."""
     model = PageSection
     extra = 0
@@ -53,7 +58,7 @@ class PageSectionInline(admin.StackedInline):
 
 
 @admin.register(PageSection)
-class PageSectionAdmin(admin.ModelAdmin):
+class PageSectionAdmin(ModelAdmin):
     list_display = ['title', 'page', 'icon', 'color', 'order', 'is_active']
     list_filter = ['page', 'icon', 'color', 'is_active']
     list_editable = ['order', 'is_active']
@@ -62,7 +67,7 @@ class PageSectionAdmin(admin.ModelAdmin):
 
 
 @admin.register(StaticPage)
-class StaticPageAdmin(admin.ModelAdmin):
+class StaticPageAdmin(ModelAdmin):
     list_display = ['title', 'slug', 'section_count', 'is_active', 'updated_at']
     list_filter = ['is_active', 'slug']
     search_fields = ['title', 'content']
@@ -75,7 +80,7 @@ class StaticPageAdmin(admin.ModelAdmin):
 
 
 @admin.register(ServiceCharge)
-class ServiceChargeAdmin(admin.ModelAdmin):
+class ServiceChargeAdmin(ModelAdmin):
     list_display = ['name', 'formatted_amount', 'currency', 'is_active']
     list_filter = ['is_active', 'currency']
     list_editable = ['is_active']
@@ -88,7 +93,7 @@ class ServiceChargeAdmin(admin.ModelAdmin):
 
 
 @admin.register(AdminLog)
-class AdminLogAdmin(admin.ModelAdmin):
+class AdminLogAdmin(ModelAdmin):
     list_display = ['user', 'action', 'ip_address', 'created_at']
     list_filter = ['created_at']
     search_fields = ['user__email', 'action', 'details']
@@ -102,7 +107,7 @@ class AdminLogAdmin(admin.ModelAdmin):
         return False
 
 
-class ShippingRateInline(admin.TabularInline):
+class ShippingRateInline(TabularInline):
     """Inline editor for shipping rates within a zone."""
     model = ShippingRate
     extra = 1
@@ -110,7 +115,7 @@ class ShippingRateInline(admin.TabularInline):
 
 
 @admin.register(ShippingZone)
-class ShippingZoneAdmin(admin.ModelAdmin):
+class ShippingZoneAdmin(ModelAdmin):
     list_display = ['name', 'country_count', 'countries', 'rate_count', 'is_active', 'order']
     list_filter = ['is_active']
     list_editable = ['is_active', 'order']
@@ -129,7 +134,7 @@ class ShippingZoneAdmin(admin.ModelAdmin):
 
 
 @admin.register(ShippingRate)
-class ShippingRateAdmin(admin.ModelAdmin):
+class ShippingRateAdmin(ModelAdmin):
     list_display = ['zone', 'weight_range', 'rate_type', 'formatted_price', 'delivery_range', 'is_active']
     list_filter = ['zone', 'rate_type', 'is_active']
     list_editable = ['is_active']

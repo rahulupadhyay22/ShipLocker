@@ -1,10 +1,11 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin
 from .models import AppSettings
 
 
 @admin.register(AppSettings)
-class AppSettingsAdmin(admin.ModelAdmin):
+class AppSettingsAdmin(ModelAdmin):
     """
     Admin interface for managing all app settings.
     Organized into logical sections with help text.

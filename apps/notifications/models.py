@@ -13,7 +13,7 @@ class AppSettings(models.Model):
     # ===========================
     site_name = models.CharField(
         max_length=100,
-        default="IndiaBox",
+        default="INDIBOX",
         help_text="Your company/site name"
     )
     support_email = models.EmailField(

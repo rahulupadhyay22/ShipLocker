@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Action Required - IndiaBox{% endblock %}
+{% block title %}Action Required - INDIBOX{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -82,14 +82,15 @@
 </div>
 
 <!-- Customs Notice -->
-<div class="modern-alert"
-    style="background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; margin-bottom: 1.5rem;">
+<div class="modern-alert" onclick="openCustomsModal()"
+    style="background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; margin-bottom: 1.5rem; cursor: pointer; transition: all 0.2s;"
+    onmouseover="this.style.background='#FEF3C7'; this.style.borderColor='#FCD34D';"
+    onmouseout="this.style.background='#FFFBEB'; this.style.borderColor='#FDE68A';">
     <div style="font-size: 1.1rem;">ⓘ</div>
     <div>
-        <strong>Important customs notice:</strong> Research item eligibility on Google before shipping. <button
-            onclick="openCustomsModal()"
-            style="background: none; border: none; padding: 0; text-decoration: underline; color: inherit; cursor: pointer; font-family: inherit; font-size: inherit;">Learn
-            more</button>
+        <strong>Important customs notice:</strong> Research item eligibility on Google before shipping. <span
+            style="text-decoration: underline; color: inherit; font-family: inherit; font-size: inherit; font-weight: 600;">Learn
+            more</span>
     </div>
 </div>
 
@@ -128,16 +129,18 @@
         <!-- Body -->
         <div class="card-body" style="flex: 1; display: flex; flex-direction: column;">
             <div style="margin-bottom: 0.75rem;">
-                <span class="status-badge status-action" style="font-size: 0.7rem;">Review Needed</span>
+                <span class="status-badge status-action" style="font-size: 0.7rem;">Please Review Parcel</span>
             </div>
 
             <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 0.5rem;">
-                    <span style="color: var(--text-secondary);">Parcel ID</span>
-                    <span style="font-weight: 500; font-family: monospace;">{{ parcel.display_id|default:"--" }}</span>
+                <span style="color: var(--text-secondary);">Parcel ID</span>
+                <span style="font-weight: 500;">{{ parcel.display_id|default:"--" }}</span>
             </div>
 
-            <h3 style="font-size: 1.1rem; margin-bottom: 1rem; line-height: 1.4;">
-                {{parcel.item_name|default:parcel.tracking_number }}</h3>
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 0.5rem;">
+                <span style="color: var(--text-secondary);">Parcel name</span>
+                <span style="font-weight: 500;">{{ parcel.item_name|default:"--" }}</span>
+            </div>
 
             <div style="flex: 1; margin-bottom: 1.5rem;">
                 <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.5rem;">
@@ -193,8 +196,8 @@
         <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #111827;">Customs Eligibility
             Notice</h3>
         <p style="color: #4B5563; font-size: 0.95rem; line-height: 1.6; margin-bottom: 0;">
-            IndiaBox shares item eligibility based on available knowledge and customer experiences, but we do not
-            have first-hand confirmation. For certainty, please research via Google before shipping. IndiaBox is not
+            INDIBOX shares item eligibility based on available knowledge and customer experiences, but we do not
+            have first-hand confirmation. For certainty, please research via Google before shipping. INDIBOX is not
             liable for customs rejections due to ineligible items.
         </p>
     </div>

@@ -71,7 +71,7 @@ class SecurityHeadersMiddleware:
         response = self.get_response(request)
         
         # Content Security Policy
-        response['Content-Security-Policy'] = (
+        csp = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
@@ -81,6 +81,12 @@ class SecurityHeadersMiddleware:
             "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com; "
             "frame-ancestors 'self';"
         )
+        
+        # Append 'unsafe-eval' for the admin panel to allow Alpine.js (used by Django Unfold) to run
+        if request.path.startswith('/manage-rb-panel/'):
+            csp = csp.replace("script-src 'self'", "script-src 'self' 'unsafe-eval'")
+            
+        response['Content-Security-Policy'] = csp
         
         # Permissions Policy
         response['Permissions-Policy'] = (

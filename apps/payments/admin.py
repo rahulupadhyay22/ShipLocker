@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin
+from unfold.decorators import display
 from .models import Payment, StorageFee
 
 
@@ -20,7 +22,7 @@ STORAGE_STATUS_COLORS = {
 
 
 @admin.register(Payment)
-class PaymentAdmin(admin.ModelAdmin):
+class PaymentAdmin(ModelAdmin):
     list_display = [
         'display_id', 'user', 'shipment', 'formatted_amount',
         'payment_method', 'status_badge', 'created_at'
@@ -66,15 +68,20 @@ class PaymentAdmin(admin.ModelAdmin):
 
     actions = ['mark_captured', 'mark_failed']
 
+    @display(
+        description='Status',
+        ordering='status',
+        label={
+            'pending': 'warning',
+            'authorized': 'info',
+            'captured': 'success',
+            'failed': 'danger',
+            'refunded': 'info',
+            'partially_refunded': 'info',
+        }
+    )
     def status_badge(self, obj):
-        css_class, icon = PAYMENT_STATUS_COLORS.get(obj.status, ('badge-draft', '❓'))
-        label = obj.get_status_display()
-        return format_html(
-            '<span class="badge-status {}">{} {}</span>',
-            css_class, icon, label
-        )
-    status_badge.short_description = 'Status'
-    status_badge.admin_order_field = 'status'
+        return obj.status
 
     def formatted_amount(self, obj):
         symbol = '₹' if obj.currency == 'INR' else obj.currency
@@ -95,7 +102,7 @@ class PaymentAdmin(admin.ModelAdmin):
 
 
 @admin.register(StorageFee)
-class StorageFeeAdmin(admin.ModelAdmin):
+class StorageFeeAdmin(ModelAdmin):
     list_display = [
         'parcel', 'formatted_fee', 'days_overdue',
         'status_badge', 'payment', 'created_at'
@@ -116,15 +123,17 @@ class StorageFeeAdmin(admin.ModelAdmin):
             ).distinct()
         return queryset
 
+    @display(
+        description='Status',
+        ordering='status',
+        label={
+            'pending': 'warning',
+            'paid': 'success',
+            'waived': 'info',
+        }
+    )
     def status_badge(self, obj):
-        css_class, icon = STORAGE_STATUS_COLORS.get(obj.status, ('badge-draft', '❓'))
-        label = obj.get_status_display()
-        return format_html(
-            '<span class="badge-status {}">{} {}</span>',
-            css_class, icon, label
-        )
-    status_badge.short_description = 'Status'
-    status_badge.admin_order_field = 'status'
+        return obj.status
 
     def formatted_fee(self, obj):
         symbol = '₹' if obj.currency == 'INR' else obj.currency

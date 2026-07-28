@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Shipment {{ shipment.display_id }} - IndiaBox{% endblock %}
+{% block title %}Shipment {{ shipment.display_id }} - INDIBOX{% endblock %}
 
 {% block content %}
 <div class="page-header" style="align-items: flex-start; flex-direction: column; gap: 1rem;">
@@ -71,7 +71,7 @@
                         <div class="timeline-icon">✈️</div>
                         <div class="timeline-content">
                             <div class="timeline-title">Dispatched</div>
-                            <div class="timeline-desc">Handed over to carrier ({{ shipment.get_carrier_display }}).
+                            <div class="timeline-desc">Handed over to carrier {{ shipment.get_carrier_display }}.
                             </div>
                             {% if shipment.dispatched_at %}
                             <div class="timeline-date">{{ shipment.dispatched_at|date:"M d, Y" }}</div>
@@ -163,9 +163,9 @@
                     {{ shipment.country }}
                 </div>
                 <div style="padding-top: 1rem; border-top: 1px solid var(--surface-100); font-size: 0.9rem;">
-                    <div style="margin-bottom: 0.5rem;"><span style="color: var(--text-muted);">Phone:</span>
+                    <div style="margin-bottom: 0.5rem;"><span style="font-weight:600;">Phone:</span>
                         {{shipment.recipient_phone }}</div>
-                    {% if shipment.recipient_email %}<div><span style="color: var(--text-muted);">Email:</span>
+                    {% if shipment.recipient_email %}<div><span style="font-weight:600;">Email:</span>
                         {{shipment.recipient_email }}</div>{% endif %}
                 </div>
             </div>
@@ -423,7 +423,7 @@
                     key: orderData.key_id,
                     amount: orderData.amount,
                     currency: orderData.currency,
-                    name: 'IndiaBox',
+                    name: 'INDIBOX',
                     description: 'Shipping payment for {{ shipment.display_id }}',
                     order_id: orderData.order_id,
                     handler: async function (response) {

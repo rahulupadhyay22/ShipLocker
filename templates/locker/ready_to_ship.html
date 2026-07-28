@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Ready to Ship - IndiaBox{% endblock %}
+{% block title %}Ready to Ship - INDIBOX{% endblock %}
 
 {% block content %}
 <!-- Page Header -->
@@ -126,14 +126,15 @@
 </div>
 
 <!-- Customs Notice -->
-<div class="modern-alert"
-    style="background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; margin-bottom: 1.5rem;">
+<div class="modern-alert" onclick="openCustomsModal()"
+    style="background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; margin-bottom: 1.5rem; cursor: pointer; transition: all 0.2s;"
+    onmouseover="this.style.background='#FEF3C7'; this.style.borderColor='#FCD34D';"
+    onmouseout="this.style.background='#FFFBEB'; this.style.borderColor='#FDE68A';">
     <div style="font-size: 1.1rem;">ⓘ</div>
     <div>
-        <strong>Important customs notice:</strong> Research item eligibility on Google before shipping. <button
-            onclick="openCustomsModal()"
-            style="background: none; border: none; padding: 0; text-decoration: underline; color: inherit; cursor: pointer; font-family: inherit; font-size: inherit;">Learn
-            more</button>
+        <strong>Important customs notice:</strong> Research item eligibility on Google before shipping. <span
+            style="text-decoration: underline; color: inherit; font-family: inherit; font-size: inherit; font-weight: 600;">Learn
+            more</span>
     </div>
 </div>
 
@@ -169,7 +170,7 @@
             Ship Internationally - IMPORTANT</h4>
         <p style="font-size: 0.9rem; line-height: 1.5; margin-bottom: 0;">
             For KYC, please provide an Aadhaar Card (yours/relative's/friend's). Without it, the shipment will move in
-            "Commercial Mode" under IndiaBox, leading to extra scrutiny, higher duties, and longer processing times.
+            "Commercial Mode" under INDIBOX, leading to extra scrutiny, higher duties, and longer processing times.
         </p>
     </div>
 </div>
@@ -263,4 +264,46 @@
 </div>
 {% endif %}
 
+<!-- Customs Modal -->
+<div id="customs-modal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center;">
+    <div
+        style="background: white; width: 90%; max-width: 500px; padding: 2rem; border-radius: 12px; position: relative; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+        <button onclick="closeCustomsModal()"
+            style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; cursor: pointer; font-size: 1.5rem; line-height: 1; color: #6B7280;">&times;</button>
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: #111827;">Customs Eligibility Notice</h3>
+        <p style="color: #4B5563; font-size: 0.95rem; line-height: 1.6; margin-bottom: 0;">
+            INDIBOX shares item eligibility based on available knowledge and customer experiences, but we do not
+            have first-hand confirmation. For certainty, please research via Google before shipping. INDIBOX is not
+            liable for customs rejections due to ineligible items.
+        </p>
+    </div>
+</div>
+
+<script>
+    function openCustomsModal() {
+        document.getElementById('customs-modal').style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+    }
+
+    // Double check other modals don't conflict, and close on escape/click outside
+    function closeCustomsModal() {
+        document.getElementById('customs-modal').style.display = 'none';
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+
+    // Close on click outside
+    document.getElementById('customs-modal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeCustomsModal();
+        }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.getElementById('customs-modal').style.display === 'flex') {
+            closeCustomsModal();
+        }
+    });
+</script>
 {% endblock %}

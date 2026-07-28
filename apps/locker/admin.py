@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django import forms
+from unfold.admin import ModelAdmin, TabularInline
+from unfold.decorators import display
 from .models import Parcel, ParcelImage, ReturnRequest, DiscardRequest
 
 
@@ -59,7 +61,7 @@ class ParcelImageForm(forms.ModelForm):
         return instance
 
 
-class ParcelImageInline(admin.TabularInline):
+class ParcelImageInline(TabularInline):
     model = ParcelImage
     form = ParcelImageForm
     extra = 1
@@ -76,7 +78,7 @@ class ParcelImageInline(admin.TabularInline):
 
 
 @admin.register(Parcel)
-class ParcelAdmin(admin.ModelAdmin):
+class ParcelAdmin(ModelAdmin):
     list_display = ['display_id', 'locker', 'user_email', 'status_badge', 'item_name', 'weight_kg', 'storage_info', 'received_at']
     list_filter = ['status', 'category', 'received_at']
     search_fields = ['display_id', 'locker__locker_id', 'locker__user__email', 'item_name']
@@ -117,15 +119,20 @@ class ParcelAdmin(admin.ModelAdmin):
         """
         return super().get_queryset(request).select_related('locker', 'locker__user')
 
+    @display(
+        description='Status',
+        ordering='status',
+        label={
+            'pending': 'warning',
+            'action_required': 'danger',
+            'approved': 'success',
+            'shipped': 'info',
+            'returned': 'info',
+            'discarded': 'danger',
+        }
+    )
     def status_badge(self, obj):
-        css_class, icon = PARCEL_STATUS_COLORS.get(obj.status, ('badge-draft', '❓'))
-        label = obj.get_status_display()
-        return format_html(
-            '<span class="badge-status {}">{} {}</span>',
-            css_class, icon, label
-        )
-    status_badge.short_description = 'Status'
-    status_badge.admin_order_field = 'status'
+        return obj.status
     
     def user_email(self, obj):
         return obj.locker.user.email
@@ -159,7 +166,7 @@ class ParcelAdmin(admin.ModelAdmin):
 
 
 @admin.register(ParcelImage)
-class ParcelImageAdmin(admin.ModelAdmin):
+class ParcelImageAdmin(ModelAdmin):
     form = ParcelImageForm
     list_display = ['parcel', 'is_primary', 'image_preview', 'uploaded_at']
     list_filter = ['is_primary']
@@ -178,7 +185,7 @@ class ParcelImageAdmin(admin.ModelAdmin):
 
 
 @admin.register(ReturnRequest)
-class ReturnRequestAdmin(admin.ModelAdmin):
+class ReturnRequestAdmin(ModelAdmin):
     list_display = ['parcel', 'status_badge', 'reason_preview', 'requested_at', 'processed_at']
     list_filter = ['status']
     search_fields = ['parcel__locker__locker_id', 'parcel__display_id']
@@ -188,15 +195,21 @@ class ReturnRequestAdmin(admin.ModelAdmin):
     
     actions = ['approve_requests', 'complete_requests']
     
+    @display(
+        description='Status',
+        ordering='status',
+        label={
+            'requested': 'warning',
+            'approved': 'success',
+            'processing': 'info',
+            'completed': 'success',
+            'confirmed': 'success',
+            'discarded': 'danger',
+            'rejected': 'danger',
+        }
+    )
     def status_badge(self, obj):
-        css_class, icon = REQUEST_STATUS_COLORS.get(obj.status, ('badge-draft', '❓'))
-        label = obj.get_status_display()
-        return format_html(
-            '<span class="badge-status {}">{} {}</span>',
-            css_class, icon, label
-        )
-    status_badge.short_description = 'Status'
-    status_badge.admin_order_field = 'status'
+        return obj.status
     
     def reason_preview(self, obj):
         reason = getattr(obj, 'reason', '') or ''
@@ -216,7 +229,7 @@ class ReturnRequestAdmin(admin.ModelAdmin):
 
 
 @admin.register(DiscardRequest)
-class DiscardRequestAdmin(admin.ModelAdmin):
+class DiscardRequestAdmin(ModelAdmin):
     list_display = ['parcel', 'status_badge', 'requested_at', 'discarded_at']
     list_filter = ['status']
     search_fields = ['parcel__locker__locker_id', 'parcel__display_id']
@@ -226,15 +239,21 @@ class DiscardRequestAdmin(admin.ModelAdmin):
     
     actions = ['confirm_requests', 'mark_discarded']
     
+    @display(
+        description='Status',
+        ordering='status',
+        label={
+            'requested': 'warning',
+            'approved': 'success',
+            'processing': 'info',
+            'completed': 'success',
+            'confirmed': 'success',
+            'discarded': 'danger',
+            'rejected': 'danger',
+        }
+    )
     def status_badge(self, obj):
-        css_class, icon = REQUEST_STATUS_COLORS.get(obj.status, ('badge-draft', '❓'))
-        label = obj.get_status_display()
-        return format_html(
-            '<span class="badge-status {}">{} {}</span>',
-            css_class, icon, label
-        )
-    status_badge.short_description = 'Status'
-    status_badge.admin_order_field = 'status'
+        return obj.status
     
     @admin.action(description='✅ Confirm selected requests')
     def confirm_requests(self, request, queryset):

@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.utils.html import format_html, mark_safe
 from django import forms
 from decimal import Decimal
+from unfold.admin import ModelAdmin, TabularInline
+from unfold.decorators import display
 from .models import Shipment, ShipmentItem, ShipmentDocument, TrackingEvent
 from apps.payments.models import StorageFee
 from apps.payments.services import _get_daily_storage_fee_amount
@@ -23,7 +25,7 @@ SHIPMENT_STATUS_COLORS = {
 }
 
 
-class ShipmentItemInline(admin.TabularInline):
+class ShipmentItemInline(TabularInline):
     model = ShipmentItem
     extra = 1
     raw_id_fields = ['parcel']
@@ -70,7 +72,7 @@ class ShipmentDocumentForm(forms.ModelForm):
         return instance
 
 
-class ShipmentDocumentInline(admin.TabularInline):
+class ShipmentDocumentInline(TabularInline):
     model = ShipmentDocument
     form = ShipmentDocumentForm
     extra = 1
@@ -89,7 +91,7 @@ class ShipmentDocumentInline(admin.TabularInline):
     document_link.short_description = "View"
 
 
-class TrackingEventInline(admin.TabularInline):
+class TrackingEventInline(TabularInline):
     """Inline for viewing tracking events in Shipment admin."""
     model = TrackingEvent
     extra = 0
@@ -135,7 +137,7 @@ class ShipmentAdminForm(forms.ModelForm):
 
 
 @admin.register(Shipment)
-class ShipmentAdmin(admin.ModelAdmin):
+class ShipmentAdmin(ModelAdmin):
     form = ShipmentAdminForm
     list_display = ['display_id', 'user', 'shipment_type', 'status_badge', 'payment_badge', 'carrier', 'tracking_number', 'item_count_display', 'created_at']
     list_filter = ['status', 'shipment_type', 'carrier', 'created_at']
@@ -251,31 +253,38 @@ class ShipmentAdmin(admin.ModelAdmin):
             ),
         )
     
-    def status_badge(self, obj):
-        css_class, icon = SHIPMENT_STATUS_COLORS.get(obj.status, ('badge-draft', '❓'))
-        label = obj.get_status_display()
-        return format_html(
-            '<span class="badge-status {}">{} {}</span>',
-            css_class, icon, label
-        )
-    status_badge.short_description = 'Status'
-    status_badge.admin_order_field = 'status'
-    
-    def payment_badge(self, obj):
-        colors = {
-            'unpaid': ('badge-cancelled', '💳'),
-            'partial': ('badge-pending', '💳'),
-            'paid': ('badge-delivered', '✅'),
-            'refunded': ('badge-returned', '↩️'),
+    @display(
+        description='Status',
+        ordering='status',
+        label={
+            'draft': 'info',
+            'declaration_pending': 'warning',
+            'pending_payment': 'warning',
+            'packing': 'info',
+            'dispatched': 'success',
+            'in_transit': 'info',
+            'customs': 'warning',
+            'out_for_delivery': 'success',
+            'delivered': 'success',
+            'returned': 'info',
+            'cancelled': 'danger',
         }
-        css_class, icon = colors.get(obj.payment_status, ('badge-draft', '❓'))
-        label = obj.get_payment_status_display()
-        return format_html(
-            '<span class="badge-status {}">{} {}</span>',
-            css_class, icon, label
-        )
-    payment_badge.short_description = 'Payment'
-    payment_badge.admin_order_field = 'payment_status'
+    )
+    def status_badge(self, obj):
+        return obj.status
+    
+    @display(
+        description='Payment',
+        ordering='payment_status',
+        label={
+            'unpaid': 'danger',
+            'partial': 'warning',
+            'paid': 'success',
+            'refunded': 'info',
+        }
+    )
+    def payment_badge(self, obj):
+        return obj.payment_status
     
     def item_count_display(self, obj):
         count = obj.items.count()
@@ -351,7 +360,7 @@ class DeclarationPendingShipment(Shipment):
 
 
 @admin.register(DeclarationPendingShipment)
-class DeclarationApprovalAdmin(admin.ModelAdmin):
+class DeclarationApprovalAdmin(ModelAdmin):
     """Admin view specifically for approving declarations."""
     list_display = ['display_id', 'user', 'recipient_name', 'city', 'country', 'declaration_link', 'created_at']
     list_filter = ['created_at']
@@ -424,13 +433,13 @@ class DeclarationApprovalAdmin(admin.ModelAdmin):
 
 
 @admin.register(ShipmentItem)
-class ShipmentItemAdmin(admin.ModelAdmin):
+class ShipmentItemAdmin(ModelAdmin):
     list_display = ['parcel', 'shipment', 'added_at']
     raw_id_fields = ['shipment', 'parcel']
 
 
 @admin.register(ShipmentDocument)
-class ShipmentDocumentAdmin(admin.ModelAdmin):
+class ShipmentDocumentAdmin(ModelAdmin):
     form = ShipmentDocumentForm
     list_display = ['shipment', 'document_type', 'document_link', 'uploaded_at']
     list_filter = ['document_type']
@@ -451,7 +460,7 @@ class ShipmentDocumentAdmin(admin.ModelAdmin):
 
 
 @admin.register(TrackingEvent)
-class TrackingEventAdmin(admin.ModelAdmin):
+class TrackingEventAdmin(ModelAdmin):
     """Admin for viewing all tracking events."""
     list_display = ['shipment', 'status', 'location', 'event_timestamp', 'created_at']
     list_filter = ['status', 'created_at']

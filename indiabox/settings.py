@@ -1,5 +1,5 @@
 """
-Django settings for IndiaBox Global Locker project.
+Django settings for INDIBOX Global Locker project.
 """
 
 import os
@@ -35,141 +35,13 @@ if railway_static_url:
 
 ALLOWED_HOSTS = list(dict.fromkeys(allowed_hosts_env))
 
-# =========================================
-# JAZZMIN ADMIN UI CONFIGURATION
-# =========================================
-JAZZMIN_SETTINGS = {
-    # Title & Branding
-    "site_title": "IndiaBox Admin",
-    "site_header": "IndiaBox",
-    "site_brand": "IndiaBox",
-    "site_logo": None,
-    "login_logo": None,
-    "welcome_sign": "Welcome to IndiaBox Admin",
-    "copyright": "IndiaBox Global Locker",
-    
-    # User Menu
-    "user_avatar": None,
-    
-    # Top Menu
-    "topmenu_links": [
-        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "View Site", "url": "/", "new_window": True},
-        {"app": "accounts"},
-    ],
-    
-    # Sidebar
-    "show_sidebar": True,
-    "navigation_expanded": True,
-    "hide_apps": [],
-    "hide_models": ["notifications.notificationsettings"],
-    
-    # App & Model Ordering + Custom Names
-    "order_with_respect_to": [
-        "accounts",
-        "locker",
-        "shipments",
-        "content",
-        "notifications",
-        "payments",
-        "auth",
-        "admin",
-    ],
-    
-    # Custom App Names in Sidebar
-    "custom_links": {},
-    
-    # Icons (Font Awesome 5)
-    "icons": {
-        "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
-        "accounts": "fas fa-user-shield",
-        "accounts.user": "fas fa-user-circle",
-        "accounts.locker": "fas fa-inbox",
-        "accounts.kycdocument": "fas fa-id-card",
-        "locker": "fas fa-warehouse",
-        "locker.parcel": "fas fa-box",
-        "locker.parcelimage": "fas fa-images",
-        "locker.returnrequest": "fas fa-undo-alt",
-        "locker.discardrequest": "fas fa-trash-alt",
-        "shipments": "fas fa-shipping-fast",
-        "shipments.shipment": "fas fa-truck",
-        "shipments.shipmentitem": "fas fa-cubes",
-        "shipments.shipmentdocument": "fas fa-file-alt",
-        "shipments.trackingevent": "fas fa-map-marker-alt",
-        "shipments.declarationpendingshipment": "fas fa-clipboard-check",
-        "content": "fas fa-globe",
-        "content.staticpage": "fas fa-file-alt",
-        "content.pagesection": "fas fa-puzzle-piece",
-        "content.servicecharge": "fas fa-rupee-sign",
-        "content.announcement": "fas fa-bullhorn",
-        "content.shippingzone": "fas fa-map-marked-alt",
-        "content.shippingrate": "fas fa-tags",
-        "content.adminlog": "fas fa-clipboard-list",
-        "notifications": "fas fa-sliders-h",
-        "notifications.appsettings": "fas fa-cogs",
-        "payments": "fas fa-credit-card",
-        "payments.payment": "fas fa-money-check-alt",
-        "payments.storagefee": "fas fa-warehouse",
-        "admin": "fas fa-history",
-        "admin.logentry": "fas fa-clipboard-list",
-    },
-    "default_icon_parents": "fas fa-folder",
-    "default_icon_children": "fas fa-circle",
-    
-    # UI Tweaks
-    "related_modal_active": True,
-    "custom_css": "css/admin_custom.css",
-    "custom_js": None,
-    "use_google_fonts_cdn": True,
-    "show_ui_builder": False,
-    
-    # Change View
-    "changeform_format": "horizontal_tabs",
-    "changeform_format_overrides": {
-        "auth.user": "collapsible",
-        "auth.group": "vertical_tabs",
-        "notifications.appsettings": "vertical_tabs",
-    },
-}
+# Note: Deprecated JAZZMIN settings removed. Django Unfold is used instead.
 
-JAZZMIN_UI_TWEAKS = {
-    "navbar_small_text": False,
-    "footer_small_text": True,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": "navbar-dark",
-    "accent": "accent-primary",
-    "navbar": "navbar-dark navbar-primary",
-    "no_navbar_border": True,
-    "navbar_fixed": True,
-    "layout_boxed": False,
-    "footer_fixed": False,
-    "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-primary",
-    "sidebar_nav_small_text": False,
-    "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": True,
-    "sidebar_nav_compact_style": False,
-    "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": False,
-    "theme": "darkly",
-    "dark_mode_theme": "darkly",
-    "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success"
-    },
-    "actions_sticky_top": True,
-}
-
-# Application definition
 INSTALLED_APPS = [
-    'jazzmin',  # Modern Admin UI
+    'unfold',  # Modern Admin UI
+    'unfold.contrib.filters',
+    'unfold.contrib.forms',
+    'unfold.contrib.inlines',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -455,9 +327,10 @@ from django.templatetags.static import static
 from django.urls import reverse_lazy
 
 UNFOLD = {
-    "SITE_TITLE": "IndiaBox Admin",
-    "SITE_HEADER": "IndiaBox",
+    "SITE_TITLE": "INDIBOX Admin",
+    "SITE_HEADER": "INDIBOX",
     "SITE_SYMBOL": "package",  # Material icon
+    "DASHBOARD_CALLBACK": "indiabox.dashboard.dashboard_callback",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "SHOW_SEARCH": False,  # Disable search modal
@@ -506,6 +379,11 @@ UNFOLD = {
                         "link": reverse_lazy("admin:locker_parcel_changelist"),
                     },
                     {
+                        "title": "Parcel Images",
+                        "icon": "photo_library",
+                        "link": reverse_lazy("admin:locker_parcelimage_changelist"),
+                    },
+                    {
                         "title": "Return Requests",
                         "icon": "keyboard_return",
                         "link": reverse_lazy("admin:locker_returnrequest_changelist"),
@@ -531,6 +409,37 @@ UNFOLD = {
                         "icon": "assignment_turned_in",
                         "link": reverse_lazy("admin:shipments_declarationpendingshipment_changelist"),
                     },
+                    {
+                        "title": "Shipment Items",
+                        "icon": "inventory",
+                        "link": reverse_lazy("admin:shipments_shipmentitem_changelist"),
+                    },
+                    {
+                        "title": "Shipment Documents",
+                        "icon": "description",
+                        "link": reverse_lazy("admin:shipments_shipmentdocument_changelist"),
+                    },
+                    {
+                        "title": "Tracking Events",
+                        "icon": "pin_drop",
+                        "link": reverse_lazy("admin:shipments_trackingevent_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "Payments",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Payments",
+                        "icon": "payment",
+                        "link": reverse_lazy("admin:payments_payment_changelist"),
+                    },
+                    {
+                        "title": "Storage Fees",
+                        "icon": "garage",
+                        "link": reverse_lazy("admin:payments_storagefee_changelist"),
+                    },
                 ],
             },
             {
@@ -543,6 +452,11 @@ UNFOLD = {
                         "link": reverse_lazy("admin:accounts_user_changelist"),
                     },
                     {
+                        "title": "Groups",
+                        "icon": "groups",
+                        "link": reverse_lazy("admin:auth_group_changelist"),
+                    },
+                    {
                         "title": "Lockers",
                         "icon": "lock",
                         "link": reverse_lazy("admin:accounts_locker_changelist"),
@@ -552,21 +466,51 @@ UNFOLD = {
                         "icon": "verified_user",
                         "link": reverse_lazy("admin:accounts_kycdocument_changelist"),
                     },
+                    {
+                        "title": "Saved Addresses",
+                        "icon": "home_pin",
+                        "link": reverse_lazy("admin:accounts_savedaddress_changelist"),
+                    },
                 ],
             },
             {
-                "title": "Content",
+                "title": "Content & Announcements",
                 "separator": True,
                 "items": [
+                    {
+                        "title": "Announcements",
+                        "icon": "campaign",
+                        "link": reverse_lazy("admin:content_announcement_changelist"),
+                    },
                     {
                         "title": "Static Pages",
                         "icon": "article",
                         "link": reverse_lazy("admin:content_staticpage_changelist"),
                     },
                     {
+                        "title": "Page Sections",
+                        "icon": "layers",
+                        "link": reverse_lazy("admin:content_pagesection_changelist"),
+                    },
+                    {
                         "title": "Service Charges",
-                        "icon": "payments",
+                        "icon": "price_change",
                         "link": reverse_lazy("admin:content_servicecharge_changelist"),
+                    },
+                    {
+                        "title": "Shipping Zones",
+                        "icon": "public",
+                        "link": reverse_lazy("admin:content_shippingzone_changelist"),
+                    },
+                    {
+                        "title": "Shipping Rates",
+                        "icon": "sell",
+                        "link": reverse_lazy("admin:content_shippingrate_changelist"),
+                    },
+                    {
+                        "title": "Admin Logs",
+                        "icon": "receipt_long",
+                        "link": reverse_lazy("admin:content_adminlog_changelist"),
                     },
                 ],
             },

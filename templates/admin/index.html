@@ -1,462 +1,121 @@
-{% extends "admin/base_site.html" %}
-{% load i18n static %}
-
-{% block extrastyle %}
-{{ block.super }}
-<style>
-    .dashboard-header {
-        margin-bottom: 2rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-    }
-    
-    .dashboard-welcome {
-        font-size: 1.75rem;
-        font-weight: 800;
-        color: var(--text-main);
-        margin-bottom: 0.25rem;
-        letter-spacing: -0.025em;
-        line-height: 1.2;
-    }
-    
-    .dashboard-subtitle {
-        color: var(--text-secondary);
-        font-size: 1rem;
-        margin: 0;
-    }
-
-    .dashboard-date {
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        font-weight: 500;
-        background: white;
-        padding: 0.5rem 1rem;
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--border-color);
-        box-shadow: var(--shadow-sm);
-    }
-
-    /* Stats Grid */
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2.5rem;
-    }
-
-    .stat-card {
-        background: white;
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--border-color);
-        padding: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
-    }
-
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-        background: #F3F4F6;
-        color: var(--text-secondary);
-        flex-shrink: 0;
-    }
-    
-    .stat-icon.primary { background: #EBF8FF; color: #2563EB; }
-    .stat-icon.success { background: #ECFDF5; color: #10B981; }
-    .stat-icon.warning { background: #FFFBEB; color: #F59E0B; }
-    .stat-icon.danger { background: #FEF2F2; color: #EF4444; }
-
-    .stat-info {
-        flex: 1;
-    }
-
-    .stat-value {
-        display: block;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--text-main);
-        line-height: 1.2;
-    }
-
-    .stat-label {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-        font-weight: 500;
-    }
-
-    /* Main Grid */
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: 2.5fr 1fr;
-        gap: 2rem;
-    }
-
-    @media (max-width: 1024px) {
-        .dashboard-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    /* App Section */
-    .app-card {
-        background: white;
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--border-color);
-        margin-bottom: 2rem;
-        overflow: hidden;
-    }
-
-    .app-card-header {
-        padding: 1rem 1.5rem;
-        background: #F8FAFC;
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .app-card-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-main);
-        margin: 0;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    .app-card-title a {
-        text-decoration: none;
-        color: inherit;
-    }
-
-    .model-list {
-        padding: 0;
-    }
-
-    .model-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--border-color);
-        transition: background 0.15s;
-    }
-
-    .model-row:last-child {
-        border-bottom: none;
-    }
-
-    .model-row:hover {
-        background: #F8FAFC;
-    }
-
-    .model-name {
-        font-size: 0.95rem;
-        font-weight: 500;
-        color: var(--primary);
-    }
-    
-    .model-name a {
-        text-decoration: none;
-        color: inherit;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-    
-    .model-name i {
-        color: var(--text-muted);
-        width: 16px;
-        text-align: center;
-    }
-
-    .model-actions {
-        display: flex;
-        gap: 0.5rem;
-        opacity: 0.6;
-        transition: opacity 0.2s;
-    }
-    
-    .model-row:hover .model-actions {
-        opacity: 1;
-    }
-
-    .action-btn {
-        font-size: 0.75rem;
-        padding: 0.35rem 0.75rem;
-        border-radius: var(--radius-sm);
-        text-decoration: none;
-        font-weight: 600;
-        transition: all 0.2s;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
-    .action-btn.add {
-        background: #F0FDF4;
-        color: #166534;
-        border: 1px solid #BBF7D0;
-    }
-    
-    .action-btn.add:hover {
-        background: #DCFCE7;
-        transform: translateY(-1px);
-    }
-
-    .action-btn.change {
-        background: white;
-        color: #475569;
-        border: 1px solid #E2E8F0;
-    }
-    
-    .action-btn.change:hover {
-        border-color: var(--primary);
-        color: var(--primary);
-        background: #EFF6FF;
-    }
-
-    /* Sidebar - Recent Actions */
-    .sidebar-card {
-        background: white;
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--border-color);
-        padding: 0;
-        overflow: hidden;
-        position: sticky;
-        top: 80px;
-    }
-
-    .sidebar-header {
-        padding: 1rem 1.25rem;
-        background: #ffffff;
-        border-bottom: 1px solid var(--border-color);
-        font-weight: 600;
-        color: var(--text-main);
-        font-size: 0.95rem;
-    }
-
-    .recent-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .recent-item {
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        gap: 1rem;
-        align-items: flex-start;
-    }
-    
-    .recent-item:last-child {
-        border-bottom: none;
-    }
-
-    .recent-icon {
-        flex-shrink: 0;
-        width: 32px;
-        height: 32px;
-        background: #F1F5F9;
-        color: var(--text-secondary);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.8rem;
-    }
-    
-    .recent-icon.add { background: #EFF6FF; color: #2563EB; }
-    .recent-icon.change { background: #FFFBEB; color: #D97706; }
-    .recent-icon.delete { background: #FEF2F2; color: #EF4444; }
-
-    .recent-content {
-        flex: 1;
-    }
-
-    .recent-title {
-        font-weight: 500;
-        font-size: 0.9rem;
-        color: var(--text-main);
-        display: block;
-        margin-bottom: 0.25rem;
-        line-height: 1.3;
-    }
-
-    .recent-meta {
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-    
-    .type-badge {
-        background: #F1F5F9;
-        padding: 0.1rem 0.4rem;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        font-weight: 500;
-        color: #475569;
-    }
-</style>
-{% endblock %}
+{% extends 'admin/index.html' %}
+{% load unfold %}
 
 {% block content %}
-<div class="dashboard-header">
-    <div>
-        <h1 class="dashboard-welcome">Dashboard</h1>
-        <p class="dashboard-subtitle">Control panel for IndiaBox operations.</p>
-    </div>
-    <div class="dashboard-date">
-        {% now "l, F j, Y" %}
-    </div>
-</div>
-
-<!-- Quick Stats -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon primary"><i class="fas fa-users"></i></div>
-        <div class="stat-info">
-            <span class="stat-label">Users</span>
-            <span class="stat-value">Manage</span>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon success"><i class="fas fa-box-open"></i></div>
-        <div class="stat-info">
-            <span class="stat-label">Shipments</span>
-            <span class="stat-value">Track</span>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon warning"><i class="fas fa-file-invoice-dollar"></i></div>
-        <div class="stat-info">
-            <span class="stat-label">Refunds</span>
-            <span class="stat-value">Review</span>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon danger"><i class="fas fa-exclamation-triangle"></i></div>
-        <div class="stat-info">
-            <span class="stat-label">Alerts</span>
-            <span class="stat-value">Check</span>
-        </div>
-    </div>
-</div>
-
-<div class="dashboard-grid">
-    <!-- Main Content -->
-    <div class="main-column">
-        {% if app_list %}
-            {% for app in app_list %}
-            <div class="app-card">
-                <div class="app-card-header">
-                    <h3 class="app-card-title">
-                        <a href="{{ app.app_url }}" title="{% blocktrans with name=app.name %}Models in the {{ name }} application{% endblocktrans %}">
-                            {{ app.name }}
-                        </a>
-                    </h3>
-                </div>
-                <div class="model-list">
-                    {% for model in app.models %}
-                    <div class="model-row">
-                        <div class="model-name">
-                            <a href="{% if model.admin_url %}{{ model.admin_url }}{% else %}#{% endif %}">
-                                <i class="fas fa-circle-notch fa-xs"></i>
-                                {{ model.name }}
-                            </a>
+    <!-- KPI cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {% for kpi in kpis %}
+            {% component "unfold/components/card.html" %}
+                <div class="flex items-center gap-4">
+                    {% if kpi.icon %}
+                        <div class="p-3 rounded-lg bg-primary-100 dark:bg-primary-950 text-primary-600 dark:text-primary-400">
+                            <span class="material-symbols-outlined">{{ kpi.icon }}</span>
                         </div>
-                        <div class="model-actions">
-                            {% if model.add_url %}
-                                <a href="{{ model.add_url }}" class="action-btn add">
-                                    <i class="fas fa-plus"></i> Add
-                                </a>
-                            {% endif %}
-                            {% if model.admin_url %}
-                                <a href="{{ model.admin_url }}" class="action-btn change">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                            {% endif %}
+                    {% endif %}
+                    <div>
+                        <div class="text-xs uppercase tracking-wider text-slate-500">
+                            {% component "unfold/components/text.html" %}{{ kpi.title }}{% endcomponent %}
+                        </div>
+                        <div class="text-2xl font-bold mt-1 text-slate-800 dark:text-slate-200">
+                            {% component "unfold/components/title.html" %}{{ kpi.value }}{% endcomponent %}
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="app-card">
-                <div class="app-card-header">
-                    <p>{% translate "You don't have permission to view or edit anything." %}</p>
-                </div>
-            </div>
-        {% endif %}
+            {% endcomponent %}
+        {% endfor %}
     </div>
 
-    <!-- Sidebar -->
-    <div class="sidebar-column">
-        <div class="sidebar-card">
-            <div class="sidebar-header">
-                <i class="fas fa-history section-icon" style="margin-right: 8px;"></i>
-                {% translate 'Recent Activity' %}
+    <!-- Detailed Breakdowns -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Parcels Breakdown -->
+        {% component "unfold/components/card.html" %}
+            <div class="flex items-center gap-2 mb-4 font-semibold text-slate-700 dark:text-slate-300">
+                <span class="material-symbols-outlined text-primary-600">inventory_2</span>
+                <span>Parcels Status</span>
             </div>
-            <div class="recent-list-container">
-                <ul class="recent-list">
-                    {% load log %}
-                    {% get_admin_log 10 as admin_log for_user user %}
-                    {% if admin_log %}
-                        {% for entry in admin_log %}
-                        <li class="recent-item">
-                            <div class="recent-icon {% if entry.is_addition %}add{% elif entry.is_change %}change{% elif entry.is_deletion %}delete{% endif %}">
-                                {% if entry.is_addition %}<i class="fas fa-plus"></i>{% endif %}
-                                {% if entry.is_change %}<i class="fas fa-pen"></i>{% endif %}
-                                {% if entry.is_deletion %}<i class="fas fa-trash"></i>{% endif %}
-                            </div>
-                            <div class="recent-content">
-                                <span class="recent-title">
-                                    {% if entry.is_deletion or not entry.get_admin_url %}
-                                        {{ entry.object_repr }}
-                                    {% else %}
-                                        <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
-                                    {% endif %}
-                                </span>
-                                <div class="recent-meta">
-                                    {% if entry.content_type %}
-                                        <span class="type-badge">{{ entry.content_type.name }}</span>
-                                    {% endif %}
-                                    <span class="time">{{ entry.action_time|timesince }} ago</span>
-                                </div>
-                            </div>
-                        </li>
-                        {% endfor %}
-                    {% else %}
-                        <li class="recent-item">
-                            <div class="recent-content">
-                                <p class="text-muted">{% translate 'None available' %}</p>
-                            </div>
-                        </li>
-                    {% endif %}
-                </ul>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">Pending Inspection</span>
+                    <span class="px-2.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 font-semibold">{{ parcel_stats.pending }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">Action Required</span>
+                    <span class="px-2.5 py-0.5 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 font-semibold">{{ parcel_stats.action_required }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">In Locker (Approved)</span>
+                    <span class="px-2.5 py-0.5 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 font-semibold">{{ parcel_stats.approved }}</span>
+                </div>
             </div>
-        </div>
+        {% endcomponent %}
+
+        <!-- Shipments Breakdown -->
+        {% component "unfold/components/card.html" %}
+            <div class="flex items-center gap-2 mb-4 font-semibold text-slate-700 dark:text-slate-300">
+                <span class="material-symbols-outlined text-primary-600">local_shipping</span>
+                <span>Shipments Status</span>
+            </div>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">Declaration Pending</span>
+                    <span class="px-2.5 py-0.5 rounded text-xs bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 font-semibold">{{ shipment_stats.declaration_pending }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">Packing / Preparing</span>
+                    <span class="px-2.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 font-semibold">{{ shipment_stats.packing }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">In Transit / Dispatched</span>
+                    <span class="px-2.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-semibold">{{ shipment_stats.in_transit }}</span>
+                </div>
+            </div>
+        {% endcomponent %}
+
+        <!-- Pending Approvals & Actions -->
+        {% component "unfold/components/card.html" %}
+            <div class="flex items-center gap-2 mb-4 font-semibold text-slate-700 dark:text-slate-300">
+                <span class="material-symbols-outlined text-primary-600">notification_important</span>
+                <span>Pending Tasks</span>
+            </div>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">KYC Document Approvals</span>
+                    <span class="px-2.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 font-semibold">{{ pending_actions.kyc_approvals }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">Return Requests</span>
+                    <span class="px-2.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 font-semibold">{{ pending_actions.return_requests }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">Discard Requests</span>
+                    <span class="px-2.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 font-semibold">{{ pending_actions.discard_requests }}</span>
+                </div>
+            </div>
+        {% endcomponent %}
     </div>
-</div>
+
+    <!-- Financial Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {% component "unfold/components/card.html" %}
+            <div class="flex items-center gap-2 mb-4 font-semibold text-slate-700 dark:text-slate-300">
+                <span class="material-symbols-outlined text-primary-600">account_balance_wallet</span>
+                <span>Financial Metrics</span>
+            </div>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">Total Payments Received (Count)</span>
+                    <span class="font-semibold text-slate-800 dark:text-slate-200">{{ financial_stats.total_payments_count }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">Pending Storage Fees (Records)</span>
+                    <span class="font-semibold text-yellow-600 dark:text-yellow-500">{{ financial_stats.pending_storage_fees_count }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-600 dark:text-slate-400">Pending Storage Fees (Amount)</span>
+                    <span class="font-semibold text-red-600 dark:text-red-500">{{ financial_stats.pending_storage_fees_total }}</span>
+                </div>
+            </div>
+        {% endcomponent %}
+    </div>
+
 {% endblock %}
