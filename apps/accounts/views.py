@@ -5,7 +5,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.http import JsonResponse
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 import logging
 
 from .models import User, Locker
@@ -193,7 +193,40 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             user=user,
             status__in=['packing', 'dispatched', 'in_transit']
         ).count()
-        
+
+        # Parcels currently held in the trunk (inspected, not yet shipped)
+        trunk_parcels = list(Parcel.objects.filter(
+            locker=locker, status__in=['action_required', 'approved']
+        ))
+        parcels_in_trunk = len(trunk_parcels)
+        incoming_count = Parcel.objects.filter(locker=locker, status='pending').count()
+
+        weights = [float(p.weight_kg) for p in trunk_parcels if p.weight_kg]
+        total_weight_kg = sum(weights)
+        avg_weight_per_item = round(total_weight_kg / parcels_in_trunk, 2) if parcels_in_trunk else 0
+
+        storage_days_left = min((p.days_remaining_free for p in trunk_parcels), default=30)
+        avg_storage_days = round(
+            sum(p.storage_days for p in trunk_parcels) / parcels_in_trunk, 1
+        ) if parcels_in_trunk else 0
+
+        declared_value_total = sum(float(p.item_price) for p in trunk_parcels if p.item_price)
+
+        est_shipping_cost = None
+        try:
+            from apps.content.models import ShippingZone
+            zone = ShippingZone.objects.filter(is_active=True).order_by('order').first()
+            if zone and total_weight_kg:
+                rate = zone.rates.filter(
+                    is_active=True, min_weight__lte=total_weight_kg, max_weight__gt=total_weight_kg
+                ).first()
+                if rate:
+                    est_shipping_cost = rate.calculate_price(total_weight_kg)
+        except Exception:
+            est_shipping_cost = None
+
+        recent_activity = Parcel.objects.filter(locker=locker).order_by('-updated_at')[:5]
+
         context.update({
             'locker': locker,
             'announcements': announcements,
@@ -201,6 +234,16 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             'urgent_items': action_required_parcels,
             'ready_to_ship_count': ready_to_ship_count,
             'active_shipments': active_shipments,
+            'parcels_in_trunk': parcels_in_trunk,
+            'incoming_count': incoming_count,
+            'total_weight_kg': round(total_weight_kg, 2),
+            'storage_days_left': storage_days_left,
+            'avg_weight_per_item': avg_weight_per_item,
+            'avg_storage_days': avg_storage_days,
+            'declared_value_total': round(declared_value_total, 2),
+            'est_shipping_cost': est_shipping_cost,
+            'recent_activity': recent_activity,
+            'trunk_capacity': 30,
         })
         return context
 

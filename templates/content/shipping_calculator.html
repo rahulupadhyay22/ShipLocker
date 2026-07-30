@@ -1,16 +1,9 @@
 {% extends base_template|default:'public_base.html' %}
 
-{% block title %}Shipping Calculator - INDIBOX{% endblock %}
+{% block title %}Shipping Calculator - CamelTrunk{% endblock %}
 
 {% block extra_css %}
 <style>
-    :root {
-        --border: var(--surface-200, #E2E8F0);
-        --bg-light: var(--surface-50, #F8FAFC);
-        --text-primary: var(--text-main, #0F172A);
-        --primary-dark: var(--primary-hover, #4338CA);
-    }
-
     .calc-container {
         display: grid;
         grid-template-columns: 1.5fr 1fr;
@@ -26,7 +19,7 @@
         display: block;
         font-weight: 600;
         font-size: 0.95rem;
-        color: var(--text-primary);
+        color: var(--text-main);
         margin-bottom: 0.5rem;
     }
 
@@ -34,19 +27,19 @@
         width: 100%;
         padding: 0.875rem 1rem;
         font-size: 1rem;
-        border: 1px solid var(--border);
+        border: 1px solid var(--surface-200);
         border-radius: var(--radius-sm, 8px);
-        background: var(--bg-light);
-        color: var(--text-primary);
+        background: var(--surface-50);
+        color: var(--text-main);
         transition: all 0.2s;
         font-family: inherit;
     }
 
     .form-control:focus {
         outline: none;
-        border-color: var(--primary, #4F46E5);
+        border-color: var(--primary, #005F73);
         background: white;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        box-shadow: 0 0 0 3px rgba(0, 95, 115, 0.15);
     }
 
     .form-select {
@@ -58,8 +51,8 @@
     }
 
     .tips-card {
-        background: var(--bg-light);
-        border: 1px solid var(--border);
+        background: var(--surface-50);
+        border: 1px solid var(--surface-200);
         border-radius: var(--radius-md, 16px);
         padding: 2rem;
     }
@@ -84,13 +77,13 @@
         justify-content: center;
         font-size: 1.2rem;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        border: 1px solid var(--border);
+        border: 1px solid var(--surface-200);
         flex-shrink: 0;
     }
 
     .result-card {
         background: white;
-        border: 1px solid var(--border);
+        border: 1px solid var(--surface-200);
         border-radius: 12px;
         padding: 1.25rem;
         display: flex;
@@ -106,8 +99,8 @@
     }
 
     .result-card.featured {
-        background: var(--primary-light, #EFF6FF);
-        border-color: rgba(79, 70, 229, 0.2);
+        background: var(--primary-light, #E0EEF0);
+        border-color: rgba(0, 95, 115, 0.2);
     }
 
     @media (max-width: 900px) {
@@ -121,7 +114,7 @@
 
 {% block content %}
 <div class="page-header" style="margin-bottom: 3rem; text-align: center;">
-    <h1 style="font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem;">Shipping
+    <h1 style="font-size: 2.5rem; font-weight: 800; color: var(--text-main); margin-bottom: 1rem;">Shipping
         Calculator</h1>
     <p style="font-size: 1.1rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
         Get instant estimates for shipping your packages from India to anywhere in the world.
@@ -131,7 +124,7 @@
 <div class="calc-container">
     <!-- Calculator Form -->
     <div
-        style="background: white; padding: 2rem; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+        style="background: white; padding: 2rem; border-radius: 16px; border: 1px solid var(--surface-200); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
         <form id="calculatorForm">
             <div class="form-group">
                 <label class="form-label">Destination Country</label>
@@ -183,7 +176,7 @@
 
         <!-- Results Section -->
         <div id="results"
-            style="display: none; margin-top: 2.5rem; border-top: 1px solid var(--border); padding-top: 2rem; animation: fadeIn 0.3s ease;">
+            style="display: none; margin-top: 2.5rem; border-top: 1px solid var(--surface-200); padding-top: 2rem; animation: fadeIn 0.3s ease;">
             <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">Estimated Shipping Costs</h3>
             <div id="ratesContainer"></div>
 
@@ -309,7 +302,7 @@
 
         // Build weight breakdown HTML
         let weightHtml = `
-            <div style="margin-bottom: 1.5rem; background: var(--bg-light); border-radius: 8px; padding: 1rem; font-size: 0.9rem;">
+            <div style="margin-bottom: 1.5rem; background: var(--surface-50); border-radius: 8px; padding: 1rem; font-size: 0.9rem;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                     <span style="color: var(--text-secondary);">Actual Weight:</span>
                     <strong>${actualWeight} kg</strong>
@@ -326,8 +319,8 @@
         }
 
         weightHtml += `
-            <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.5rem;">
-                <span style="color: var(--text-primary); font-weight: 600;">Chargeable Weight:</span>
+            <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--surface-200); padding-top: 0.5rem; margin-top: 0.5rem;">
+                <span style="color: var(--text-main); font-weight: 600;">Chargeable Weight:</span>
                 <strong style="color: var(--primary); font-size: 1.1rem;">${finalWeight.toFixed(1)} kg</strong>
             </div>
         </div>
@@ -338,7 +331,7 @@
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <div style="background: white; padding: 0.5rem; border-radius: 6px;">🚀</div>
                     <div>
-                        <div style="font-weight: 700; color: var(--primary-dark);">Express</div>
+                        <div style="font-weight: 700; color: var(--primary-hover);">Express</div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">3-6 Business Days</div>
                     </div>
                 </div>
@@ -350,7 +343,7 @@
 
             <div class="result-card">
                 <div style="display: flex; gap: 1rem; align-items: center;">
-                    <div style="background: #F1F5F9; padding: 0.5rem; border-radius: 6px;">✈️</div>
+                    <div style="background: #F1E9DA; padding: 0.5rem; border-radius: 6px;">✈️</div>
                     <div>
                         <div style="font-weight: 700;">Standard</div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">${rate.delivery_min}-${rate.delivery_max} Business Days</div>
@@ -364,7 +357,7 @@
 
             <div class="result-card">
                 <div style="display: flex; gap: 1rem; align-items: center;">
-                    <div style="background: #F1F5F9; padding: 0.5rem; border-radius: 6px;">📦</div>
+                    <div style="background: #F1E9DA; padding: 0.5rem; border-radius: 6px;">📦</div>
                     <div>
                         <div style="font-weight: 700;">Economy</div>
                         <div style="font-size: 0.85rem; color: var(--text-secondary);">15-20 Business Days</div>

@@ -5,1336 +5,702 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IndiaBox — Your Personal Locker in India. One Parcel. Shipped Anywhere.</title>
-    <meta name="description"
-        content="Get a personal Indian address, shop across India, and receive one consolidated parcel abroad — no repeat courier fees, no stacked FX charges.">
+    <title>CamelTrunk - Shop Anywhere in India. Ship Everything Together.</title>
+    <meta name="description" content="Get your own Indian address to shop from any store. CamelTrunk receives, stores, consolidates and ships your parcels to your doorstep worldwide.">
+    <meta name="theme-color" content="#082b3a">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
-
-    <style>
-        body {
-            background-color: #fff;
-            overflow-x: hidden;
-        }
-
-        /* Navbar */
-        .landing-nav-wrapper {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background: #fff;
-            border-bottom: 1px solid var(--surface-200);
-        }
-
-        .landing-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.25rem 5%;
-            max-width: 1400px;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        .mobile-nav-toggle {
-            display: none;
-        }
-
-        .mobile-nav-panel {
-            display: none;
-        }
-
-        .brand {
-            font-family: 'Fraunces', serif;
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: var(--primary);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-
-        .brand .brand-mark {
-            width: 34px;
-            height: 34px;
-            background: var(--primary);
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-
-        .nav-link {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.95rem;
-            transition: color 0.2s;
-        }
-
-        .nav-link:hover {
-            color: var(--primary);
-        }
-
-        /* Hero — asymmetric, off-center */
-        .hero-section {
-            position: relative;
-            padding: 4.5rem 5% 5rem;
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 3rem;
-            align-items: center;
-            overflow: hidden;
-        }
-
-        .hero-eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--accent-light);
-            color: var(--accent-hover);
-            font-weight: 700;
-            font-size: 0.78rem;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            padding: 0.4rem 0.9rem;
-            border-radius: 100px;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero-content h1 {
-            font-size: 3.25rem;
-            line-height: 1.08;
-            margin-bottom: 1.5rem;
-            color: var(--text-main);
-        }
-
-        .hero-content h1 .accent-underline {
-            position: relative;
-            white-space: nowrap;
-        }
-
-        .hero-content h1 .accent-underline::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0.06em;
-            height: 0.28em;
-            background: var(--accent-light);
-            z-index: -1;
-            border-bottom: 3px solid var(--accent);
-        }
-
-        .hero-content p {
-            font-size: 1.15rem;
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-            line-height: 1.65;
-            max-width: 520px;
-        }
-
-        .cta-group {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .btn-lg {
-            padding: 0.9rem 1.85rem;
-            font-size: 1.05rem;
-        }
-
-        .hero-trust-row {
-            margin-top: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            font-size: 0.88rem;
-            color: var(--text-secondary);
-            flex-wrap: wrap;
-        }
-
-        .hero-trust-row span {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .hero-trust-row svg {
-            width: 16px;
-            height: 16px;
-            color: var(--accent);
-            flex-shrink: 0;
-        }
-
-        /* Hero visual: tracking card, off-axis */
-        .hero-visual {
-            position: relative;
-            height: 440px;
-            overflow: hidden;
-        }
-
-        .hero-visual-plate {
-            position: absolute;
-            inset: 0;
-            background: var(--primary);
-            border-radius: 28px;
-            transform: rotate(-3deg);
-        }
-
-        .hero-visual-plate::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.035) 0px, rgba(255, 255, 255, 0.035) 1px, transparent 1px, transparent 22px);
-            border-radius: 28px;
-        }
-
-        .hero-visual-plate::after {
-            content: '';
-            position: absolute;
-            width: 220px;
-            height: 220px;
-            right: -40px;
-            top: -40px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(200, 145, 42, 0.35) 0%, transparent 70%);
-        }
-
-        .hero-tracking-card {
-            position: absolute;
-            top: 8%;
-            left: 8%;
-            right: 14%;
-            background: white;
-            border-radius: 18px;
-            padding: 1.5rem;
-            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
-            transform: rotate(2deg);
-        }
-
-        .hero-tracking-card .locker-id {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px dashed var(--surface-200);
-        }
-
-        .hero-tracking-card .locker-id .label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .hero-tracking-card .locker-id .value {
-            font-family: 'Fraunces', serif;
-            font-weight: 600;
-            font-size: 1.15rem;
-            color: var(--primary);
-        }
-
-        .hero-tracking-row {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.85rem;
-            margin-bottom: 0.65rem;
-        }
-
-        .hero-tracking-row .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--surface-200);
-            flex-shrink: 0;
-        }
-
-        .hero-tracking-row.done .dot {
-            background: var(--success-text);
-        }
-
-        .hero-tracking-row.active .dot {
-            background: var(--accent);
-            box-shadow: 0 0 0 4px var(--accent-light);
-        }
-
-        .hero-tracking-row .t-label {
-            color: var(--text-secondary);
-        }
-
-        .hero-tracking-row.active .t-label {
-            color: var(--text-main);
-            font-weight: 700;
-        }
-
-        .hero-parcel-badge {
-            position: absolute;
-            bottom: 10%;
-            left: 22%;
-            background: var(--accent);
-            color: white;
-            padding: 0.7rem 1.1rem;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            box-shadow: 0 12px 24px -8px rgba(200, 145, 42, 0.6);
-        }
-
-        /* Trust badges strip */
-        .trust-strip {
-            background: var(--surface-50);
-            border-top: 1px solid var(--surface-200);
-            border-bottom: 1px solid var(--surface-200);
-            padding: 2.25rem 5%;
-        }
-
-        .trust-strip-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1.5rem;
-        }
-
-        .trust-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .trust-badge svg {
-            width: 22px;
-            height: 22px;
-            color: var(--primary);
-            flex-shrink: 0;
-        }
-
-        /* How it Works — vertical connected timeline */
-        .steps-section {
-            padding: 6rem 5%;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        .section-head {
-            max-width: 620px;
-            margin-bottom: 3.5rem;
-        }
-
-        .section-eyebrow {
-            display: inline-block;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--accent-hover);
-            margin-bottom: 0.75rem;
-        }
-
-        .section-title {
-            font-size: 2.35rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .section-subtitle {
-            color: var(--text-secondary);
-            font-size: 1.05rem;
-        }
-
-        .steps-list {
-            position: relative;
-        }
-
-        .steps-list::before {
-            content: '';
-            position: absolute;
-            left: 27px;
-            top: 12px;
-            bottom: 12px;
-            width: 2px;
-            background: linear-gradient(180deg, var(--primary) 0%, var(--accent) 100%);
-            opacity: 0.25;
-        }
-
-        .step-row {
-            display: grid;
-            grid-template-columns: 56px 1fr;
-            gap: 1.75rem;
-            padding-bottom: 3rem;
-            position: relative;
-        }
-
-        .step-row:last-child {
-            padding-bottom: 0;
-        }
-
-        .step-number {
-            width: 56px;
-            height: 56px;
-            background: white;
-            border: 2px solid var(--primary);
-            color: var(--primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Fraunces', serif;
-            font-weight: 600;
-            font-size: 1.35rem;
-            position: relative;
-            z-index: 2;
-        }
-
-        .step-row:nth-child(even) .step-number {
-            border-color: var(--accent);
-            color: var(--accent-hover);
-        }
-
-        .step-copy h3 {
-            font-size: 1.3rem;
-            margin-bottom: 0.4rem;
-        }
-
-        .step-copy p {
-            color: var(--text-secondary);
-            font-size: 0.98rem;
-            max-width: 540px;
-        }
-
-        /* Savings calculator */
-        .savings-section {
-            background: var(--surface-50);
-            padding: 6rem 5%;
-        }
-
-        .savings-wrap {
-            max-width: 1100px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 0.9fr 1.1fr;
-            gap: 3.5rem;
-            align-items: center;
-        }
-
-        .compare-card {
-            background: white;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--surface-200);
-            box-shadow: var(--shadow-md);
-            padding: 2rem;
-        }
-
-        .compare-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--surface-100);
-        }
-
-        .compare-row:last-child {
-            border-bottom: none;
-        }
-
-        .compare-label {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-        }
-
-        .compare-label strong {
-            display: block;
-            color: var(--text-main);
-            font-size: 1rem;
-            margin-bottom: 0.15rem;
-        }
-
-        .compare-value {
-            font-family: 'Fraunces', serif;
-            font-weight: 600;
-            font-size: 1.5rem;
-        }
-
-        .compare-value.penalty {
-            color: var(--danger-text);
-        }
-
-        .compare-value.win {
-            color: var(--success-text);
-        }
-
-        .savings-total {
-            margin-top: 1.5rem;
-            background: var(--primary);
-            color: white;
-            border-radius: 14px;
-            padding: 1.25rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .savings-total .amount {
-            font-family: 'Fraunces', serif;
-            font-size: 1.85rem;
-            font-weight: 600;
-            color: var(--accent);
-        }
-
-        /* Features */
-        .features-section {
-            padding: 6rem 5%;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.75rem;
-        }
-
-        .feature-card {
-            background: white;
-            padding: 2rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--surface-200);
-            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-md);
-            border-color: var(--primary-light);
-        }
-
-        .feature-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 12px;
-            background: var(--primary-light);
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.25rem;
-        }
-
-        .feature-icon svg {
-            width: 22px;
-            height: 22px;
-        }
-
-        .feature-card h4 {
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .feature-card p {
-            font-size: 0.92rem;
-            color: var(--text-secondary);
-        }
-
-        /* Testimonials */
-        .testimonials-section {
-            background: var(--primary);
-            padding: 6rem 5%;
-            color: white;
-        }
-
-        .testimonials-head {
-            max-width: 620px;
-            margin: 0 auto 3rem;
-            text-align: center;
-        }
-
-        .testimonials-head .section-title {
-            color: white;
-        }
-
-        .testimonials-head .section-subtitle {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .testimonials-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
-        }
-
-        .testimonial-card {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: var(--radius-md);
-            padding: 1.75rem;
-        }
-
-        .testimonial-quote {
-            font-size: 0.98rem;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.92);
-            margin-bottom: 1.25rem;
-        }
-
-        .testimonial-author {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .testimonial-avatar {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: var(--accent);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-family: 'Fraunces', serif;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-        }
-
-        .testimonial-author .name {
-            font-weight: 700;
-            font-size: 0.9rem;
-        }
-
-        .testimonial-author .loc {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        /* Countries strip */
-        .countries-section {
-            padding: 5rem 5%;
-            max-width: 1100px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .countries-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 0.75rem;
-            margin-top: 2.5rem;
-        }
-
-        .country-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.6rem 1.1rem;
-            border-radius: 100px;
-            border: 1px solid var(--surface-200);
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text-main);
-        }
-
-        .country-chip .flag {
-            font-size: 1rem;
-        }
-
-        /* Final CTA */
-        .final-cta {
-            margin: 0 5% 6rem;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            background: var(--primary);
-            border-radius: var(--radius-lg);
-            padding: 4rem 3rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .final-cta::before {
-            content: '';
-            position: absolute;
-            width: 320px;
-            height: 320px;
-            right: -80px;
-            bottom: -120px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(200, 145, 42, 0.28) 0%, transparent 70%);
-        }
-
-        .final-cta h2 {
-            color: white;
-            font-size: 2.25rem;
-            margin-bottom: 1rem;
-            position: relative;
-        }
-
-        .final-cta p {
-            color: rgba(255, 255, 255, 0.75);
-            max-width: 480px;
-            margin: 0 auto 2rem;
-            position: relative;
-        }
-
-        /* Footer */
-        .footer {
-            background: #0C1633;
-            color: #9CA3AF;
-            padding: 4rem 5% 2rem;
-        }
-
-        .footer-grid {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
-            gap: 4rem;
-            margin-bottom: 4rem;
-        }
-
-        .footer-brand h2 {
-            color: white;
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .footer-col h4 {
-            color: white;
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .footer-col ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .footer-col li {
-            margin-bottom: 0.75rem;
-        }
-
-        .footer-col a {
-            color: #9CA3AF;
-            text-decoration: none;
-            transition: color 0.2s;
-            font-size: 0.9rem;
-        }
-
-        .footer-col a:hover {
-            color: var(--accent);
-        }
-
-        .footer-bottom {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding-top: 2rem;
-            border-top: 1px solid #24304F;
-            text-align: center;
-            font-size: 0.85rem;
-        }
-
-        @media (max-width: 1024px) {
-            .hero-section {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-visual {
-                height: 340px;
-                order: -1;
-            }
-
-            .trust-strip-grid,
-            .testimonials-grid,
-            .features-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .savings-wrap {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .landing-nav {
-                padding: 1rem;
-            }
-
-            .nav-links {
-                gap: 0.6rem;
-            }
-
-            .nav-links .nav-link {
-                display: none;
-            }
-
-            .nav-links .btn {
-                padding: 0.6rem 1rem;
-                font-size: 0.88rem;
-            }
-
-            .mobile-nav-toggle {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 40px;
-                height: 40px;
-                border-radius: var(--radius-sm);
-                background: var(--surface-50);
-                border: 1px solid var(--surface-200);
-                cursor: pointer;
-                flex-shrink: 0;
-            }
-
-            .mobile-nav-toggle svg {
-                width: 20px;
-                height: 20px;
-                color: var(--primary);
-            }
-
-            .mobile-nav-panel {
-                display: none;
-                flex-direction: column;
-                padding: 0.5rem 6% 1.25rem;
-                background: #fff;
-                border-bottom: 1px solid var(--surface-200);
-            }
-
-            .mobile-nav-panel.open {
-                display: flex;
-            }
-
-            .mobile-nav-panel a {
-                padding: 0.85rem 0;
-                font-weight: 500;
-                color: var(--text-main);
-                border-bottom: 1px solid var(--surface-100);
-                text-decoration: none;
-            }
-
-            .mobile-nav-panel a:last-child {
-                border-bottom: none;
-            }
-
-            .hero-section {
-                padding: 2.5rem 6% 3rem;
-                gap: 2rem;
-            }
-
-            .hero-content h1 {
-                font-size: 1.9rem;
-            }
-
-            .hero-content p {
-                font-size: 1rem;
-            }
-
-            .hero-visual {
-                height: 300px;
-            }
-
-            .hero-tracking-card {
-                left: 5%;
-                right: 5%;
-                padding: 1.1rem;
-            }
-
-            .hero-tracking-card .value {
-                font-size: 1rem;
-            }
-
-            .hero-tracking-row {
-                font-size: 0.78rem;
-            }
-
-            .hero-parcel-badge {
-                left: 5%;
-                right: 5%;
-                bottom: 6%;
-                font-size: 0.78rem;
-                text-align: center;
-            }
-
-            .trust-strip-grid,
-            .testimonials-grid,
-            .features-grid,
-            .footer-grid {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-
-            .section-title {
-                font-size: 1.85rem;
-            }
-
-            .compare-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-
-            .savings-total {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.4rem;
-            }
-
-            .final-cta {
-                padding: 2.5rem 1.5rem;
-            }
-
-            .final-cta h2 {
-                font-size: 1.65rem;
-            }
-        }
-
-        @media (max-width: 400px) {
-            .brand {
-                font-size: 1.1rem;
-            }
-
-            .brand .brand-mark {
-                width: 28px;
-                height: 28px;
-            }
-
-            .nav-links .btn {
-                padding: 0.5rem 0.75rem;
-                font-size: 0.8rem;
-            }
-
-            .cta-group .btn {
-                width: 100%;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
 </head>
 
-<body>
-
-    <!-- Navbar -->
-    <div class="landing-nav-wrapper">
-        <nav class="landing-nav">
-            <a href="/" class="brand">
-                <span class="brand-mark">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"
-                        stroke="white">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+<body class="home-page">
+    <header class="site-header" id="siteHeader">
+        <div class="nav-shell">
+            <a href="/" class="brand" aria-label="CamelTrunk home">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 36c0-8 6-15 14-15h4c6 0 11 5 11 11v6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M17 37h27c5 0 9 4 9 9v3H12v-6c0-3 2-6 5-6Z" fill="currentColor"/>
+                        <path d="M21 40h6" stroke="#082b3a" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M27 19c0-2 2-4 4-4h4l2 6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="43" cy="17" r="2.5" fill="currentColor"/>
                     </svg>
                 </span>
-                IndiaBox
+                <span class="brand-text">Camel<span>Trunk</span></span>
             </a>
-            <div class="nav-links">
-                <a href="#how-it-works" class="nav-link">How it Works</a>
-                <a href="#features" class="nav-link">Features</a>
-                <a href="{% url 'content:shipping_calculator' %}" class="nav-link">Shipping Calculator</a>
-                <a href="{% url 'accounts:login' %}" class="nav-link">Login</a>
-                <button type="button" class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open menu" aria-expanded="false">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+
+            <nav class="nav-links" aria-label="Primary">
+                <a href="#how-it-works" class="nav-link">How It Works</a>
+                <a href="#estimate" class="nav-link">Pricing</a>
+                <a href="#trusted" class="nav-link">Countries</a>
+                <a href="{% url 'accounts:login' %}" class="nav-link">Track Shipment</a>
+                <a href="{% url 'content:faq' %}" class="nav-link">Help Center</a>
+                <a href="{% url 'accounts:login' %}" class="nav-link nav-login">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4h-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M12 13a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="2"/>
                     </svg>
+                    Log In
+                </a>
+                <a href="{% url 'accounts:login' %}" class="cta-button">Get Your Trunk</a>
+                <button type="button" class="mobile-toggle" id="mobileMenuToggle" aria-label="Open menu" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
                 </button>
-                <a href="{% url 'accounts:login' %}" class="btn btn-primary">Get Your Locker</a>
-            </div>
-        </nav>
-        <div class="mobile-nav-panel" id="mobileNavPanel">
-            <a href="#how-it-works">How it Works</a>
-            <a href="#features">Features</a>
-            <a href="{% url 'content:shipping_calculator' %}">Shipping Calculator</a>
-            <a href="{% url 'accounts:login' %}">Login</a>
+            </nav>
         </div>
-    </div>
 
-    <script>
-        (function () {
-            var toggle = document.getElementById('mobileNavToggle');
-            var panel = document.getElementById('mobileNavPanel');
-            toggle.addEventListener('click', function () {
-                var isOpen = panel.classList.toggle('open');
-                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-            });
-        })();
-    </script>
+        <div class="mobile-panel" id="mobilePanel">
+            <a href="#how-it-works">How It Works</a>
+            <a href="#estimate">Pricing</a>
+            <a href="#trusted">Countries</a>
+            <a href="{% url 'accounts:login' %}">Track Shipment</a>
+            <a href="{% url 'content:faq' %}">Help Center</a>
+            <a href="{% url 'accounts:login' %}">Log In</a>
+            <a href="{% url 'accounts:login' %}" class="cta-button mobile-cta">Get Your Trunk</a>
+        </div>
+    </header>
 
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="hero-content">
-            <span class="hero-eyebrow">Built for NRIs</span>
-            <h1>Your Personal Locker in India. One Parcel, <span class="accent-underline">Shipped
-                    Anywhere.</span></h1>
-            <p>Get a personal Indian address. Shop on Amazon India, Flipkart, and Myntra. We receive, inspect, and
-                hold every package — then ship them abroad as one consolidated parcel, so you pay one shipping fee,
-                not five.</p>
-            <div class="cta-group">
-                <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-lg">Get Your Free Indian Locker</a>
-                <a href="{% url 'content:shipping_calculator' %}" class="btn btn-secondary btn-lg">See What You'd
-                    Save</a>
-            </div>
-            <div class="hero-trust-row">
-                <span>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <main>
+        <section class="hero-section">
+            <div class="hero-shell">
+                <div class="hero-copy">
+                    <h1>Shop Anywhere in India.<br>Ship Everything <span>Together.</span></h1>
+                    <p>Your own Indian address to shop from any store. We receive, store, consolidate and ship to your doorstep worldwide.</p>
+                    <div class="hero-actions">
+                        <a href="{% url 'accounts:login' %}" class="cta-button hero-primary">Get Your Trunk
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M5 12h13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                                <path d="M12 5l6 7-6 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </a>
+                        <a href="#how-it-works" class="cta-button hero-secondary">
+                            <span class="play-chip" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 5v14l11-7-11-7Z"/>
+                                </svg>
+                            </span>
+                            How It Works
+                        </a>
+                    </div>
+                    <div class="hero-rating">
+                        <span class="stars">★★★★★</span>
+                        <span>4.8/5 from 2,500+ customers worldwide</span>
+                    </div>
+                </div>
+
+                <div class="hero-visual" aria-hidden="true">
+                    <svg class="hero-art" viewBox="0 0 760 540" role="presentation">
+                        <defs>
+                            <linearGradient id="globeGlow" x1="0" x2="1" y1="0" y2="1">
+                                <stop offset="0%" stop-color="#7ad8e0" stop-opacity="0.95"/>
+                                <stop offset="55%" stop-color="#3d97a8" stop-opacity="0.9"/>
+                                <stop offset="100%" stop-color="#0d6477" stop-opacity="0.92"/>
+                            </linearGradient>
+                            <radialGradient id="globeShade" cx="50%" cy="40%" r="60%">
+                                <stop offset="0%" stop-color="#9be9ef" stop-opacity="0.6"/>
+                                <stop offset="70%" stop-color="#154e5e" stop-opacity="0.15"/>
+                                <stop offset="100%" stop-color="#082b3a" stop-opacity="0"/>
+                            </radialGradient>
+                            <linearGradient id="boxGrad" x1="0" x2="1" y1="0" y2="1">
+                                <stop offset="0%" stop-color="#f2b248"/>
+                                <stop offset="100%" stop-color="#d78c18"/>
+                            </linearGradient>
+                        </defs>
+
+                        <path d="M135 99C215 40 322 38 395 88" fill="none" stroke="#f3ae31" stroke-width="2" stroke-dasharray="7 10" opacity="0.85"/>
+                        <path d="M152 139C253 94 354 91 463 137" fill="none" stroke="#f3ae31" stroke-width="2" stroke-dasharray="7 10" opacity="0.65"/>
+                        <path d="M170 222C271 168 404 148 528 180" fill="none" stroke="#f3ae31" stroke-width="2" stroke-dasharray="7 10" opacity="0.7"/>
+                        <path d="M162 307C246 260 365 241 476 271" fill="none" stroke="#f3ae31" stroke-width="2" stroke-dasharray="7 10" opacity="0.7"/>
+                        <path d="M555 121C623 75 658 62 706 77" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="7 10" opacity="0.95"/>
+                        <path d="M500 191C587 163 646 150 700 176" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="7 10" opacity="0.95"/>
+                        <path d="M486 277C581 250 646 241 705 268" fill="none" stroke="#f3ae31" stroke-width="2" stroke-dasharray="7 10" opacity="0.9"/>
+
+                        <g opacity="0.95">
+                            <path d="M244 106l22-18 22 8 12 24-26 17-30-5z" fill="#2e9ea4" opacity="0.9"/>
+                            <path d="M233 145l28-10 20 11 8 19-25 14-26-5-10-15z" fill="#1f8d94" opacity="0.75"/>
+                            <path d="M274 88l17 12 7 18-18 15-20-5-8-16 10-19z" fill="#51b3b7" opacity="0.85"/>
+                            <path d="M223 169l17-8 11 11-8 18-19 4-8-14z" fill="#1b7c84" opacity="0.8"/>
+                            <circle cx="249" cy="126" r="6" fill="#f3ae31"/>
+                            <path d="M246 119l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#f3ae31"/>
+                        </g>
+
+                        <g>
+                            <rect x="103" y="179" width="30" height="22" rx="4" fill="url(#boxGrad)" stroke="#b57112" stroke-width="2"/>
+                            <rect x="136" y="209" width="24" height="18" rx="4" fill="url(#boxGrad)" stroke="#b57112" stroke-width="2"/>
+                            <rect x="185" y="227" width="26" height="20" rx="4" fill="url(#boxGrad)" stroke="#b57112" stroke-width="2"/>
+                            <rect x="289" y="158" width="26" height="20" rx="4" fill="url(#boxGrad)" stroke="#b57112" stroke-width="2"/>
+                            <rect x="370" y="95" width="26" height="20" rx="4" fill="url(#boxGrad)" stroke="#b57112" stroke-width="2"/>
+                            <rect x="475" y="145" width="26" height="20" rx="4" fill="url(#boxGrad)" stroke="#b57112" stroke-width="2"/>
+                            <rect x="558" y="112" width="26" height="20" rx="4" fill="url(#boxGrad)" stroke="#b57112" stroke-width="2"/>
+                            <rect x="524" y="237" width="26" height="20" rx="4" fill="url(#boxGrad)" stroke="#b57112" stroke-width="2"/>
+                        </g>
+
+                        <g transform="translate(632 62) rotate(20)">
+                            <path d="M0 14h28l18-10 8 1-7 11 7 11-8 1-18-10H0z" fill="#f6f1ea"/>
+                            <path d="M29 14l15-7 8 2-8 5 8 5-8 2z" fill="#dfe9ef"/>
+                        </g>
+
+                        <circle cx="615" cy="246" r="124" fill="url(#globeGlow)" opacity="0.95"/>
+                        <circle cx="615" cy="246" r="124" fill="url(#globeShade)"/>
+                        <ellipse cx="615" cy="333" rx="102" ry="13" fill="#0a2330" opacity="0.42"/>
+
+                        <path d="M546 174c14-16 32-22 52-26 17-3 41 3 55 11 12 7 22 15 29 26-13 3-25 10-39 14-25 7-38 8-55 4-16-4-31-13-42-29Z" fill="#2e7e8a" opacity="0.75"/>
+                        <path d="M533 225c16-11 30-15 48-13 19 1 33 9 47 16 12 6 23 13 25 22-14 3-26 11-38 19-15 11-29 18-46 18-21 0-41-9-61-22 6-14 14-28 25-40Z" fill="#1f6574" opacity="0.8"/>
+                        <path d="M562 288c17-8 34-11 49-9 23 2 40 9 56 20-8 14-21 24-41 30-18 5-37 5-56 0-13-4-20-11-26-22 4-8 11-14 18-19Z" fill="#2fa0af" opacity="0.55"/>
+                        <path d="M614 153c3 25 3 48 0 70-3 22-10 45-20 69" stroke="#0a4050" stroke-width="2" stroke-opacity="0.55"/>
+                        <path d="M648 165c3 23 3 45 0 68-4 27-11 50-22 71" stroke="#0a4050" stroke-width="2" stroke-opacity="0.45"/>
+                        <path d="M585 161c-7 25-8 50-4 76 4 28 11 52 24 71" stroke="#0a4050" stroke-width="2" stroke-opacity="0.45"/>
+                        <path d="M548 217c19 7 37 10 56 10 21 0 40-4 57-13" stroke="#0a4050" stroke-width="2" stroke-opacity="0.45"/>
+                        <path d="M541 263c19 5 39 8 58 8 22 0 41-3 61-11" stroke="#0a4050" stroke-width="2" stroke-opacity="0.45"/>
+                        <path d="M551 306c18 3 35 4 54 2 22-3 43-10 62-21" stroke="#0a4050" stroke-width="2" stroke-opacity="0.45"/>
+
+                        <g fill="#f3ae31">
+                            <circle cx="538" cy="177" r="5"/>
+                            <path d="M538 168l5 9-5 9-5-9 5-9Z" opacity="0.9"/>
+                            <circle cx="658" cy="212" r="5"/>
+                            <path d="M658 203l5 9-5 9-5-9 5-9Z" opacity="0.9"/>
+                            <circle cx="688" cy="303" r="5"/>
+                            <path d="M688 294l5 9-5 9-5-9 5-9Z" opacity="0.9"/>
+                        </g>
                     </svg>
-                    Insured storage &amp; shipping
+
+                    <div class="store-pill pill-amazon">amazon.in</div>
+                    <div class="store-pill pill-myntra">Myntra</div>
+                    <div class="store-pill pill-ajio">AJIO</div>
+                    <div class="store-pill pill-meesho">meesho</div>
+                    <div class="store-pill pill-more">&amp; more</div>
+
+                    <div class="trunk-box">
+                        <span class="trunk-handle"></span>
+                        <div class="trunk-lock"></div>
+                        <div class="trunk-logo">
+                            <span class="camel">camel</span>
+                            <span class="trunk">Trunk</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="feature-strip" aria-label="Core features">
+            <article class="feature-card">
+                <span class="feature-icon accent" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c3.5 0 6-2.9 6-6.5S15.5 8 12 8s-6 3.1-6 7.5S8.5 22 12 22Z" fill="currentColor" opacity="0.18"/><path d="M12 17.4c1.6 0 2.9-1.3 2.9-2.9S13.6 11.6 12 11.6 9.1 12.9 9.1 14.5 10.4 17.4 12 17.4Z" fill="currentColor"/><path d="M12 2.8v4.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9.8 5h4.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 6.8c-3.4 0-6.2 2.8-6.2 6.2 0 3.2 2.8 6.1 6.2 10.2 3.4-4.1 6.2-7 6.2-10.2 0-3.4-2.8-6.2-6.2-6.2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
                 </span>
-                <span>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    30 days free storage
+                <div>
+                    <h3>Your Indian Address</h3>
+                    <p>Get a unique Indian address to shop from any Indian store.</p>
+                </div>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon teal" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 9.2 12 4l8 5.2V20H4V9.2Z" fill="currentColor" opacity="0.22"/><path d="M5.2 9.8 12 5.4l6.8 4.4V19H5.2V9.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11.2h8v6.8H8v-6.8Z" fill="currentColor" opacity="0.16"/><path d="M7 15.6h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10 11.2v6.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                 </span>
-                <span>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-                    </svg>
-                    Real FX rate, no bank markup
+                <div>
+                    <h3>We Receive &amp; Store</h3>
+                    <p>We receive your parcels safely and store them in our secure warehouse.</p>
+                </div>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon accent" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 8.2 7 4h10l2 4.2-2.1 10.3H7.1L5 8.2Z" fill="currentColor" opacity="0.18"/><path d="M7.1 4.2h9.8l1.7 3.6H5.4L7.1 4.2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.2 9h7.6l1.4 8.5H6.8L8.2 9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10.3 9v8.5M13.7 9v8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
                 </span>
-            </div>
-        </div>
-        <div class="hero-visual">
-            <div class="hero-visual-plate"></div>
-            <div class="hero-tracking-card">
-                <div class="locker-id">
-                    <span class="label">Your Locker</span>
-                    <span class="value">RB-10402</span>
+                <div>
+                    <h3>Consolidate</h3>
+                    <p>Combine multiple parcels into one to save on international shipping.</p>
                 </div>
-                <div class="hero-tracking-row done">
-                    <span class="dot"></span>
-                    <span class="t-label">3 packages received &amp; inspected</span>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon teal" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 16.5 20 4l-7.2 16-1.2-5.5-7.6 2Z" fill="currentColor" opacity="0.16"/><path d="M4.8 15.8 19.2 4.8l-6.5 13.8-1.2-5.1-6.7 2.3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M11 12.4 12.5 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M15.7 9.2l1.8 1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </span>
+                <div>
+                    <h3>Ship Worldwide</h3>
+                    <p>Fast &amp; reliable shipping to 190+ countries with top couriers.</p>
                 </div>
-                <div class="hero-tracking-row done">
-                    <span class="dot"></span>
-                    <span class="t-label">Consolidated into 1 parcel — 2.4kg</span>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon accent" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.8 19 5.2v5.5c0 4.9-3 8.5-7 10.5-4-2-7-5.6-7-10.5V5.2l7-2.4Z" fill="currentColor" opacity="0.18"/><path d="M12 3.8 18 6v4.7c0 4.1-2.4 7.1-6 8.8-3.6-1.7-6-4.7-6-8.8V6l6-2.2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.1 11.9 11 13.8l3.9-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <div>
+                    <h3>Safe &amp; Trusted</h3>
+                    <p>Your parcels are insured, tracked and handled with care.</p>
                 </div>
-                <div class="hero-tracking-row active">
-                    <span class="dot"></span>
-                    <span class="t-label">In transit to London</span>
-                </div>
-            </div>
-            <div class="hero-parcel-badge">Saved ₹4,200 by consolidating</div>
-        </div>
-    </section>
+            </article>
+        </section>
 
-    <!-- Trust Strip -->
-    <section class="trust-strip">
-        <div class="trust-strip-grid">
-            <div class="trust-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 2l7 3v6c0 5-3 8.5-7 10-4-1.5-7-5-7-10V5l7-3z" />
-                </svg>
-                Secure warehouse storage
+        <section class="how-section" id="how-it-works">
+            <div class="section-head">
+                <span class="section-kicker"><span class="kicker-line">→</span> How It Works <span class="kicker-line">←</span></span>
             </div>
-            <div class="trust-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l9-5 9 5-9 5-9-5zm0 0v8l9 5 9-5V8" />
-                </svg>
-                Insured international shipping
-            </div>
-            <div class="trust-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M4 6h16M4 12h16M4 18h7" />
-                </svg>
-                Customs-compliant paperwork
-            </div>
-            <div class="trust-badge">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.5 0-4 1.5-4 3.5S9.5 15 12 15s4 1.5 4 3.5-1.5 3.5-4 3.5m0-17v2m0 15v2" />
-                </svg>
-                Transparent pricing, no markups
-            </div>
-        </div>
-    </section>
-
-    <!-- How it Works -->
-    <section id="how-it-works" class="steps-section">
-        <div class="section-head">
-            <span class="section-eyebrow">How It Works</span>
-            <h2 class="section-title">Four steps to one parcel, anywhere.</h2>
-            <p class="section-subtitle">No new bank account, no repeat customs paperwork — just one Indian address
-                that follows you home.</p>
-        </div>
-
-        <div class="steps-list">
-            <div class="step-row">
-                <div class="step-number">1</div>
-                <div class="step-copy">
-                    <h3>Get your locker address</h3>
-                    <p>Sign up free and get a unique Indian warehouse address with your own locker ID — use it as the
-                        shipping address at checkout, anywhere in India.</p>
-                </div>
-            </div>
-            <div class="step-row">
-                <div class="step-number">2</div>
-                <div class="step-copy">
-                    <h3>Shop &amp; ship to us</h3>
-                    <p>Buy from Amazon India, Flipkart, Myntra, or any local vendor. Every package lands at your
-                        locker — we photograph and inspect it the moment it arrives.</p>
-                </div>
-            </div>
-            <div class="step-row">
-                <div class="step-number">3</div>
-                <div class="step-copy">
-                    <h3>We consolidate</h3>
-                    <p>Pick the packages sitting in your locker and request consolidation. We repack them into a
-                        single box, strip excess packaging, and show you the combined weight before you pay.</p>
-                </div>
-            </div>
-            <div class="step-row">
-                <div class="step-number">4</div>
-                <div class="step-copy">
-                    <h3>We ship internationally</h3>
-                    <p>One parcel goes out to your overseas address with full tracking — one shipping fee, one
-                        customs entry, one FX conversion at the real rate.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Savings Calculator -->
-    <section class="savings-section">
-        <div class="savings-wrap">
-            <div>
-                <span class="section-eyebrow">Why Consolidate</span>
-                <h2 class="section-title">Three parcels or one — the math isn't close.</h2>
-                <p class="section-subtitle">Shipping three separate packages internationally stacks three courier
-                    fees, three FX conversions, and three customs entries. Consolidating into one parcel collapses
-                    all of it into a single charge.</p>
-            </div>
-            <div class="compare-card">
-                <div class="compare-row">
-                    <div class="compare-label">
-                        <strong>3 separate international shipments</strong>
-                        Courier fee × 3 + FX markup × 3 + customs × 3
+            <div class="steps-row">
+                <article class="step-item">
+                    <div class="step-icon-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z" fill="currentColor" opacity="0.92"/><path d="M5 21a7 7 0 0 1 14 0" fill="currentColor" opacity="0.92"/><path d="M18.2 14.5h3.1M19.75 12.95v3.1" stroke="#f3ae31" stroke-width="1.8" stroke-linecap="round"/><path d="M12 3.5c3.8 0 6.7 2.9 6.7 6.2 0 2.6-1.8 5.3-4.8 8.5-.9.9-1.2 1.3-1.9 2.2-.7-.9-1-1.3-1.9-2.2C7.1 15 5.3 12.3 5.3 9.7 5.3 6.4 8.2 3.5 12 3.5Z" stroke="currentColor" stroke-width="1.2" opacity="0.18"/></svg>
                     </div>
-                    <div class="compare-value penalty">₹9,600</div>
-                </div>
-                <div class="compare-row">
-                    <div class="compare-label">
-                        <strong>1 consolidated parcel</strong>
-                        Single courier fee, single FX conversion, single customs entry
+                    <span class="step-number">1</span>
+                    <h3>Create Account</h3>
+                    <p>Sign up and get your unique Trunk ID.</p>
+                </article>
+                <div class="step-arrow" aria-hidden="true">→</div>
+                <article class="step-item">
+                    <div class="step-icon-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="14" height="14" rx="2.2" fill="currentColor" opacity="0.16"/><rect x="5.5" y="5.5" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="5.5" y="5.5" width="13" height="3" rx="1.4" fill="currentColor" opacity="0.92"/><circle cx="9.2" cy="10.9" r="1.5" fill="currentColor" opacity="0.92"/><path d="M15.3 11.4c0 1.5-1.2 2.7-2.7 2.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                     </div>
-                    <div class="compare-value win">₹5,400</div>
-                </div>
-                <div class="savings-total">
-                    <span>Estimated savings</span>
-                    <span class="amount">₹4,200</span>
-                </div>
+                    <span class="step-number">2</span>
+                    <h3>Get Indian Address</h3>
+                    <p>Use your address to shop from any Indian store.</p>
+                </article>
+                <div class="step-arrow" aria-hidden="true">→</div>
+                <article class="step-item">
+                    <div class="step-icon-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 7.5h9.4l3.6 3.4V19H4V7.5Z" fill="currentColor" opacity="0.16"/><path d="M5 6.5h8.6L17 10v8.5H5V6.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 9.5h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="11.4" cy="13.4" r="1.8" fill="currentColor" opacity="0.92"/><path d="M10.2 15.5c.8-.7 1.8-1 2.4-1 1.1 0 2.1.4 2.8 1.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                    </div>
+                    <span class="step-number">3</span>
+                    <h3>Shop &amp; Ship to Us</h3>
+                    <p>Shop from your favorite stores and ship to us.</p>
+                </article>
+                <div class="step-arrow" aria-hidden="true">→</div>
+                <article class="step-item">
+                    <div class="step-icon-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8h11.5l1.5 2.8V18H6V8Z" fill="currentColor" opacity="0.16"/><path d="M7 7h10.2L18.7 9.8V18H7V7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 7v11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 11h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </div>
+                    <span class="step-number">4</span>
+                    <h3>We Consolidate</h3>
+                    <p>We pack everything together to save on cost.</p>
+                </article>
+                <div class="step-arrow" aria-hidden="true">→</div>
+                <article class="step-item">
+                    <div class="step-icon-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8.2" fill="currentColor" opacity="0.16"/><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M4.4 12h15.2" stroke="#f3ae31" stroke-width="1.4" stroke-linecap="round" opacity="0.95"/><path d="M12 4a14 14 0 0 1 0 16" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.8"/><path d="M12 4a14 14 0 0 0 0 16" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/></svg>
+                    </div>
+                    <span class="step-number">5</span>
+                    <h3>Delivered to You</h3>
+                    <p>We ship to your doorstep anywhere in the world.</p>
+                </article>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Features -->
-    <section id="features" class="features-section">
-        <div class="section-head" style="margin-left: auto; margin-right: auto; text-align: center;">
-            <span class="section-eyebrow">Why IndiaBox</span>
-            <h2 class="section-title">Everything a consolidated shipment needs.</h2>
-        </div>
+        <section class="estimate-section" id="estimate">
+            <div class="estimate-panel">
+                <div class="estimate-copy">
+                    <h2>Estimate Your <span>Shipping Cost</span></h2>
+                    <p>Get an instant estimate for international shipping.</p>
+                </div>
+                <div class="estimate-form">
+                    <div class="estimate-fields">
+                        <div class="field">
+                            <label for="country">Select Country</label>
+                            <div class="select-wrap">
+                                <select id="country" name="country">
+                                    <option>United States</option>
+                                    <option>United Kingdom</option>
+                                    <option>Canada</option>
+                                    <option>Australia</option>
+                                    <option>UAE</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="weight">Estimated Weight</label>
+                            <div class="weight-input">
+                                <input id="weight" name="weight" type="number" min="0.5" step="0.5" value="5">
+                                <span>kg</span>
+                            </div>
+                        </div>
+                        <a href="{% url 'content:shipping_calculator' %}" class="cta-button estimate-button">Calculate Estimate</a>
+                    </div>
+                    <div class="estimate-trust">
+                        <span>No Hidden Charges</span>
+                        <span>Best Courier Rates</span>
+                        <span>Secure Packaging</span>
+                        <span>Doorstep Delivery</span>
+                    </div>
+                </div>
+                <div class="estimate-art" aria-hidden="true">
+                    <svg viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M24 184h156l32-56h-124l-20 28H12l12 28Z" fill="#0d5c6c" opacity="0.96"/>
+                        <path d="M79 126h97l34-28H96l-17 28Z" fill="#114c59"/>
+                        <rect x="32" y="168" width="172" height="10" rx="5" fill="#062433" opacity="0.55"/>
+                        <path d="M236 90l17-11 12 4-11 9 11 9-12 4-17-11Z" fill="#f6f1ea"/>
+                        <path d="M228 103h24" stroke="#f6f1ea" stroke-width="4" stroke-linecap="round"/>
+                        <rect x="130" y="120" width="86" height="48" rx="10" fill="#f3ae31"/>
+                        <rect x="138" y="128" width="70" height="6" rx="3" fill="#f7d26d"/>
+                        <rect x="138" y="138" width="56" height="6" rx="3" fill="#e5a223"/>
+                        <rect x="138" y="148" width="48" height="6" rx="3" fill="#e5a223"/>
+                    </svg>
+                </div>
+            </div>
+        </section>
 
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l9-5 9 5-9 5-9-5zm0 0v8l9 5 9-5V8" />
-                    </svg>
-                </div>
-                <h4>Free consolidation</h4>
-                <p>Combine multiple packages into one shipment and save up to 80% on international shipping costs.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16v13H4zM4 7l3-4h10l3 4M9 11a3 3 0 006 0" />
-                    </svg>
-                </div>
-                <h4>Photo inspection</h4>
-                <p>Every parcel is photographed and inspected the moment it arrives, before it ever touches your
-                    locker.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <h4>30 days free storage</h4>
-                <p>Take your time. Shop across multiple sites while we hold every package free of charge for a
-                    month.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m5-8.13a4 4 0 110 8 4 4 0 010-8zm6 3a4 4 0 110 8" />
-                    </svg>
-                </div>
-                <h4>Personal shopper</h4>
-                <p>No Indian card or UPI? We buy on your behalf from any store for a small handling fee.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 12l-8 8-8-8M12 4v16" />
-                    </svg>
-                </div>
-                <h4>Repacking service</h4>
-                <p>We strip retail boxes and excess packaging to cut volumetric weight before your parcel ships.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M4 6h16M4 12h16M4 18h7" />
-                    </svg>
-                </div>
-                <h4>Customs assistance</h4>
-                <p>We prepare accurate customs declarations so your consolidated parcel clears without delays.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Testimonials -->
-    <section class="testimonials-section">
-        <div class="testimonials-head">
-            <span class="section-eyebrow" style="color: var(--accent);">Trusted by NRIs</span>
-            <h2 class="section-title">From Bengaluru to your doorstep abroad.</h2>
-            <p class="section-subtitle">Real customers shipping consolidated parcels to their new homes.</p>
-        </div>
-        <div class="testimonials-grid">
-            <div class="testimonial-card">
-                <p class="testimonial-quote">"I had four Flipkart orders sitting for two weeks. IndiaBox combined
-                    them into one box — cost less than shipping just one parcel myself would have."</p>
-                <div class="testimonial-author">
-                    <div class="testimonial-avatar">A</div>
-                    <div>
-                        <div class="name">Anjali R.</div>
-                        <div class="loc">Austin, USA</div>
+        <section class="trusted-section" id="trusted">
+            <h2>Trusted by 50,000+ Customers Worldwide</h2>
+            <p>Shop from your favorite Indian stores</p>
+            <div class="logo-marquee" aria-label="Brand logos carousel">
+                <div class="logo-marquee-inner">
+                    <div class="logo-track">
+                        <span class="logo amazon">amazon.in</span>
+                        <span class="logo myntra">Myntra</span>
+                        <span class="logo ajio">AJIO</span>
+                        <span class="logo flipkart">Flipkart</span>
+                        <span class="logo meesho">meesho</span>
+                        <span class="logo nykaa">NYKAA</span>
+                        <span class="logo tata">Tata CLiQ</span>
+                        <span class="logo croma">Croma</span>
+                        <span class="logo firstcry">firstcry</span>
+                        <span class="logo snapdeal">Snapdeal</span>
+                        <span class="logo pepperfry">Pepperfry</span>
+                        <span class="logo more">&amp; more</span>
+                    </div>
+                    <div class="logo-track" aria-hidden="true">
+                        <span class="logo amazon">amazon.in</span>
+                        <span class="logo myntra">Myntra</span>
+                        <span class="logo ajio">AJIO</span>
+                        <span class="logo flipkart">Flipkart</span>
+                        <span class="logo meesho">meesho</span>
+                        <span class="logo nykaa">NYKAA</span>
+                        <span class="logo tata">Tata CLiQ</span>
+                        <span class="logo croma">Croma</span>
+                        <span class="logo firstcry">firstcry</span>
+                        <span class="logo snapdeal">Snapdeal</span>
+                        <span class="logo pepperfry">Pepperfry</span>
+                        <span class="logo more">&amp; more</span>
                     </div>
                 </div>
             </div>
-            <div class="testimonial-card">
-                <p class="testimonial-quote">"The FX rate shown at checkout matched what my bank quoted — no
-                    surprise markup like the courier apps I used before."</p>
-                <div class="testimonial-author">
-                    <div class="testimonial-avatar">S</div>
-                    <div>
-                        <div class="name">Sandeep M.</div>
-                        <div class="loc">Manchester, UK</div>
+        </section>
+
+        <section class="testimonials-section">
+            <div class="section-head">
+                <span class="section-kicker"><span class="kicker-line">→</span> Loved by Customers <span class="kicker-line">←</span></span>
+            </div>
+            <div class="testimonials-wrap">
+                <button type="button" class="testimonial-nav" id="testimonialPrev" aria-label="Previous testimonial">‹</button>
+                <div class="testimonial-viewport">
+                <div class="testimonial-grid" id="testimonialGrid">
+                    <article class="testimonial-card">
+                        <span class="quote-mark">“</span>
+                        <p>CamelTrunk made my India shopping so easy. I saved so much on shipping by combining all my orders.</p>
+                        <div class="testimonial-author">
+                            <div class="avatar">R</div>
+                            <div>
+                                <strong>Riya Sharma</strong>
+                                <span>New Jersey, USA</span>
+                                <div class="rating">★★★★★</div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="testimonial-card">
+                        <span class="quote-mark">“</span>
+                        <p>The warehouse team is super helpful and my parcels always arrive perfectly packed and on time.</p>
+                        <div class="testimonial-author">
+                            <div class="avatar">A</div>
+                            <div>
+                                <strong>Arjun Mehta</strong>
+                                <span>Melbourne, Australia</span>
+                                <div class="rating">★★★★★</div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="testimonial-card">
+                        <span class="quote-mark">“</span>
+                        <p>Finally a service that NRIs can trust. My go-to platform for all my shopping needs from India.</p>
+                        <div class="testimonial-author">
+                            <div class="avatar">P</div>
+                            <div>
+                                <strong>Priya Iyer</strong>
+                                <span>London, UK</span>
+                                <div class="rating">★★★★★</div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="testimonial-card">
+                        <span class="quote-mark">“</span>
+                        <p>Shipping updates are clear and fast. I always know where my package is, and delivery is consistently reliable.</p>
+                        <div class="testimonial-author">
+                            <div class="avatar">N</div>
+                            <div>
+                                <strong>Neha Kapoor</strong>
+                                <span>Toronto, Canada</span>
+                                <div class="rating">★★★★★</div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="testimonial-card">
+                        <span class="quote-mark">“</span>
+                        <p>The consolidation service saved me a lot. Five different store orders came in one shipment with perfect packaging.</p>
+                        <div class="testimonial-author">
+                            <div class="avatar">S</div>
+                            <div>
+                                <strong>Sanjay Rao</strong>
+                                <span>Dubai, UAE</span>
+                                <div class="rating">★★★★★</div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="testimonial-card">
+                        <span class="quote-mark">“</span>
+                        <p>Customer support is excellent. They verified my items and shared photos before shipping, which gave me peace of mind.</p>
+                        <div class="testimonial-author">
+                            <div class="avatar">M</div>
+                            <div>
+                                <strong>Meera Nair</strong>
+                                <span>Singapore</span>
+                                <div class="rating">★★★★★</div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="testimonial-card">
+                        <span class="quote-mark">“</span>
+                        <p>I use CamelTrunk every month for family shopping. Rates are fair, delivery is quick, and everything arrives safely.</p>
+                        <div class="testimonial-author">
+                            <div class="avatar">V</div>
+                            <div>
+                                <strong>Vikram Patel</strong>
+                                <span>Dublin, Ireland</span>
+                                <div class="rating">★★★★★</div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                </div>
+                <button type="button" class="testimonial-nav" id="testimonialNext" aria-label="Next testimonial">›</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-shell">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="brand brand-footer">
+                        <span class="brand-mark" aria-hidden="true">
+                            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M15 36c0-8 6-15 14-15h4c6 0 11 5 11 11v6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M17 37h27c5 0 9 4 9 9v3H12v-6c0-3 2-6 5-6Z" fill="currentColor"/>
+                                <path d="M21 40h6" stroke="#082b3a" stroke-width="3" stroke-linecap="round"/>
+                                <path d="M27 19c0-2 2-4 4-4h4l2 6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="43" cy="17" r="2.5" fill="currentColor"/>
+                            </svg>
+                        </span>
+                        <span class="brand-text">Camel<span>Trunk</span></span>
+                    </a>
+                    <p>Bringing India closer to you.<br>Shop, ship and smile.</p>
+                    <div class="social-row">
+                        <a href="#" aria-label="Facebook">f</a>
+                        <a href="#" aria-label="Instagram">i</a>
+                        <a href="#" aria-label="YouTube">y</a>
+                        <a href="#" aria-label="WhatsApp">w</a>
                     </div>
                 </div>
-            </div>
-            <div class="testimonial-card">
-                <p class="testimonial-quote">"Photo inspection caught a damaged item before it even left the
-                    warehouse. Support sorted a replacement without me chasing anyone."</p>
-                <div class="testimonial-author">
-                    <div class="testimonial-avatar">P</div>
-                    <div>
-                        <div class="name">Priya N.</div>
-                        <div class="loc">Dubai, UAE</div>
-                    </div>
+
+                <div class="footer-col">
+                    <h3>Company</h3>
+                    <a href="{% url 'content:about' %}">About Us</a>
+                    <a href="#">Careers</a>
+                    <a href="#">Press</a>
+                    <a href="#">Blog</a>
+                    <a href="mailto:support@cameltrunk.com">Contact Us</a>
                 </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- Countries We Ship To -->
-    <section class="countries-section">
-        <span class="section-eyebrow">Where We Deliver</span>
-        <h2 class="section-title">Shipping to NRIs worldwide.</h2>
-        <div class="countries-grid">
-            <span class="country-chip"><span class="flag">🇺🇸</span> United States</span>
-            <span class="country-chip"><span class="flag">🇬🇧</span> United Kingdom</span>
-            <span class="country-chip"><span class="flag">🇨🇦</span> Canada</span>
-            <span class="country-chip"><span class="flag">🇦🇺</span> Australia</span>
-            <span class="country-chip"><span class="flag">🇦🇪</span> UAE</span>
-            <span class="country-chip"><span class="flag">🇸🇬</span> Singapore</span>
-            <span class="country-chip"><span class="flag">🇩🇪</span> Germany</span>
-            <span class="country-chip"><span class="flag">🇳🇿</span> New Zealand</span>
-        </div>
-    </section>
+                <div class="footer-col">
+                    <h3>Services</h3>
+                    <a href="#how-it-works">How It Works</a>
+                    <a href="{% url 'content:shipping_calculator' %}">Pricing</a>
+                    <a href="{% url 'content:service_charges' %}">Storage Policy</a>
+                    <a href="{% url 'content:prohibited_items' %}">Prohibited Items</a>
+                    <a href="{% url 'content:duties' %}">Shipping Guide</a>
+                </div>
 
-    <!-- Final CTA -->
-    <section class="final-cta">
-        <h2>Get your Indian address in under two minutes.</h2>
-        <p>Free to sign up. No commitment until your first shipment.</p>
-        <a href="{% url 'accounts:login' %}" class="btn btn-accent btn-lg">Get Your Free Indian Locker</a>
-    </section>
+                <div class="footer-col">
+                    <h3>Support</h3>
+                    <a href="{% url 'content:faq' %}">Help Center</a>
+                    <a href="{% url 'accounts:login' %}">Track Shipment</a>
+                    <a href="{% url 'content:faq' %}">FAQs</a>
+                    <a href="{% url 'content:refund_policy' %}">Refund Policy</a>
+                    <a href="{% url 'content:privacy' %}">Privacy Policy</a>
+                </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-grid">
-            <div class="footer-brand">
-                <h2>IndiaBox</h2>
-                <p style="line-height: 1.6; font-size: 0.9rem;">Your personal Indian address for shopping — we
-                    receive, inspect, consolidate, and ship your purchases worldwide.</p>
-                <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-                    <a href="#"
-                        style="background: rgba(255,255,255,0.08); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem;">fb</a>
-                    <a href="#"
-                        style="background: rgba(255,255,255,0.08); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem;">in</a>
-                    <a href="#"
-                        style="background: rgba(255,255,255,0.08); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem;">tw</a>
+                <div class="footer-col newsletter-col">
+                    <h3>Newsletter</h3>
+                    <p>Subscribe for tips, offers and updates.</p>
+                    <form class="newsletter-form" onsubmit="return false;">
+                        <input type="email" placeholder="Enter your email" aria-label="Email address">
+                        <button type="submit" aria-label="Subscribe">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 11.5 21 3l-6.5 18-3.2-7.4L3 11.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M21 3 11.3 13.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        </button>
+                    </form>
                 </div>
             </div>
 
-            <div class="footer-col">
-                <h4>Company</h4>
-                <ul>
-                    <li><a href="{% url 'content:about' %}">About Us</a></li>
-                    <li><a href="#">Careers</a></li>
-                    <li><a href="#">Blog</a></li>
-                    <li><a href="#">Press</a></li>
-                </ul>
+            <div class="footer-bottom">
+                <span>&copy; 2026 CamelTrunk. All rights reserved.</span>
+                <span>Made with heart in India</span>
             </div>
-
-            <div class="footer-col">
-                <h4>Support</h4>
-                <ul>
-                    <li><a href="{% url 'content:prohibited_items' %}">Prohibited Items</a></li>
-                    <li><a href="{% url 'content:shipping_calculator' %}">Shipping Calculator</a></li>
-                    <li><a href="{% url 'content:faq' %}">FAQ</a></li>
-                    <li><a href="mailto:support@indiabox.com">Contact Us</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-col">
-                <h4>Legal</h4>
-                <ul>
-                    <li><a href="{% url 'content:terms' %}">Terms of Service</a></li>
-                    <li><a href="{% url 'content:privacy' %}">Privacy Policy</a></li>
-                    <li><a href="{% url 'content:refund_policy' %}">Refund Policy</a></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            &copy; 2026 IndiaBox Global Locker. All rights reserved.
         </div>
     </footer>
 
+    <script>
+        (function () {
+            var toggle = document.getElementById('mobileMenuToggle');
+            var panel = document.getElementById('mobilePanel');
+            var header = document.getElementById('siteHeader');
+            var testimonialGrid = document.getElementById('testimonialGrid');
+            var testimonialPrev = document.getElementById('testimonialPrev');
+            var testimonialNext = document.getElementById('testimonialNext');
+            var autoplayHandle = null;
+            var currentSlide = 0;
+            var maxSlide = 0;
+
+            function getVisibleSlides() {
+                var width = window.innerWidth;
+                if (width <= 768) {
+                    return 1;
+                }
+                if (width <= 1120) {
+                    return 2;
+                }
+                return 3;
+            }
+
+            function updateCarousel(animate) {
+                if (!testimonialGrid) {
+                    return;
+                }
+
+                var cards = testimonialGrid.querySelectorAll('.testimonial-card');
+                if (!cards.length) {
+                    return;
+                }
+
+                var visibleSlides = getVisibleSlides();
+                maxSlide = Math.max(0, cards.length - visibleSlides);
+                if (currentSlide > maxSlide) {
+                    currentSlide = 0;
+                }
+
+                testimonialGrid.style.transitionDuration = animate ? '420ms' : '0ms';
+
+                if (maxSlide === 0) {
+                    testimonialGrid.style.transform = 'translateX(0px)';
+                    return;
+                }
+
+                var cardWidth = cards[0].offsetWidth;
+                var cardGap = 20;
+                var shift = (cardWidth + cardGap) * currentSlide;
+                testimonialGrid.style.transform = 'translateX(-' + shift + 'px)';
+            }
+
+            function nextSlide() {
+                if (!testimonialGrid) {
+                    return;
+                }
+                if (currentSlide >= maxSlide) {
+                    currentSlide = 0;
+                } else {
+                    currentSlide += 1;
+                }
+                updateCarousel(true);
+            }
+
+            function prevSlide() {
+                if (!testimonialGrid) {
+                    return;
+                }
+                if (currentSlide <= 0) {
+                    currentSlide = maxSlide;
+                } else {
+                    currentSlide -= 1;
+                }
+                updateCarousel(true);
+            }
+
+            function stopAutoplay() {
+                if (autoplayHandle) {
+                    window.clearInterval(autoplayHandle);
+                    autoplayHandle = null;
+                }
+            }
+
+            function startAutoplay() {
+                stopAutoplay();
+                autoplayHandle = window.setInterval(nextSlide, 3600);
+            }
+
+            function setMenuState(isOpen) {
+                if (!panel || !toggle) {
+                    return;
+                }
+
+                panel.classList.toggle('open', isOpen);
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+
+                if (header) {
+                    header.classList.toggle('menu-open', isOpen);
+                }
+
+                document.body.classList.toggle('menu-open', isOpen);
+            }
+
+            if (toggle && panel) {
+                toggle.addEventListener('click', function () {
+                    var isOpen = !panel.classList.contains('open');
+                    setMenuState(isOpen);
+                });
+
+                panel.querySelectorAll('a').forEach(function (link) {
+                    link.addEventListener('click', function () {
+                        setMenuState(false);
+                    });
+                });
+
+                window.addEventListener('resize', function () {
+                    if (window.innerWidth > 1024) {
+                        setMenuState(false);
+                    }
+                });
+            }
+
+            if (testimonialGrid) {
+                if (testimonialPrev) {
+                    testimonialPrev.addEventListener('click', function () {
+                        prevSlide();
+                        startAutoplay();
+                    });
+                }
+
+                if (testimonialNext) {
+                    testimonialNext.addEventListener('click', function () {
+                        nextSlide();
+                        startAutoplay();
+                    });
+                }
+
+                testimonialGrid.addEventListener('mouseenter', stopAutoplay);
+                testimonialGrid.addEventListener('mouseleave', startAutoplay);
+
+                updateCarousel(false);
+                startAutoplay();
+                window.addEventListener('resize', function () {
+                    updateCarousel(false);
+                });
+            }
+
+            function onScroll() {
+                if (!header) {
+                    return;
+                }
+                header.classList.toggle('scrolled', window.scrollY > 48);
+            }
+
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        })();
+    </script>
 </body>
 
 </html>

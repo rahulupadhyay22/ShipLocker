@@ -2,10 +2,10 @@
 <div class="page-header" style="margin-bottom: 2rem;">
     <!-- Virtual Card Summary -->
     <div class="virtual-card"
-        style="width: 100%; padding: 3rem; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); overflow: hidden;">
+        style="width: 100%; padding: 3rem; background: linear-gradient(135deg, #005F73 0%, #00404D 100%); overflow: hidden;">
         <div style="position: relative; z-index: 2;">
             <h1 class="page-title" style="color: white; margin-bottom: 0.5rem;">Shipments</h1>
-            <p class="page-subtitle" style="color: #94a3b8; max-width: 600px;">Track your international and domestic
+            <p class="page-subtitle" style="color: #A69FB0; max-width: 600px;">Track your international and domestic
                 shipments.</p>
 
             <div style="display: flex; gap: 3rem; margin-top: 2.5rem;">
@@ -13,14 +13,14 @@
                     <span
                         style="font-size: 2.5rem; font-weight: 700; display: block; line-height: 1;">{{active_count|default:"0"}}</span>
                     <span
-                        style="color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Active</span>
+                        style="color: #A69FB0; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Active</span>
                 </div>
                 <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
                 <div>
                     <span
                         style="font-size: 2.5rem; font-weight: 700; display: block; line-height: 1;">{{delivered_count|default:"0"}}</span>
                     <span
-                        style="color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Delivered</span>
+                        style="color: #A69FB0; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Delivered</span>
                 </div>
                 {% if closed_count %}
                 <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
@@ -28,7 +28,7 @@
                     <span
                         style="font-size: 2.5rem; font-weight: 700; display: block; line-height: 1; color: #f87171;">{{closed_count}}</span>
                     <span
-                        style="color: #94a3b8; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Closed</span>
+                        style="color: #A69FB0; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Closed</span>
                 </div>
                 {% endif %}
             </div>
@@ -88,9 +88,9 @@
         <div style="flex: 1;">
             <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75rem; color: #7F1D1D;">International
                 Shipments</h3>
-            <p style="font-weight: 600; margin-bottom: 0.5rem;">INDIBOX is not responsible for delivery delays,
+            <p style="font-weight: 600; margin-bottom: 0.5rem;">CamelTrunk is not responsible for delivery delays,
                 customs clearance, VAT, duties, or taxes.</p>
-            <p style="font-weight: 600; margin-bottom: 1rem;">INDIBOX is also not responsible for shipments that are
+            <p style="font-weight: 600; margin-bottom: 1rem;">CamelTrunk is also not responsible for shipments that are
                 rejected, destroyed, or returned to India.</p>
             <p style="font-size: 0.95rem; margin-bottom: 0.75rem; opacity: 0.9;">
                 Once a shipment has been handed over to the carrier, the receiver must work directly with the carrier to
@@ -104,7 +104,7 @@
             <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; font-size: 0.9rem; align-items: start;">
                 <span>👉</span>
                 <span>If any additional documents, customs certifications, or declarations are required, the receiver
-                    can connect with INDIBOX Support for assistance and we can help procure the documents if its
+                    can connect with CamelTrunk Support for assistance and we can help procure the documents if its
                     possible.</span>
             </div>
 
@@ -135,7 +135,7 @@
                 <li style="margin-bottom: 0.5rem;"><strong>Pickup Time:</strong> 10 AM to 5 PM IST</li>
                 <li>
                     Schedule pickup using any available courier service in India, some examples:
-                    <ul style="margin-top: 0.25rem; margin-bottom: 0.5rem; color: #2563EB;">
+                    <ul style="margin-top: 0.25rem; margin-bottom: 0.5rem; color: #005F73;">
                         <li>Premium - <a href="https://www.dtdc.in/" target="_blank"
                                 style="text-decoration: underline; color: inherit;">DTDC</a>, <a
                                 href="https://www.bluedart.com/" target="_blank"
@@ -151,16 +151,16 @@
             <!-- Warning Box -->
             <div
                 style="background: #FEF2F2; border: 1px solid #FECACA; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: #991B1B;">
-                <strong>INDIBOX is not affiliated with or responsible for any third-party courier services.</strong>
+                <strong>CamelTrunk is not affiliated with or responsible for any third-party courier services.</strong>
                 Customers may use any domestic courier of their choice to send or collect packages. The links provided
-                are for convenience only, and INDIBOX bears no liability for the performance or conduct of these
+                are for convenience only, and CamelTrunk bears no liability for the performance or conduct of these
                 services.
             </div>
 
             <!-- Success/Info Box -->
             <div
                 style="background: #ECFDF5; border: 1px solid #6EE7B7; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; color: #065F46;">
-                <strong>5. Share pickup labels with INDIBOX team.</strong> We'll ensure your package is ready for
+                <strong>5. Share pickup labels with CamelTrunk team.</strong> We'll ensure your package is ready for
                 handover at the scheduled time.
             </div>
 
@@ -359,7 +359,7 @@
                     key: orderData.key_id,
                     amount: orderData.amount,
                     currency: orderData.currency,
-                    name: 'INDIBOX',
+                    name: 'CamelTrunk',
                     description: 'Shipment payment',
                     order_id: orderData.order_id,
                     handler: async function (response) {
@@ -383,7 +383,7 @@
                         }
                     },
                     theme: {
-                        color: '#2563EB'
+                        color: '#005F73'
                     },
                     modal: {
                         ondismiss: function () {

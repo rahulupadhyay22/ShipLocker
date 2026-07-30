@@ -9,39 +9,12 @@
     <meta name="description"
         content="{% block meta_description %}Get your free virtual Indian address. Shop from Amazon India, Myntra, Flipkart & 1000+ stores. We consolidate & ship to 200+ countries.{% endblock %}">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
 
     <style>
-        :root {
-            --primary: #2563EB;
-            --primary-dark: #1D4ED8;
-            --primary-light: #EFF6FF;
-            --gradient: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
-            --text-primary: #0F172A;
-            --text-secondary: #64748B;
-            --text-muted: #94A3B8;
-            --bg-light: #F8FAFC;
-            --white: #FFFFFF;
-            --border: #E2E8F0;
-            --success: #10B981;
-            --warning: #F59E0B;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
-            color: var(--text-primary);
-            line-height: 1.6;
             overflow-x: hidden;
-            background: var(--white);
+            background: white;
         }
 
         a {
@@ -124,19 +97,19 @@
         .btn-primary {
             background: var(--primary);
             color: white;
-            box-shadow: 0 4px 14px -3px rgba(37, 99, 235, 0.4);
+            box-shadow: 0 4px 14px -3px rgba(0, 95, 115, 0.4);
         }
 
         .btn-primary:hover {
-            background: var(--primary-dark);
+            background: var(--primary-hover);
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px -3px rgba(37, 99, 235, 0.5);
+            box-shadow: 0 6px 20px -3px rgba(0, 95, 115, 0.5);
         }
 
         .btn-outline {
             background: transparent;
-            color: var(--text-primary);
-            border: 1px solid var(--border);
+            color: var(--text-main);
+            border: 1px solid var(--surface-200);
         }
 
         .btn-outline:hover {
@@ -154,10 +127,10 @@
 
         /* ===== FOOTER ===== */
         .footer {
-            background: #0F172A;
-            color: #94A3B8;
+            background: #1F1F1F;
+            color: #B3ACC0;
             padding: 5rem 5% 2rem;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--surface-200);
         }
 
         .footer-container {
@@ -218,7 +191,7 @@
         }
 
         .footer-col a {
-            color: #94A3B8;
+            color: #B3ACC0;
             transition: color 0.2s;
         }
 

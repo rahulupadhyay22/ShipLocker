@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Shipment {{ shipment.display_id }} - INDIBOX{% endblock %}
+{% block title %}Shipment {{ shipment.display_id }} - CamelTrunk{% endblock %}
 
 {% block content %}
 <div class="page-header" style="align-items: flex-start; flex-direction: column; gap: 1rem;">
@@ -423,7 +423,7 @@
                     key: orderData.key_id,
                     amount: orderData.amount,
                     currency: orderData.currency,
-                    name: 'INDIBOX',
+                    name: 'CamelTrunk',
                     description: 'Shipping payment for {{ shipment.display_id }}',
                     order_id: orderData.order_id,
                     handler: async function (response) {
@@ -452,7 +452,7 @@
                         contact: '{{ shipment.recipient_phone|escapejs }}'
                     },
                     theme: {
-                        color: '#2563EB'
+                        color: '#005F73'
                     },
                     modal: {
                         ondismiss: function () {
