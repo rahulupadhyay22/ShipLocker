@@ -30,6 +30,11 @@
     --warning-text: #B45309;
     --danger-bg: #FEF2F2;
     --danger-text: #DC2626;
+    --badge-danger: #e11d48;
+    --danger-text-on-dark: #f87171;
+
+    /* Text on dark surfaces (sidebar, navy panels) */
+    --text-on-dark: #fff8e8;
 
     /* Metrics */
     --radius-sm: 8px;
@@ -186,13 +191,154 @@ a {
     opacity: 1;
 }
 
+.nav-badge {
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--badge-danger);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
 .desktop-hidden {
     display: none;
 }
 
+/* Sidebar bottom cluster: Trunk ID card, profile card, logout, Need Help card */
+.sidebar-bottom {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.sidebar-trunk-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    background: rgba(0, 41, 52, 0.8);
+}
+
+.sidebar-trunk-label {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.03em;
+    color: rgba(245, 251, 249, 0.6);
+}
+
+.sidebar-trunk-value {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-on-dark);
+    margin-top: 0.1rem;
+}
+
+.sidebar-copy-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(245, 251, 249, 0.8);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.sidebar-copy-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: var(--accent);
+}
+
+.sidebar-profile-card {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    background: rgba(0, 41, 52, 0.8);
+}
+
+.sidebar-profile-card:hover {
+    background: rgba(0, 41, 52, 1);
+}
+
+.sidebar-profile-card svg {
+    margin-left: auto;
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+
+.sidebar-profile-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.sidebar-profile-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.sidebar-profile-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-on-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-profile-link {
+    font-size: 0.68rem;
+    color: rgba(245, 251, 249, 0.6);
+}
+
+.sidebar-logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    background: none;
+    border: none;
+    color: var(--danger-text-on-dark);
+    font-weight: 600;
+    font-size: 0.78rem;
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.sidebar-logout-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
 /* Sidebar Support */
 .sidebar-support {
-    margin-top: auto;
     padding: 0.85rem;
     border: 1px solid rgba(255,255,255,0.14);
     border-radius: 12px;
@@ -769,6 +915,63 @@ a {
     color: var(--danger-text);
 }
 
+/* Bottom Tab Bar (mobile only) */
+.bottom-tab-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 55;
+    background: #0d2b3c;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.4rem 0.25rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
+    align-items: stretch;
+    justify-content: space-between;
+}
+
+.tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    padding: 0.3rem 0.1rem;
+    color: rgba(245, 251, 249, 0.6);
+    font-size: 0.62rem;
+    font-weight: 700;
+    position: relative;
+}
+
+.tab-item svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2px;
+}
+
+.tab-item.active {
+    color: var(--accent);
+}
+
+.tab-badge {
+    position: absolute;
+    top: 0.05rem;
+    right: 18%;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--badge-danger);
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
 /* Sidebar close (mobile drawer) */
 .sidebar-close {
     display: none;
@@ -809,10 +1012,10 @@ a {
         margin-left: 0;
         width: 100%;
         padding: 1.5rem;
-        padding-bottom: 5rem;
+        padding-bottom: 6rem;
         border-radius: 0;
         border: none;
-        /* Space for floating button on mobile */
+        /* Space for bottom tab bar + floating button on mobile */
     }
 
     .mobile-header {
@@ -821,6 +1024,10 @@ a {
 
     .app-topbar {
         display: none;
+    }
+
+    .bottom-tab-bar {
+        display: flex;
     }
 
     .dashboard-grid {
@@ -832,7 +1039,7 @@ a {
     }
 
     .whatsapp-btn {
-        bottom: 1.5rem;
+        bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
         right: 1.5rem;
         width: 50px;
         height: 50px;
@@ -847,7 +1054,7 @@ a {
 .mobile-brand {
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--primary);
+    color: var(--text-on-dark);
     letter-spacing: -0.01em;
 }
 

@@ -99,23 +99,29 @@
 <div class="db-main-grid">
     <!-- Left column -->
     <div>
-        <div class="db-trunk-hero">
-            <div class="db-trunk-hero-body">
-                <h4>Your Trunk</h4>
-                <p>Good things from India are on their way to the world</p>
+        <div class="db-panel">
+            <div class="db-panel-header db-trunk-overview-header">
+                <div>
+                    <h3>Your Trunk Overview</h3>
+                    <p class="db-trunk-overview-sub">Good things from India are on their way to the world</p>
+                </div>
+                <a href="{% url 'locker:my_locker' %}" class="db-stat-view">View My Trunk →</a>
+            </div>
 
+            <div class="db-trunk-overview-body">
                 <div class="db-trunk-visual">
                     <img src="{% static 'img/trunk-illustration.png' %}" alt="CamelTrunk" class="db-trunk-img">
                 </div>
+                <div class="db-trunk-overview-stats">
+                    <div class="db-trunk-overview-items">{{ parcels_in_trunk }} Items</div>
+                    <div class="db-trunk-overview-percent">{% widthratio parcels_in_trunk trunk_capacity 100 %}%</div>
+                    <div class="db-trunk-overview-full">Full</div>
+                    <div class="db-trunk-overview-caption">of Trunk Capacity</div>
+                </div>
+            </div>
 
-                <div class="db-trunk-progress-labels">
-                    <span>{{ parcels_in_trunk }} Items</span>
-                    <span>{% widthratio parcels_in_trunk trunk_capacity 100 %}% Full</span>
-                </div>
-                <div class="db-trunk-progress-bar">
-                    <div class="db-trunk-progress-fill" style="width: {% widthratio parcels_in_trunk trunk_capacity 100 %}%;"></div>
-                </div>
-                <div class="db-trunk-progress-caption">{{ trunk_capacity }} Items Capacity</div>
+            <div class="db-trunk-progress-bar">
+                <div class="db-trunk-progress-fill" style="width: {% widthratio parcels_in_trunk trunk_capacity 100 %}%;"></div>
             </div>
         </div>
 
@@ -183,11 +189,60 @@
                 <h3>Quick Actions</h3>
             </div>
             <div class="db-quick-actions">
-                <a href="{% url 'locker:ready_to_ship' %}" class="db-qa-btn primary">📤 Ship My Trunk</a>
-                <a href="{% url 'accounts:profile' %}" class="db-qa-btn outline">📍 View My Address</a>
+                <a href="{% url 'locker:ready_to_ship' %}" class="db-qa-btn primary span-2">📤 Ship My Trunk</a>
                 <a href="{% url 'shipments:list' %}" class="db-qa-btn outline span-2">🚢 View Shipments</a>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Recent Shipments -->
+<div class="db-panel">
+    <div class="db-panel-header">
+        <h3>Recent Shipments</h3>
+        <a href="{% url 'shipments:list' %}" class="db-stat-view">View all shipments →</a>
+    </div>
+    <div class="db-shipments-table-wrap">
+        <table class="db-shipments-table">
+            <thead>
+                <tr>
+                    <th>Tracking ID</th>
+                    <th>Destination</th>
+                    <th>Items</th>
+                    <th>Weight</th>
+                    <th>Status</th>
+                    <th>Shipped On</th>
+                    <th>Est. Delivery</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for shipment in recent_shipments %}
+                <tr>
+                    <td><a href="{% url 'shipments:detail' shipment.pk %}" class="db-shipments-link">{{ shipment.display_id }}</a></td>
+                    <td>{{ shipment.city }}, {{ shipment.country }}</td>
+                    <td>{{ shipment.items_count }}</td>
+                    <td>{% if shipment.total_weight_kg %}{{ shipment.total_weight_kg }} kg{% else %}—{% endif %}</td>
+                    <td>
+                        <span class="status-badge
+                            {% if shipment.status == 'delivered' %}status-delivered
+                            {% elif shipment.status == 'in_transit' or shipment.status == 'out_for_delivery' %}status-transit
+                            {% elif shipment.status == 'cancelled' or shipment.status == 'returned' %}status-action
+                            {% else %}status-pending{% endif %}">
+                            {{ shipment.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ shipment.dispatched_at|date:"d M Y"|default:"—" }}</td>
+                    <td>{{ shipment.estimated_delivery_date|date:"d M Y"|default:"—" }}</td>
+                    <td><a href="{% url 'shipments:detail' shipment.pk %}" class="db-shipments-link">View Details</a></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="db-activity-empty">No shipments yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 

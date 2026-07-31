@@ -87,6 +87,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'indiabox.context_processors.app_settings',
+                'indiabox.context_processors.nav_counts',
             ],
         },
     },

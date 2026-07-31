@@ -226,6 +226,9 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             est_shipping_cost = None
 
         recent_activity = Parcel.objects.filter(locker=locker).order_by('-updated_at')[:5]
+        recent_shipments = Shipment.objects.filter(user=user).annotate(
+            items_count=Count('items')
+        ).order_by('-created_at')[:5]
 
         context.update({
             'locker': locker,
@@ -243,6 +246,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             'declared_value_total': round(declared_value_total, 2),
             'est_shipping_cost': est_shipping_cost,
             'recent_activity': recent_activity,
+            'recent_shipments': recent_shipments,
             'trunk_capacity': 30,
         })
         return context

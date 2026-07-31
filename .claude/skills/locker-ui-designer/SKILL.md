@@ -1,7 +1,7 @@
 ---
 name: locker-ui-designer
 description: Designs and generates modern, production-ready UI for ShipLocker (internal codename "CamelTrunk"), a Django-based international parcel-forwarding app built on Django templates + vanilla CSS. Produces clean logistics/fintech-style pages and components - locker cards, parcel tables, dashboards, modals, forms - with consistent spacing, soft shadows, rounded corners, and inline outline SVG icons matching the existing design system. Use this skill whenever the user asks to design, build, create, redesign, improve, or style any ShipLocker page, screen, section, or component - including phrasings like "design the X page", "create UI for X", "build a component for X", "make the X look better", "redesign X", or any request about ShipLocker's frontend, layout, CSS, or visual polish - even when ShipLocker isn't named explicitly if the conversation context is clearly about it.
-disable-model-invocation: true
+allowed-tools: Read,Write,Glob,ReadDir
 ---
 
 # ShipLocker UI Designer
