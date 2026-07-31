@@ -140,14 +140,14 @@ class MyTrunkView(LoginRequiredMixin, View):
                 'parcel': p, 'kind': 'action_required', 'status_label': 'Action Required',
                 'status_class': 'status-action', 'title': p.item_name or 'Unnamed Item',
                 'weight_kg': p.weight_kg, 'display_id': p.display_id, 'date': p.received_at,
-                'image': p.images.first(), 'pk': p.pk,
+                'image': p.images.first(), 'pk': p.pk, 'days_left': p.days_remaining_free,
             })
         for p in Parcel.objects.filter(locker=locker, status='approved').prefetch_related('images'):
             items.append({
                 'parcel': p, 'kind': 'ready_to_ship', 'status_label': 'Ready to Ship',
                 'status_class': 'status-approved', 'title': p.item_name or 'Unnamed Item',
                 'weight_kg': p.weight_kg, 'display_id': p.display_id, 'date': p.received_at,
-                'image': p.images.first(), 'pk': p.pk,
+                'image': p.images.first(), 'pk': p.pk, 'days_left': p.days_remaining_free,
             })
         return_status_class = {
             'completed': 'status-delivered', 'rejected': 'status-action',
@@ -158,7 +158,7 @@ class MyTrunkView(LoginRequiredMixin, View):
                 'status_class': return_status_class.get(r.status, 'status-pending'),
                 'title': r.parcel.item_name or r.parcel.tracking_number,
                 'weight_kg': r.parcel.weight_kg, 'display_id': r.parcel.display_id, 'date': r.requested_at,
-                'image': r.parcel.images.first(), 'pk': r.parcel.pk,
+                'image': r.parcel.images.first(), 'pk': r.parcel.pk, 'days_left': r.parcel.days_remaining_free,
             })
         discard_status_class = {'discarded': 'status-delivered'}
         for d in DiscardRequest.objects.filter(parcel__locker=locker).exclude(status='discarded').select_related('parcel').prefetch_related('parcel__images'):
@@ -167,17 +167,15 @@ class MyTrunkView(LoginRequiredMixin, View):
                 'status_class': discard_status_class.get(d.status, 'status-action'),
                 'title': d.parcel.item_name or d.parcel.tracking_number,
                 'weight_kg': d.parcel.weight_kg, 'display_id': d.parcel.display_id, 'date': d.requested_at,
-                'image': d.parcel.images.first(), 'pk': d.parcel.pk,
+                'image': d.parcel.images.first(), 'pk': d.parcel.pk, 'days_left': d.parcel.days_remaining_free,
             })
 
         items.sort(key=lambda i: i['date'] or timezone.now(), reverse=True)
-        total_items = len(items)
 
-        active_tab = request.GET.get('tab', 'all')
-        if active_tab in ('action_required', 'ready_to_ship', 'returns', 'discards'):
-            items = [i for i in items if i['kind'] == active_tab]
-        else:
-            active_tab = 'all'
+        active_tab = request.GET.get('tab', 'ready_to_ship')
+        if active_tab not in ('action_required', 'ready_to_ship', 'returns', 'discards'):
+            active_tab = 'ready_to_ship'
+        items = [i for i in items if i['kind'] == active_tab]
 
         paginator = Paginator(items, 20)
         page_obj = paginator.get_page(request.GET.get('page'))
@@ -185,7 +183,6 @@ class MyTrunkView(LoginRequiredMixin, View):
         context = {
             'page_obj': page_obj,
             'items': page_obj.object_list,
-            'total_items': total_items,
             'active_tab': active_tab,
             'locker': locker,
             'has_kyc': request.user.kyc_documents.filter(status='approved').exists(),
@@ -202,11 +199,19 @@ class ParcelDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Parcel.objects.filter(
             locker=self.request.user.locker
-        ).prefetch_related('images')
+        ).prefetch_related('images', 'shipment_items__shipment')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         _sync_overdue_storage_fees(self.request.user)
+
+        images = list(self.object.images.all())
+        context['primary_image'] = images[0] if images else None
+        context['earliest_image'] = images[-1] if images else None
+
+        shipment_items = list(self.object.shipment_items.all())
+        context['shipment_item'] = shipment_items[0] if shipment_items else None
+
         return context
 
 

@@ -1,0 +1,456 @@
+/* Parcel Details page — layout/components specific to templates/locker/parcel_detail.html */
+
+.pd-header {
+    margin-bottom: 1.25rem;
+}
+
+.pd-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: var(--surface-0);
+    border: 1px solid var(--surface-200);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.9rem;
+    margin-bottom: 0.75rem;
+    box-shadow: var(--shadow-xs);
+    transition: 0.2s;
+}
+
+.pd-back-link:hover {
+    color: var(--primary);
+    border-color: var(--primary-light);
+    background: var(--primary-light);
+    transform: translateY(-1px);
+}
+
+.pd-grid {
+    display: grid;
+    grid-template-columns: 1.8fr 1.2fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.pd-main,
+.pd-side {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ---------- Hero card ---------- */
+.pd-hero-card {
+    background: var(--surface-0);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.25rem;
+}
+
+.pd-hero-image {
+    flex-shrink: 0;
+    width: 220px;
+    aspect-ratio: 3 / 4;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--surface-50);
+    border: 1px solid var(--surface-100);
+}
+
+.pd-hero-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+}
+
+.pd-hero-noimage {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+}
+
+.pd-hero-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pd-hero-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.pd-hero-title {
+    font-size: 1.4rem;
+    color: var(--text-main);
+}
+
+.pd-hero-stats {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.pd-hero-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.pd-hero-stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.pd-hero-stat-value.overdue {
+    color: var(--danger-text);
+}
+
+.pd-hero-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.1rem;
+}
+
+.pd-hero-meta {
+    border-top: 1px dashed var(--surface-200);
+    padding-top: 0.75rem;
+}
+
+.pd-hero-meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    font-size: 0.88rem;
+}
+
+.pd-hero-meta-row dt {
+    color: var(--text-secondary);
+}
+
+.pd-hero-meta-row dd {
+    color: var(--text-main);
+    font-weight: 600;
+    text-align: right;
+}
+
+/* ---------- Warehouse photos ---------- */
+.pd-photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 0.75rem;
+}
+
+.pd-photo-tile {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--surface-100);
+}
+
+.pd-photo-tile-hidden {
+    display: none;
+}
+
+.pd-photo-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.pd-photo-tile img:hover {
+    transform: scale(1.05);
+}
+
+.pd-photo-primary-tag {
+    position: absolute;
+    top: 0.4rem;
+    left: 0.4rem;
+    background: var(--primary);
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+}
+
+.pd-photo-more {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    border: none;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.pd-empty-photos {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--text-muted);
+    background: var(--surface-50);
+    border-radius: var(--radius-sm);
+}
+
+.pd-empty-photos-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.pd-notes-text {
+    color: var(--text-main);
+}
+
+.pd-notes-empty {
+    color: var(--text-muted);
+}
+
+/* ---------- Declaration form ---------- */
+.pd-form-hint {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    display: block;
+    margin-top: 0.5rem;
+}
+
+.pd-form-submit {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.pd-form-divider {
+    margin: 2rem 0;
+    height: 1px;
+    background: var(--surface-200);
+}
+
+.pd-form-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.pd-form-actions .btn {
+    flex: 1;
+}
+
+/* ---------- Parcel timeline ---------- */
+.pd-timeline {
+    display: flex;
+    flex-direction: column;
+}
+
+.pd-timeline-step {
+    display: flex;
+    gap: 0.85rem;
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.pd-timeline-step:last-child {
+    padding-bottom: 0;
+}
+
+.pd-timeline-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 26px;
+    bottom: 0;
+    width: 2px;
+    background: var(--surface-200);
+}
+
+.pd-timeline-dot {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--surface-100);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    z-index: 1;
+}
+
+.pd-timeline-step.done .pd-timeline-dot {
+    background: var(--success-text);
+    color: #fff;
+}
+
+.pd-timeline-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.pd-timeline-date {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 0.1rem;
+}
+
+/* ---------- Actions card (desktop sidebar) ---------- */
+.pd-actions-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pd-action-btn {
+    width: 100%;
+    justify-content: center;
+}
+
+/* ---------- Parcel information ---------- */
+.pd-info-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.pd-info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px dashed var(--surface-200);
+    font-size: 0.88rem;
+}
+
+.pd-info-row:last-child {
+    border-bottom: none;
+}
+
+.pd-info-row dt {
+    color: var(--text-secondary);
+}
+
+.pd-info-row dd {
+    color: var(--text-main);
+    font-weight: 600;
+    text-align: right;
+}
+
+/* ---------- Mobile sticky action bar ---------- */
+.pd-mobile-bar {
+    display: none;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+    .pd-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .pd-hero-card {
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .pd-hero-image {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+    }
+
+    .pd-hero-stats {
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .pd-actions-card {
+        display: none;
+    }
+
+    .pd-mobile-bar {
+        display: flex;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 150;
+        background: var(--surface-0);
+        border-top: 1px solid var(--surface-100);
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+        padding: 0.6rem 0.5rem calc(0.6rem + env(safe-area-inset-bottom));
+    }
+
+    .pd-mobile-bar-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        padding: 0.5rem 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        border: none;
+        background: none;
+        cursor: pointer;
+    }
+
+    .pd-mobile-bar-btn-primary {
+        color: var(--primary);
+        background: var(--accent);
+        border-radius: var(--radius-sm);
+    }
+
+    .pd-mobile-bar-btn-danger {
+        color: var(--danger-text);
+    }
+
+    /* Leave room at the bottom of the page for the fixed action bar */
+    body.pd-has-mobile-bar .main-content {
+        padding-bottom: 5.5rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .pd-photos-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+    }
+
+    .pd-hero-title {
+        font-size: 1.2rem;
+    }
+
+    .pd-hero-stats {
+        gap: 0.75rem 1.25rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .pd-hero-card {
+        padding: 0.85rem;
+    }
+
+    .pd-photos-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

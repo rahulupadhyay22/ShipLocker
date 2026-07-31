@@ -9,6 +9,12 @@
     flex-wrap: wrap;
 }
 
+.trunk-header-sub {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    margin-top: 0.15rem;
+}
+
 .trunk-howitworks {
     display: inline-flex;
     align-items: center;
@@ -16,6 +22,74 @@
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-secondary);
+}
+
+/* ---------- Stat tiles ---------- */
+.trunk-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.trunk-stat-tile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--surface-0);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1rem 1.1rem;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.trunk-stat-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.trunk-stat-tile.active {
+    border-color: var(--accent);
+}
+
+.trunk-stat-icon {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #fff;
+}
+
+.trunk-stat-icon.icon-1 { background: var(--success-text); }
+.trunk-stat-icon.icon-2 { background: var(--accent); }
+.trunk-stat-icon.icon-3 { background: var(--primary); }
+.trunk-stat-icon.icon-4 { background: var(--danger-text); }
+
+.trunk-stat-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.trunk-stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.1;
+}
+
+.trunk-stat-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .trunk-panel {
@@ -27,55 +101,111 @@
     margin-bottom: 1.5rem;
 }
 
-.trunk-tabs {
+/* ---------- Toolbar ---------- */
+.trunk-toolbar {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.1rem;
-    overflow-x: auto;
-    padding-bottom: 2px;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
-.trunk-tab {
-    display: inline-flex;
+.trunk-search-wrap {
+    position: relative;
+    flex: 1 1 220px;
+    min-width: 180px;
+}
+
+.trunk-search-icon {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.trunk-search-input {
+    padding-left: 2.5rem !important;
+}
+
+.trunk-category-select,
+.trunk-sort-select {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 150px;
+}
+
+.trunk-filter-btn {
+    flex-shrink: 0;
+}
+
+/* ---------- Filter drawer (inline on desktop, slide-in on mobile) ---------- */
+.trunk-filter-drawer {
+    display: flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 1rem;
-    border-radius: 100px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--text-secondary);
-    background: var(--surface-50);
-    border: 1px solid transparent;
+    gap: 0.75rem;
+}
+
+.trunk-filter-drawer-header {
+    display: none;
+}
+
+/* Visually hidden but still announced by screen readers — desktop shows the
+   select's own selected option as its visible label, so a duplicate caption
+   would clutter the layout, but the <label> must stay in the a11y tree. */
+.trunk-filter-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
     white-space: nowrap;
+    border: 0;
+}
+
+.trunk-filter-overlay {
+    display: none;
+}
+
+.trunk-view-toggle {
+    display: inline-flex;
+    border: 1px solid var(--surface-200);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.trunk-view-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: var(--surface-0);
+    color: var(--text-secondary);
+    border: none;
+    cursor: pointer;
     transition: 0.2s;
 }
 
-.trunk-tab:hover {
-    border-color: var(--surface-200);
+.trunk-view-btn:first-child {
+    border-right: 1px solid var(--surface-200);
 }
 
-.trunk-tab-count {
-    background: rgba(0, 0, 0, 0.06);
-    padding: 1px 7px;
-    border-radius: 100px;
-    font-size: 0.75rem;
-}
-
-.trunk-tab.active {
-    background: linear-gradient(180deg, #ffb82e, #f3a10f);
+.trunk-view-btn.active {
+    background: var(--primary-light);
     color: var(--primary);
-    box-shadow: 0 6px 14px rgba(246, 163, 19, 0.25);
 }
 
-.trunk-tab.active .trunk-tab-count {
-    background: rgba(0, 55, 70, 0.14);
-}
-
-.trunk-toolbar {
+.trunk-select-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     border-top: 1px dashed var(--surface-200);
+    margin-top: 1.1rem;
     padding-top: 1.1rem;
     gap: 1rem;
     flex-wrap: wrap;
@@ -131,6 +261,8 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: top center;
+    display: block;
 }
 
 .trunk-card-noimage {
@@ -165,11 +297,35 @@
     gap: 0.4rem;
 }
 
+.trunk-card-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.trunk-card-title-row .status-badge {
+    flex-shrink: 0;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.62rem;
+}
+
 .trunk-card-title {
     font-size: 1.05rem;
     font-weight: 700;
     color: var(--text-main);
     line-height: 1.3;
+}
+
+.trunk-empty-filtered {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem 0;
+}
+
+.trunk-card-meta-label {
+    font-weight: 700;
+    color: var(--text-main);
 }
 
 .trunk-card-weight {
@@ -181,7 +337,21 @@
     font-size: 0.8rem;
     color: var(--text-secondary);
     line-height: 1.5;
+}
+
+.trunk-card-storage {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
     margin-bottom: 0.4rem;
+}
+
+.trunk-card-storage.overdue {
+    color: var(--danger-text);
+}
+
+.trunk-card-storage.overdue .trunk-card-meta-label {
+    color: var(--danger-text);
 }
 
 .trunk-card-link {
@@ -216,33 +386,142 @@
     color: var(--primary);
 }
 
+/* ---------- List view (grid/list toggle) ---------- */
+.trunk-grid.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.trunk-grid.list-view .trunk-card {
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.trunk-grid.list-view .trunk-card-image {
+    width: 90px;
+    flex-shrink: 0;
+    aspect-ratio: 1 / 1;
+    border-bottom: none;
+    border-right: 1px solid var(--surface-100);
+}
+
+.trunk-grid.list-view .trunk-card-body {
+    flex: 1;
+    min-width: 0;
+    padding: 0.75rem 1rem;
+}
+
+.trunk-grid.list-view .trunk-card-link {
+    width: auto;
+    align-self: flex-start;
+}
+
 @media (max-width: 768px) {
     .trunk-header {
         margin-bottom: 1rem;
+    }
+
+    .trunk-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
     }
 
     .trunk-panel {
         padding: 0.9rem;
     }
 
-    .trunk-tabs {
-        margin: -0.9rem -0.9rem 0.9rem;
-        padding: 0.9rem 0.9rem 0.15rem;
-        mask-image: linear-gradient(90deg, #000 90%, transparent);
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-
-    .trunk-tabs::-webkit-scrollbar {
-        display: none;
-    }
-
-    .trunk-tab {
-        padding: 0.55rem 0.9rem;
-        font-size: 0.8rem;
-    }
-
     .trunk-toolbar {
+        gap: 0.6rem;
+    }
+
+    .trunk-search-wrap {
+        flex: 1 1 100%;
+    }
+
+    .trunk-view-toggle {
+        margin-left: auto;
+    }
+
+    /* Filter drawer becomes a left-to-right slide-in panel on mobile */
+    .trunk-filter-drawer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(85vw, 320px);
+        background: var(--surface-0);
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.25rem;
+        padding: 1.25rem;
+        box-shadow: var(--shadow-md);
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 200;
+        overflow-y: auto;
+    }
+
+    .trunk-filter-drawer.open {
+        transform: translateX(0);
+    }
+
+    .trunk-filter-drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .trunk-filter-label {
+        position: static;
+        width: auto;
+        height: auto;
+        padding: 0;
+        margin: 0 0 -0.75rem;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+    }
+
+    .trunk-filter-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: var(--surface-50);
+        color: var(--text-main);
+        cursor: pointer;
+    }
+
+    .trunk-category-select,
+    .trunk-sort-select {
+        width: 100%;
+    }
+
+    .trunk-filter-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 190;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    .trunk-filter-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .trunk-select-row {
         flex-direction: column;
         align-items: stretch;
         border-top: none;
@@ -254,7 +533,7 @@
         padding: 0 0.1rem;
     }
 
-    .trunk-toolbar .btn {
+    .trunk-select-row .btn {
         width: 100%;
         justify-content: center;
         padding: 0.85rem 1.15rem;
@@ -262,6 +541,25 @@
 }
 
 @media (max-width: 640px) {
+    .trunk-stat-tile {
+        padding: 0.8rem;
+        gap: 0.5rem;
+    }
+
+    .trunk-stat-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 0.82rem;
+    }
+
+    .trunk-stat-value {
+        font-size: 1.05rem;
+    }
+
+    .trunk-stat-label {
+        font-size: 0.7rem;
+    }
+
     .trunk-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.65rem;
@@ -283,6 +581,11 @@
         -webkit-box-orient: vertical;
         overflow: hidden;
         min-height: 2.1em;
+    }
+
+    .trunk-card-title-row .status-badge {
+        font-size: 0.55rem;
+        padding: 0.15rem 0.4rem;
     }
 
     .trunk-card-weight {
@@ -312,9 +615,22 @@
     .trunk-pagination {
         flex-wrap: wrap;
     }
+
+    .trunk-grid.list-view .trunk-card-image {
+        width: 70px;
+    }
+
+    .trunk-grid.list-view .trunk-card-title {
+        -webkit-line-clamp: 1;
+        min-height: 0;
+    }
 }
 
 @media (max-width: 380px) {
+    .trunk-stats-row {
+        gap: 0.5rem;
+    }
+
     .trunk-grid {
         gap: 0.5rem;
     }

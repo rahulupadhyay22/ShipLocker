@@ -1,50 +1,115 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ parcel.item_name|default:parcel.tracking_number }} - CamelTrunk{% endblock %}
 
+{% if parcel.status == 'approved' %}{% block body_class %}pd-has-mobile-bar{% endblock %}{% endif %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/parcel_detail.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
-    <div style="display: flex; align-items: center; gap: 1rem;">
-        <a href="{% url 'locker:my_locker' %}" class="btn btn-secondary btn-sm">← Back</a>
-        <div>
-            <h1 class="page-title">Parcel Details</h1>
-            <p class="page-subtitle">Review and approve this parcel for shipping.</p>
-        </div>
-    </div>
+<div class="pd-header">
+    <a href="{% url 'locker:my_locker' %}" class="pd-back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to My Trunk
+    </a>
+    <h1 class="page-title">Parcel Details</h1>
+    <p class="page-subtitle">Review and approve this parcel for shipping.</p>
 </div>
 
-<div class="dashboard-layout">
-    <!-- Left Column: Images & Info -->
-    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-        <!-- Inspection Photos -->
+<div class="pd-grid">
+    <!-- Main column -->
+    <div class="pd-main">
+        <div class="pd-hero-card">
+            <div class="pd-hero-image">
+                {% if primary_image %}
+                <img src="{{ primary_image.image_url }}" alt="{{ parcel.item_name|default:'Parcel photo' }}">
+                {% else %}
+                <div class="pd-hero-noimage">📦</div>
+                {% endif %}
+            </div>
+            <div class="pd-hero-body">
+                <div class="pd-hero-title-row">
+                    <h2 class="pd-hero-title">{{ parcel.item_name|default:"Unnamed Item" }}</h2>
+                    <span class="status-badge
+                        {% if parcel.status == 'approved' %}status-approved
+                        {% elif parcel.status == 'shipped' or parcel.status == 'returned' or parcel.status == 'discarded' %}status-delivered
+                        {% elif parcel.status == 'action_required' %}status-action
+                        {% else %}status-pending{% endif %}">
+                        {{ parcel.get_status_display }}
+                    </span>
+                </div>
+
+                <div class="pd-hero-stats">
+                    <div class="pd-hero-stat">
+                        <span class="pd-hero-stat-value">{{ parcel.weight_kg|default:"--" }} kg</span>
+                        <span class="pd-hero-stat-label">Weight</span>
+                    </div>
+                    <div class="pd-hero-stat">
+                        <span class="pd-hero-stat-value {% if parcel.is_storage_overdue %}overdue{% endif %}">
+                            {% if parcel.is_storage_overdue %}Overdue{% else %}{{ parcel.days_remaining_free }} Days{% endif %}
+                        </span>
+                        <span class="pd-hero-stat-label">Storage Left</span>
+                    </div>
+                    {% if parcel.item_price %}
+                    <div class="pd-hero-stat">
+                        <span class="pd-hero-stat-value">{{ parcel.item_currency }} {{ parcel.item_price }}</span>
+                        <span class="pd-hero-stat-label">Value</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <dl class="pd-hero-meta">
+                    {% if parcel.category %}
+                    <div class="pd-hero-meta-row">
+                        <dt>Category</dt>
+                        <dd>{{ parcel.get_category_display }}</dd>
+                    </div>
+                    {% endif %}
+                    <div class="pd-hero-meta-row">
+                        <dt>Received On</dt>
+                        <dd>{{ parcel.received_at|date:"d M Y" }}</dd>
+                    </div>
+                    {% if parcel.length_cm and parcel.width_cm and parcel.height_cm %}
+                    <div class="pd-hero-meta-row">
+                        <dt>Dimensions</dt>
+                        <dd>{{ parcel.length_cm }} x {{ parcel.width_cm }} x {{ parcel.height_cm }} cm</dd>
+                    </div>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <!-- Warehouse Photos -->
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title-row"><span class="card-icon-badge">📷</span> Inspection Photos</h3>
+                <h3 class="card-title-row"><span class="card-icon-badge">📷</span> Warehouse Photos</h3>
             </div>
             <div class="card-body">
                 {% if parcel.images.all %}
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem;">
+                <div class="pd-photos-grid">
                     {% for image in parcel.images.all %}
-                    <div
-                        style="position: relative; border-radius: 12px; overflow: hidden; height: 140px; border: 1px solid var(--surface-200);">
+                    <div class="pd-photo-tile {% if forloop.counter0 >= 4 %}pd-photo-tile-hidden{% endif %}">
                         <img src="{{ image.image_url }}" alt="Inspection photo"
                             class="inspection-photo-item"
                             data-index="{{ forloop.counter0 }}"
-                            style="width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: transform 0.2s;"
-                            onclick="openImagePreview(this)"
-                            onmouseover="this.style.transform='scale(1.05)'"
-                            onmouseout="this.style.transform='scale(1)'">
-                        {% if image.is_primary %}
-                        <span
-                            style="position: absolute; top: 0.5rem; left: 0.5rem; background: var(--primary); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">Primary</span>
+                            onclick="openImagePreview(this)">
+                        {% if image.is_primary %}<span class="pd-photo-primary-tag">Primary</span>{% endif %}
+                        {% if forloop.counter0 == 3 and parcel.images.all|length > 4 %}
+                        <button type="button" class="pd-photo-more" onclick="openImagePreview(this.previousElementSibling)">
+                            +{{ parcel.images.all|length|add:"-4" }}
+                        </button>
                         {% endif %}
                     </div>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div
-                    style="text-align: center; padding: 3rem 1rem; color: var(--text-muted); background: var(--surface-50); border-radius: var(--radius-sm);">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📷</div>
+                <div class="pd-empty-photos">
+                    <div class="pd-empty-photos-icon">📷</div>
                     <p>No inspection photos available yet.</p>
                 </div>
                 {% endif %}
@@ -58,33 +123,18 @@
             </div>
             <div class="card-body">
                 {% if parcel.inspection_notes %}
-                <p style="font-size: 1rem; color: var(--text-main);">{{ parcel.inspection_notes }}</p>
+                <p class="pd-notes-text">{{ parcel.inspection_notes }}</p>
                 {% else %}
-                <p style="color: var(--text-muted);">No notes from warehouse.</p>
+                <p class="pd-notes-empty">No notes from warehouse.</p>
                 {% endif %}
-
-                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--surface-100);">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                        <div>
-                            <span class="stat-label">Weight</span>
-                            <div class="stat-value" style="font-size: 1.25rem;">{{ parcel.weight_kg|default:"--" }} kg
-                            </div>
-                        </div>
-                        <div>
-                            <span class="stat-label">Received</span>
-                            <div class="stat-value" style="font-size: 1.25rem;">{{ parcel.received_at|date:"M d, Y" }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Declaration Form -->
-    <div>
+    <!-- Side column -->
+    <div class="pd-side">
         {% if parcel.status == 'action_required' %}
-        <div class="card" style="border-top: 4px solid var(--primary);">
+        <div class="card pd-declare-card">
             <div class="card-header">
                 <h3>✏️ Item Declaration</h3>
             </div>
@@ -130,80 +180,163 @@
                         <textarea id="customs_description" name="customs_description" class="form-input" rows="3"
                             placeholder="Brief description for customs (e.g. Men's athletic shoes, size 10, new)"
                             required>{{ parcel.customs_description }}</textarea>
-                        <small
-                            style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.5rem;">Be
-                            accurate - incorrect declarations can cause customs delays</small>
+                        <small class="pd-form-hint">Be accurate - incorrect declarations can cause customs delays</small>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="invoice">Invoice (Optional)</label>
-                        <div style="position: relative;">
-                            <input type="file" id="invoice" name="invoice" class="form-input"
-                                accept=".pdf,.jpg,.jpeg,.png" style="padding-top: 0.6rem;">
-                        </div>
-                        <small
-                            style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.5rem;">Upload
-                            purchase invoice for faster customs clearance</small>
+                        <input type="file" id="invoice" name="invoice" class="form-input"
+                            accept=".pdf,.jpg,.jpeg,.png">
+                        <small class="pd-form-hint">Upload purchase invoice for faster customs clearance</small>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <button type="submit" class="btn btn-primary pd-form-submit">
                         ✓ Approve & Move to Ready to Ship
                     </button>
                 </form>
 
-                <div style="margin: 2rem 0; height: 1px; background: var(--surface-200);"></div>
+                <div class="pd-form-divider"></div>
 
-                <div style="display: flex; gap: 1rem;">
-                    <button type="button" class="btn btn-secondary" style="flex: 1;"
-                        onclick="document.getElementById('returnModal').style.display='flex'">
+                <div class="pd-form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('returnModal').style.display='flex'">
                         Request Return
-                    </button>
-                    <button type="button" class="btn btn-danger" style="flex: 1;"
-                        onclick="document.getElementById('discardModal').style.display='flex'">
-                        Discard
                     </button>
                 </div>
             </div>
         </div>
         {% else %}
+
+        <!-- Parcel Timeline -->
         <div class="card">
             <div class="card-header">
-                <h3>📦 Parcel Status</h3>
+                <h3>Parcel Timeline</h3>
             </div>
             <div class="card-body">
-                <span class="status-badge 
-                    {% if parcel.status == 'approved' %}status-approved
-                    {% elif parcel.status == 'shipped' %}status-shipped
-                    {% else %}status-pending{% endif %}" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
-                    {{ parcel.get_status_display }}
-                </span>
+                <div class="pd-timeline">
+                    <div class="pd-timeline-step done">
+                        <span class="pd-timeline-dot">✓</span>
+                        <div class="pd-timeline-content">
+                            <div class="pd-timeline-label">Arrived at Warehouse</div>
+                            <div class="pd-timeline-date">{{ parcel.received_at|date:"d M Y, g:i A" }}</div>
+                        </div>
+                    </div>
+                    {% if earliest_image %}
+                    <div class="pd-timeline-step done">
+                        <span class="pd-timeline-dot">✓</span>
+                        <div class="pd-timeline-content">
+                            <div class="pd-timeline-label">Photos &amp; Video Verified</div>
+                            <div class="pd-timeline-date">{{ earliest_image.uploaded_at|date:"d M Y, g:i A" }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="pd-timeline-step {% if parcel.approved_at %}done{% endif %}">
+                        <span class="pd-timeline-dot">{% if parcel.approved_at %}✓{% endif %}</span>
+                        <div class="pd-timeline-content">
+                            <div class="pd-timeline-label">Ready to Ship</div>
+                            <div class="pd-timeline-date">
+                                {% if parcel.approved_at %}{{ parcel.approved_at|date:"d M Y, g:i A" }}{% else %}Pending{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pd-timeline-step {% if shipment_item %}done{% endif %}">
+                        <span class="pd-timeline-dot">{% if shipment_item %}✓{% endif %}</span>
+                        <div class="pd-timeline-content">
+                            <div class="pd-timeline-label">Shipped to You</div>
+                            <div class="pd-timeline-date">
+                                {% if shipment_item %}{{ shipment_item.shipment.created_at|date:"d M Y, g:i A" }}{% else %}Pending{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                <div style="margin-top: 2rem;">
-                    <div class="stat-label">Item Name</div>
-                    <div style="font-size: 1.1rem; font-weight: 500; margin-top: 0.25rem;">
-                        {{ parcel.item_name|default:"--" }}</div>
-                </div>
-                <div style="margin-top: 2rem;">
-                    <div class="stat-label">Parcel ID</div>
-                    <div style="font-size: 1.1rem; font-weight: 500; margin-top: 0.25rem;">
-                        {{ parcel.display_id|default:"--" }}</div>
-                </div>
+        {% if parcel.status == 'approved' %}
+        <div class="card pd-actions-card">
+            <div class="card-header">
+                <h3>Actions</h3>
+            </div>
+            <div class="card-body pd-actions-body">
+                <a href="{% url 'shipments:create' %}" class="btn btn-primary pd-action-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6m16 0l-2 5H6l-2-5m16 0H4" />
+                    </svg>
+                    <span>Ship This Item</span>
+                </a>
+                <button type="button" class="btn btn-secondary pd-action-btn" onclick="document.getElementById('returnModal').style.display='flex'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v1M3 10l4-4M3 10l4 4" />
+                    </svg>
+                    <span>Request Return</span>
+                </button>
+                <button type="button" class="btn btn-danger pd-action-btn" onclick="document.getElementById('discardModal').style.display='flex'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Move to Discard</span>
+                </button>
+            </div>
+        </div>
+        {% endif %}
 
-                <div style="margin-top: 1.5rem;">
-                    <div class="stat-label">Declared Value</div>
-                    <div style="font-size: 1.1rem; font-weight: 500; margin-top: 0.25rem;">{{ parcel.item_currency }} 
-                        {{ parcel.item_price|default:"--" }}</div>
-                </div>
-
-                <div style="margin-top: 1.5rem;">
-                    <div class="stat-label">Category</div>
-                    <div style="font-size: 1.1rem; font-weight: 500; margin-top: 0.25rem;">{{ parcel.get_category_display|default:"--" }}</div>
-                </div>
+        <!-- Parcel Information -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Parcel Information</h3>
+            </div>
+            <div class="card-body">
+                <dl class="pd-info-list">
+                    <div class="pd-info-row">
+                        <dt>Parcel ID</dt>
+                        <dd>{{ parcel.display_id|default:"--" }}</dd>
+                    </div>
+                    {% if parcel.tracking_number %}
+                    <div class="pd-info-row">
+                        <dt>AWB / Tracking ID</dt>
+                        <dd>{{ parcel.tracking_number }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if parcel.carrier %}
+                    <div class="pd-info-row">
+                        <dt>Carrier</dt>
+                        <dd>{{ parcel.carrier }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if parcel.inspection_notes %}
+                    <div class="pd-info-row">
+                        <dt>Remarks</dt>
+                        <dd>{{ parcel.inspection_notes }}</dd>
+                    </div>
+                    {% endif %}
+                </dl>
             </div>
         </div>
         {% endif %}
     </div>
 </div>
+
+{% if parcel.status == 'approved' %}
+<div class="pd-mobile-bar">
+    <a href="{% url 'shipments:create' %}" class="pd-mobile-bar-btn pd-mobile-bar-btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6m16 0l-2 5H6l-2-5m16 0H4" />
+        </svg>
+        Ship This Item
+    </a>
+    <button type="button" class="pd-mobile-bar-btn" onclick="document.getElementById('returnModal').style.display='flex'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v1M3 10l4-4M3 10l4 4" />
+        </svg>
+        Request Return
+    </button>
+    <button type="button" class="pd-mobile-bar-btn pd-mobile-bar-btn-danger" onclick="document.getElementById('discardModal').style.display='flex'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Discard
+    </button>
+</div>
+{% endif %}
 
 <!-- Return Modal -->
 <div id="returnModal"
@@ -258,15 +391,8 @@
 
 <style>
     @keyframes slideUp {
-        from {
-            transform: translateY(20px);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
     }
 
     /* Premium Image Preview Modal Styles */
@@ -332,18 +458,10 @@
         background: rgba(255, 255, 255, 0.2);
         color: #ffffff;
     }
-    .image-preview-nav-prev {
-        left: 2rem;
-    }
-    .image-preview-nav-prev:hover {
-        transform: translateY(-50%) scale(1.05) translateX(-2px);
-    }
-    .image-preview-nav-next {
-        right: 2rem;
-    }
-    .image-preview-nav-next:hover {
-        transform: translateY(-50%) scale(1.05) translateX(2px);
-    }
+    .image-preview-nav-prev { left: 2rem; }
+    .image-preview-nav-prev:hover { transform: translateY(-50%) scale(1.05) translateX(-2px); }
+    .image-preview-nav-next { right: 2rem; }
+    .image-preview-nav-next:hover { transform: translateY(-50%) scale(1.05) translateX(2px); }
     .image-preview-container {
         display: flex;
         flex-direction: column;
@@ -385,79 +503,44 @@
         -webkit-backdrop-filter: blur(8px);
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
-    
+
     @media (max-width: 768px) {
-        .image-preview-nav {
-            width: 44px;
-            height: 44px;
-        }
-        .image-preview-nav-prev {
-            left: 0.75rem;
-        }
-        .image-preview-nav-next {
-            right: 0.75rem;
-        }
-        .image-preview-close {
-            top: 1rem;
-            right: 1rem;
-            width: 40px;
-            height: 40px;
-            font-size: 1.5rem;
-        }
-        .image-preview-container {
-            max-width: 95%;
-        }
-        .image-preview-img {
-            max-height: 65vh;
-        }
+        .image-preview-nav { width: 44px; height: 44px; }
+        .image-preview-nav-prev { left: 0.75rem; }
+        .image-preview-nav-next { right: 0.75rem; }
+        .image-preview-close { top: 1rem; right: 1rem; width: 40px; height: 40px; font-size: 1.5rem; }
+        .image-preview-container { max-width: 95%; }
+        .image-preview-img { max-height: 65vh; }
     }
 </style>
 
 <!-- Image Preview Modal HTML -->
 <div id="imagePreviewModal" class="image-preview-modal">
-    <!-- Close Button -->
-    <button onclick="closeImagePreview()" class="image-preview-close" aria-label="Close Preview">
-        &times;
-    </button>
-
-    <!-- Navigation Buttons -->
+    <button onclick="closeImagePreview()" class="image-preview-close" aria-label="Close Preview">&times;</button>
     <button id="prevImageBtn" onclick="prevImage()" class="image-preview-nav image-preview-nav-prev" aria-label="Previous Image">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 24px; height: 24px;">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
         </svg>
     </button>
-
     <button id="nextImageBtn" onclick="nextImage()" class="image-preview-nav image-preview-nav-next" aria-label="Next Image">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 24px; height: 24px;">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
         </svg>
     </button>
-
-    <!-- Content Area -->
     <div class="image-preview-container">
         <div class="image-preview-wrapper">
             <img id="previewImageSrc" class="image-preview-img" src="" alt="Preview">
         </div>
-        
-        <!-- Image Counter / Info Badge -->
-        <div id="imageCounter" class="image-preview-counter">
-            1 / 1
-        </div>
+        <div id="imageCounter" class="image-preview-counter">1 / 1</div>
     </div>
 </div>
 
 <script>
-    // Close modals on outside click
     window.onclick = function (event) {
-        if (event.target.id === 'returnModal') {
-            document.getElementById('returnModal').style.display = "none";
-        }
-        if (event.target.id === 'discardModal') {
-            document.getElementById('discardModal').style.display = "none";
-        }
+        if (event.target.id === 'returnModal') document.getElementById('returnModal').style.display = "none";
+        if (event.target.id === 'discardModal') document.getElementById('discardModal').style.display = "none";
     }
 
-    // Premium Image Preview JS Logic
     let previewImages = [];
     let currentImageIndex = 0;
 
@@ -466,7 +549,6 @@
     });
 
     function openImagePreview(element) {
-        // Fallback initialization
         if (previewImages.length === 0) {
             previewImages = Array.from(document.querySelectorAll('.inspection-photo-item')).map(img => img.src);
         }
@@ -474,49 +556,38 @@
         updatePreviewImage();
         const modal = document.getElementById('imagePreviewModal');
         modal.style.display = 'flex';
-        // Use setTimeout to trigger transition
-        setTimeout(() => {
-            modal.classList.add('show');
-        }, 10);
+        setTimeout(() => { modal.classList.add('show'); }, 10);
         document.body.style.overflow = 'hidden';
     }
 
     function closeImagePreview() {
         const modal = document.getElementById('imagePreviewModal');
         modal.classList.remove('show');
-        // Wait for transition to complete
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 250);
+        setTimeout(() => { modal.style.display = 'none'; }, 250);
         document.body.style.overflow = '';
     }
 
     function updatePreviewImage() {
         if (previewImages.length === 0) return;
-        
-        // Bounds check
         if (currentImageIndex < 0) currentImageIndex = previewImages.length - 1;
         if (currentImageIndex >= previewImages.length) currentImageIndex = 0;
-        
+
         const imgElement = document.getElementById('previewImageSrc');
-        // Slide/fade animation
         imgElement.style.opacity = '0.3';
         imgElement.style.transform = 'scale(0.97)';
-        
+
         setTimeout(() => {
             imgElement.src = previewImages[currentImageIndex];
             imgElement.style.opacity = '1';
             imgElement.style.transform = 'scale(1)';
         }, 120);
 
-        // Update counter
         document.getElementById('imageCounter').textContent = `${currentImageIndex + 1} / ${previewImages.length}`;
-        
-        // Toggle nav buttons
+
         const prevBtn = document.getElementById('prevImageBtn');
         const nextBtn = document.getElementById('nextImageBtn');
         const counterBadge = document.getElementById('imageCounter');
-        
+
         if (previewImages.length <= 1) {
             prevBtn.style.display = 'none';
             nextBtn.style.display = 'none';
@@ -528,34 +599,19 @@
         }
     }
 
-    function prevImage() {
-        currentImageIndex--;
-        updatePreviewImage();
-    }
+    function prevImage() { currentImageIndex--; updatePreviewImage(); }
+    function nextImage() { currentImageIndex++; updatePreviewImage(); }
 
-    function nextImage() {
-        currentImageIndex++;
-        updatePreviewImage();
-    }
-
-    // Close on backdrop click
     document.getElementById('imagePreviewModal').addEventListener('click', function (e) {
-        if (e.target === this) {
-            closeImagePreview();
-        }
+        if (e.target === this) closeImagePreview();
     });
 
-    // Key bindings for navigation & close
     document.addEventListener('keydown', function (e) {
         const modal = document.getElementById('imagePreviewModal');
         if (modal && modal.style.display === 'flex') {
-            if (e.key === 'Escape') {
-                closeImagePreview();
-            } else if (e.key === 'ArrowLeft') {
-                prevImage();
-            } else if (e.key === 'ArrowRight') {
-                nextImage();
-            }
+            if (e.key === 'Escape') closeImagePreview();
+            else if (e.key === 'ArrowLeft') prevImage();
+            else if (e.key === 'ArrowRight') nextImage();
         }
     });
 </script>

@@ -9,7 +9,10 @@
 
 {% block content %}
 <div class="trunk-header">
-    <h1 class="page-title">My Trunk</h1>
+    <div>
+        <h1 class="page-title">My Trunk</h1>
+        <p class="trunk-header-sub">All your items, safe and secure in India</p>
+    </div>
     <a href="{% url 'content:faq' %}" class="trunk-howitworks">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -18,16 +21,99 @@
     </a>
 </div>
 
-<div class="trunk-panel">
-    <div class="trunk-tabs">
-        <a href="?tab=all" class="trunk-tab {% if active_tab == 'all' %}active{% endif %}">All <span class="trunk-tab-count">{{ total_items }}</span></a>
-        <a href="?tab=action_required" class="trunk-tab {% if active_tab == 'action_required' %}active{% endif %}">Action Required <span class="trunk-tab-count">{{ action_count }}</span></a>
-        <a href="?tab=ready_to_ship" class="trunk-tab {% if active_tab == 'ready_to_ship' %}active{% endif %}">Ready to Ship <span class="trunk-tab-count">{{ ready_count }}</span></a>
-        <a href="?tab=returns" class="trunk-tab {% if active_tab == 'returns' %}active{% endif %}">Returns <span class="trunk-tab-count">{{ return_count }}</span></a>
-        <a href="?tab=discards" class="trunk-tab {% if active_tab == 'discards' %}active{% endif %}">Discards <span class="trunk-tab-count">{{ discard_count }}</span></a>
-    </div>
+<div class="trunk-stats-row">
+    <a href="?tab=ready_to_ship" class="trunk-stat-tile {% if active_tab == 'ready_to_ship' %}active{% endif %}">
+        <span class="trunk-stat-icon icon-1">1</span>
+        <span class="trunk-stat-info">
+            <span class="trunk-stat-value">{{ ready_count }}</span>
+            <span class="trunk-stat-label">Ready to Ship</span>
+        </span>
+    </a>
+    <a href="?tab=action_required" class="trunk-stat-tile {% if active_tab == 'action_required' %}active{% endif %}">
+        <span class="trunk-stat-icon icon-2">2</span>
+        <span class="trunk-stat-info">
+            <span class="trunk-stat-value">{{ action_count }}</span>
+            <span class="trunk-stat-label">Approval Pending</span>
+        </span>
+    </a>
+    <a href="?tab=returns" class="trunk-stat-tile {% if active_tab == 'returns' %}active{% endif %}">
+        <span class="trunk-stat-icon icon-3">3</span>
+        <span class="trunk-stat-info">
+            <span class="trunk-stat-value">{{ return_count }}</span>
+            <span class="trunk-stat-label">Returns</span>
+        </span>
+    </a>
+    <a href="?tab=discards" class="trunk-stat-tile {% if active_tab == 'discards' %}active{% endif %}">
+        <span class="trunk-stat-icon icon-4">4</span>
+        <span class="trunk-stat-info">
+            <span class="trunk-stat-value">{{ discard_count }}</span>
+            <span class="trunk-stat-label">Discarded</span>
+        </span>
+    </a>
+</div>
 
+<div class="trunk-panel">
     <div class="trunk-toolbar">
+        <div class="trunk-search-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="trunk-search-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" id="trunk-search" class="form-input trunk-search-input" placeholder="Search your items..." aria-label="Search your items">
+        </div>
+        <button type="button" id="trunk-filter-btn" class="btn btn-secondary trunk-filter-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M6 8h12M9 12h6M11 16h2" />
+            </svg>
+            Filter
+        </button>
+        <div class="trunk-view-toggle" role="group" aria-label="View mode">
+            <button type="button" id="trunk-view-grid" class="trunk-view-btn" aria-label="Grid view">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
+                </svg>
+            </button>
+            <button type="button" id="trunk-view-list" class="trunk-view-btn" aria-label="List view">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="trunk-filter-drawer" id="trunk-filter-drawer">
+            <div class="trunk-filter-drawer-header">
+                <h3>Filters</h3>
+                <button type="button" id="trunk-filter-close" class="trunk-filter-close" aria-label="Close filters">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <label for="trunk-category-filter" class="trunk-filter-label">Category</label>
+            <select id="trunk-category-filter" class="form-input trunk-category-select">
+                <option value="">All Categories</option>
+                <option value="clothing">Clothing & Accessories</option>
+                <option value="electronics">Electronics</option>
+                <option value="cosmetics">Cosmetics & Personal Care</option>
+                <option value="food">Food & Supplements</option>
+                <option value="home">Home & Kitchen</option>
+                <option value="books">Books & Stationery</option>
+                <option value="jewelry">Jewelry & Watches</option>
+                <option value="sports">Sports & Fitness</option>
+                <option value="other">Other</option>
+            </select>
+            <label for="trunk-sort" class="trunk-filter-label">Sort</label>
+            <select id="trunk-sort" class="form-input trunk-sort-select">
+                <option value="newest">Sort by: Newest</option>
+                <option value="oldest">Sort by: Oldest</option>
+                <option value="name-asc">Name: A-Z</option>
+                <option value="name-desc">Name: Z-A</option>
+            </select>
+        </div>
+    </div>
+    <div class="trunk-filter-overlay" id="trunk-filter-overlay"></div>
+
+    {% if active_tab == 'ready_to_ship' %}
+    <div class="trunk-select-row">
         <label class="trunk-select-all">
             <input type="checkbox" id="trunk-select-all">
             Select All
@@ -39,12 +125,13 @@
             Ship Selected
         </a>
     </div>
+    {% endif %}
 </div>
 
 {% if items %}
 <div class="trunk-grid" id="trunk-grid">
     {% for item in items %}
-    <div class="trunk-card">
+    <div class="trunk-card" data-title="{{ item.title|lower }}" data-category="{{ item.parcel.category }}" data-date="{{ item.date|date:'U' }}">
         <div class="trunk-card-image">
             {% if item.kind == 'ready_to_ship' %}
             <label class="trunk-card-checkbox">
@@ -59,12 +146,21 @@
             {% endif %}
         </div>
         <div class="trunk-card-body">
-            <h3 class="trunk-card-title">{{ item.title }}</h3>
-            {% if item.weight_kg %}<div class="trunk-card-weight">{{ item.weight_kg }} kg</div>{% endif %}
+            <div class="trunk-card-title-row">
+                <h3 class="trunk-card-title">{{ item.title }}</h3>
+                <span class="status-badge {{ item.status_class }}">{{ item.status_label }}</span>
+            </div>
+            {% if item.weight_kg %}<div class="trunk-card-weight"><span class="trunk-card-meta-label">Weight:</span> {{ item.weight_kg }} kg</div>{% endif %}
             {% if item.date %}
             <div class="trunk-card-date">
-                {% if item.kind == 'returns' or item.kind == 'discards' %}Requested on{% else %}Received on{% endif %}<br>
+                <span class="trunk-card-meta-label">{% if item.kind == 'returns' or item.kind == 'discards' %}Requested:{% else %}Received:{% endif %}</span>
                 {{ item.date|date:"d M Y" }}
+            </div>
+            {% endif %}
+            {% if item.days_left is not None %}
+            <div class="trunk-card-storage {% if item.days_left == 0 %}overdue{% endif %}">
+                <span class="trunk-card-meta-label">Free Storage:</span>
+                {% if item.days_left > 0 %}{{ item.days_left }} day{{ item.days_left|pluralize }} left{% else %}Overdue{% endif %}
             </div>
             {% endif %}
             <a href="{% url 'locker:parcel_detail' pk=item.pk %}" class="btn btn-secondary trunk-card-link">
@@ -77,6 +173,7 @@
     </div>
     {% endfor %}
 </div>
+<p class="trunk-empty-filtered" id="trunk-empty-filtered" style="display:none;">No items match your search.</p>
 
 {% if page_obj.paginator.num_pages > 1 %}
 <div class="trunk-pagination">
@@ -103,13 +200,120 @@
 
 <script>
     (function () {
+        var grid = document.getElementById('trunk-grid');
+        if (!grid) return;
+
+        // Select All → per-checkbox propagation
         var selectAll = document.getElementById('trunk-select-all');
-        if (!selectAll) return;
-        selectAll.addEventListener('change', function () {
-            document.querySelectorAll('.trunk-item-checkbox').forEach(function (cb) {
-                cb.checked = selectAll.checked;
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                document.querySelectorAll('.trunk-item-checkbox').forEach(function (cb) {
+                    cb.checked = selectAll.checked;
+                });
             });
+        }
+
+        var searchInput = document.getElementById('trunk-search');
+        var categorySelect = document.getElementById('trunk-category-filter');
+        var sortSelect = document.getElementById('trunk-sort');
+        var filterBtn = document.getElementById('trunk-filter-btn');
+        var viewGridBtn = document.getElementById('trunk-view-grid');
+        var viewListBtn = document.getElementById('trunk-view-list');
+        var emptyFiltered = document.getElementById('trunk-empty-filtered');
+        var cards = Array.prototype.slice.call(grid.querySelectorAll('.trunk-card'));
+
+        function applyTrunkFilters() {
+            var query = (searchInput.value || '').trim().toLowerCase();
+            var category = categorySelect.value;
+            var visibleCount = 0;
+
+            cards.forEach(function (card) {
+                var matchesSearch = !query || card.dataset.title.indexOf(query) !== -1;
+                var matchesCategory = !category || card.dataset.category === category;
+                var visible = matchesSearch && matchesCategory;
+                card.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
+            });
+
+            if (emptyFiltered) {
+                emptyFiltered.style.display = visibleCount === 0 ? '' : 'none';
+            }
+        }
+
+        function applyTrunkSort() {
+            var mode = sortSelect.value;
+            var sorted = cards.slice().sort(function (a, b) {
+                if (mode === 'name-asc' || mode === 'name-desc') {
+                    var cmp = a.dataset.title.localeCompare(b.dataset.title);
+                    return mode === 'name-asc' ? cmp : -cmp;
+                }
+                var dateCmp = Number(a.dataset.date) - Number(b.dataset.date);
+                return mode === 'oldest' ? dateCmp : -dateCmp;
+            });
+            sorted.forEach(function (card) { grid.appendChild(card); });
+        }
+
+        if (searchInput) searchInput.addEventListener('input', applyTrunkFilters);
+        if (categorySelect) categorySelect.addEventListener('change', applyTrunkFilters);
+        if (sortSelect) sortSelect.addEventListener('change', applyTrunkSort);
+
+        var filterDrawer = document.getElementById('trunk-filter-drawer');
+        var filterOverlay = document.getElementById('trunk-filter-overlay');
+        var filterClose = document.getElementById('trunk-filter-close');
+        var mobileQuery = window.matchMedia('(max-width: 768px)');
+
+        function openFilterDrawer() {
+            if (filterDrawer) filterDrawer.classList.add('open');
+            if (filterOverlay) filterOverlay.classList.add('open');
+            if (filterClose) filterClose.focus();
+        }
+
+        function closeFilterDrawer() {
+            if (filterDrawer) filterDrawer.classList.remove('open');
+            if (filterOverlay) filterOverlay.classList.remove('open');
+            if (filterBtn) filterBtn.focus();
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && filterDrawer && filterDrawer.classList.contains('open')) {
+                closeFilterDrawer();
+            }
         });
+
+        if (filterBtn) {
+            filterBtn.addEventListener('click', function () {
+                if (mobileQuery.matches) {
+                    openFilterDrawer();
+                    return;
+                }
+                if (categorySelect) {
+                    if (typeof categorySelect.showPicker === 'function') {
+                        try { categorySelect.showPicker(); return; } catch (e) { /* fall through */ }
+                    }
+                    categorySelect.focus();
+                    categorySelect.click();
+                }
+            });
+        }
+
+        if (filterClose) filterClose.addEventListener('click', closeFilterDrawer);
+        if (filterOverlay) filterOverlay.addEventListener('click', closeFilterDrawer);
+
+        function setViewMode(mode, isUserChoice) {
+            grid.classList.toggle('list-view', mode === 'list');
+            if (viewGridBtn) viewGridBtn.classList.toggle('active', mode !== 'list');
+            if (viewListBtn) viewListBtn.classList.toggle('active', mode === 'list');
+            if (isUserChoice) {
+                try { localStorage.setItem('trunkViewMode', mode); } catch (e) { /* ignore */ }
+            }
+        }
+
+        if (viewGridBtn) viewGridBtn.addEventListener('click', function () { setViewMode('grid', true); });
+        if (viewListBtn) viewListBtn.addEventListener('click', function () { setViewMode('list', true); });
+
+        var savedMode = null;
+        try { savedMode = localStorage.getItem('trunkViewMode'); } catch (e) { /* ignore */ }
+        setViewMode(savedMode || (mobileQuery.matches ? 'list' : 'grid'), false);
     })();
 </script>
 {% endblock %}
