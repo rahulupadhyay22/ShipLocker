@@ -133,24 +133,6 @@
                     My Trunk
                 </a>
 
-                <a href="{% url 'locker:action_required' %}"
-                    class="nav-item {% if 'action-required' in request.path %}active{% endif %}">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M20 13V7a2 2 0 00-2-2h-4m6 8l-3-3m3 3l-3 3M4 11V7a2 2 0 012-2h4m-6 6l3-3m-3 3l3 3m1 5h8a2 2 0 002-2v-3H6v3a2 2 0 002 2z" />
-                    </svg>
-                    Incoming Parcels
-                </a>
-
-                <a href="{% url 'locker:ready_to_ship' %}"
-                    class="nav-item {% if 'ready-to-ship' in request.path %}active{% endif %}">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 7l9-4 9 4-9 4-9-4zm0 0v10l9 4 9-4V7M12 11v10" />
-                    </svg>
-                    Ship My Trunk
-                </a>
-
                 <a href="{% url 'shipments:list' %}"
                     class="nav-item {% if 'shipments' in request.path %}active{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

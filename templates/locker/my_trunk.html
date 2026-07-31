@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Trunk - CamelTrunk{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/my_trunk.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="trunk-header">
+    <h1 class="page-title">My Trunk</h1>
+    <a href="{% url 'content:faq' %}" class="trunk-howitworks">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        How it works?
+    </a>
+</div>
+
+<div class="trunk-panel">
+    <div class="trunk-tabs">
+        <a href="?tab=all" class="trunk-tab {% if active_tab == 'all' %}active{% endif %}">All <span class="trunk-tab-count">{{ total_items }}</span></a>
+        <a href="?tab=action_required" class="trunk-tab {% if active_tab == 'action_required' %}active{% endif %}">Action Required <span class="trunk-tab-count">{{ action_count }}</span></a>
+        <a href="?tab=ready_to_ship" class="trunk-tab {% if active_tab == 'ready_to_ship' %}active{% endif %}">Ready to Ship <span class="trunk-tab-count">{{ ready_count }}</span></a>
+        <a href="?tab=returns" class="trunk-tab {% if active_tab == 'returns' %}active{% endif %}">Returns <span class="trunk-tab-count">{{ return_count }}</span></a>
+        <a href="?tab=discards" class="trunk-tab {% if active_tab == 'discards' %}active{% endif %}">Discards <span class="trunk-tab-count">{{ discard_count }}</span></a>
+    </div>
+
+    <div class="trunk-toolbar">
+        <label class="trunk-select-all">
+            <input type="checkbox" id="trunk-select-all">
+            Select All
+        </label>
+        <a href="{% url 'shipments:create' %}" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6m16 0l-2 5H6l-2-5m16 0H4" />
+            </svg>
+            Ship Selected
+        </a>
+    </div>
+</div>
+
+{% if items %}
+<div class="trunk-grid" id="trunk-grid">
+    {% for item in items %}
+    <div class="trunk-card">
+        <div class="trunk-card-image">
+            {% if item.kind == 'ready_to_ship' %}
+            <label class="trunk-card-checkbox">
+                <input type="checkbox" class="trunk-item-checkbox" value="{{ item.pk }}">
+                <span></span>
+            </label>
+            {% endif %}
+            {% if item.image %}
+            <img src="{{ item.image.image_url }}" alt="{{ item.title }}">
+            {% else %}
+            <div class="trunk-card-noimage">📦</div>
+            {% endif %}
+        </div>
+        <div class="trunk-card-body">
+            <h3 class="trunk-card-title">{{ item.title }}</h3>
+            {% if item.weight_kg %}<div class="trunk-card-weight">{{ item.weight_kg }} kg</div>{% endif %}
+            {% if item.date %}
+            <div class="trunk-card-date">
+                {% if item.kind == 'returns' or item.kind == 'discards' %}Requested on{% else %}Received on{% endif %}<br>
+                {{ item.date|date:"d M Y" }}
+            </div>
+            {% endif %}
+            <a href="{% url 'locker:parcel_detail' pk=item.pk %}" class="btn btn-secondary trunk-card-link">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                View Details
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="trunk-pagination">
+    {% if page_obj.has_previous %}
+    <a href="?tab={{ active_tab }}&page={{ page_obj.previous_page_number }}" class="trunk-page-btn">&lsaquo;</a>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    <a href="?tab={{ active_tab }}&page={{ num }}" class="trunk-page-btn {% if num == page_obj.number %}active{% endif %}">{{ num }}</a>
+    {% endfor %}
+    {% if page_obj.has_next %}
+    <a href="?tab={{ active_tab }}&page={{ page_obj.next_page_number }}" class="trunk-page-btn">&rsaquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card" style="text-align: center; padding: 5rem 2rem;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">✨</div>
+    <h3>No Items Here</h3>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Shop online and send items to your virtual address to see them here.</p>
+    <a href="{% url 'accounts:dashboard' %}" class="btn btn-primary">Back to Dashboard</a>
+</div>
+{% endif %}
+
+<script>
+    (function () {
+        var selectAll = document.getElementById('trunk-select-all');
+        if (!selectAll) return;
+        selectAll.addEventListener('change', function () {
+            document.querySelectorAll('.trunk-item-checkbox').forEach(function (cb) {
+                cb.checked = selectAll.checked;
+            });
+        });
+    })();
+</script>
+{% endblock %}

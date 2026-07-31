@@ -26,116 +26,8 @@ body.dashboard-page .announcement-card {
     box-shadow: var(--shadow-xs);
 }
 
-/* ---------- Sidebar re-skin ---------- */
-body.dashboard-page .sidebar {
-    background: var(--ct-navy);
-    border-right: none;
-}
-
-body.dashboard-page .sidebar-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-bottom: 2.5rem;
-}
-
-body.dashboard-page .sidebar-brand h1 {
-    color: #fff;
-    font-size: 1.15rem;
-    margin-bottom: 0;
-}
-
-body.dashboard-page .brand-mark {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    background: var(--ct-gold);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-body.dashboard-page .brand-mark svg {
-    width: 20px;
-    height: 20px;
-    color: var(--ct-navy);
-}
-
-body.dashboard-page .sidebar-close {
-    color: var(--ct-text-light);
-}
-
-body.dashboard-page .sidebar-close:hover {
-    color: #fff;
-}
-
-body.dashboard-page .nav-item {
-    color: var(--ct-text-light);
-    opacity: 0.85;
-}
-
-body.dashboard-page .nav-item svg {
-    opacity: 0.7;
-}
-
-body.dashboard-page .nav-item:hover {
-    background: var(--ct-navy-light);
-    color: #fff;
-    opacity: 1;
-}
-
-body.dashboard-page .nav-item.active {
-    background: var(--ct-gold);
-    color: var(--ct-navy);
-    font-weight: 700;
-    opacity: 1;
-}
-
-body.dashboard-page .nav-item.active svg {
-    opacity: 1;
-    color: var(--ct-navy);
-}
-
-body.dashboard-page hr {
-    border-top-color: var(--ct-navy-lighter) !important;
-}
-
-body.dashboard-page .sidebar-support h4 {
-    color: var(--ct-text-muted);
-}
-
-body.dashboard-page .support-link {
-    color: var(--ct-text-light);
-}
-
-body.dashboard-page .support-link:hover {
-    color: var(--ct-gold);
-}
-
-body.dashboard-page .support-link span {
-    background: var(--ct-navy-light);
-    color: var(--ct-text-muted);
-}
-
-body.dashboard-page .need-help-card {
-    background: var(--ct-navy-light);
-    border-radius: var(--radius-md);
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-body.dashboard-page .need-help-card strong {
-    display: block;
-    color: #fff;
-    font-size: 0.9rem;
-    margin-bottom: 0.15rem;
-}
-
-body.dashboard-page .need-help-card span {
-    color: var(--ct-text-muted);
-    font-size: 0.8rem;
-}
+/* Sidebar/mobile-header are shared chrome — styled once in main.css so they
+   don't shift color when navigating between the dashboard and other pages. */
 
 /* ---------- Top bar ---------- */
 .db-topbar {
@@ -682,35 +574,6 @@ body.dashboard-page .need-help-card span {
 .db-qa-btn.outline:hover {
     border-color: var(--ct-gold);
     color: var(--ct-gold-dark);
-}
-
-/* ---------- Mobile header re-skin ---------- */
-body.dashboard-page .mobile-header {
-    background: var(--ct-navy);
-    border-bottom: none;
-}
-
-body.dashboard-page .mobile-brand {
-    color: var(--ct-gold) !important;
-}
-
-body.dashboard-page .menu-toggle {
-    background: var(--ct-navy-light) !important;
-    border-color: var(--ct-navy-lighter) !important;
-}
-
-body.dashboard-page .menu-toggle .hamburger-bar {
-    background-color: #fff !important;
-}
-
-body.dashboard-page .menu-toggle:hover {
-    background: var(--ct-navy-lighter) !important;
-    border-color: var(--ct-navy-lighter) !important;
-}
-
-body.dashboard-page .mobile-user > div {
-    background: var(--ct-gold) !important;
-    color: var(--ct-navy) !important;
 }
 
 /* ---------- Responsive ---------- */

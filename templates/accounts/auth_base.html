@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CamelTrunk{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+
+<body>
+    <div class="auth-split-layout">
+        <div class="auth-left">
+            <a href="/" class="auth-brand">
+                <span class="auth-brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 36c0-8 6-15 14-15h4c6 0 11 5 11 11v6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M17 37h27c5 0 9 4 9 9v3H12v-6c0-3 2-6 5-6Z" fill="currentColor"/>
+                        <path d="M21 40h6" stroke="#082b3a" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M27 19c0-2 2-4 4-4h4l2 6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="43" cy="17" r="2.5" fill="currentColor"/>
+                    </svg>
+                </span>
+                <span class="auth-brand-text">Camel<span>Trunk</span></span>
+            </a>
+
+            <div class="auth-feature-card">
+                <img src="{% static 'images/login-bg.png' %}" alt="Warehouse staff inspecting a parcel" class="auth-feature-img">
+                <div class="auth-feature-overlay">
+                    {% block marketing_icon %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#f3ae31">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    {% endblock %}
+                    <div class="auth-feature-title">{% block marketing_title %}Locker RB-10402{% endblock %}</div>
+                    <div class="auth-feature-subtitle">{% block marketing_subtitle %}Parcel inspected, ready to consolidate{% endblock %}</div>
+                </div>
+            </div>
+
+            <div class="auth-copy">
+                <h2>{% block marketing_headline %}One Indian Address.<br>One Parcel, Anywhere.{% endblock %}</h2>
+                <p>{% block marketing_body %}Shop across India, we receive and consolidate every package, then ship it abroad as one — no repeat courier fees, no stacked FX markups.{% endblock %}</p>
+            </div>
+        </div>
+
+        <div class="auth-right">
+            <a href="/" class="auth-mobile-brand">
+                <span class="auth-brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 36c0-8 6-15 14-15h4c6 0 11 5 11 11v6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M17 37h27c5 0 9 4 9 9v3H12v-6c0-3 2-6 5-6Z" fill="currentColor"/>
+                        <path d="M21 40h6" stroke="#082b3a" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M27 19c0-2 2-4 4-4h4l2 6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="43" cy="17" r="2.5" fill="currentColor"/>
+                    </svg>
+                </span>
+                CamelTrunk
+            </a>
+            <div class="auth-form-container">
+                {% block form_content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

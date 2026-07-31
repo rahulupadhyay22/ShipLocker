@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Count, Q
+from django.core.paginator import Paginator
 
 from .models import Parcel, ParcelImage, ReturnRequest, DiscardRequest
 
@@ -125,104 +126,72 @@ def _get_locker_tab_counts(locker):
     return parcel_counts
 
 
-class MyLockerView(LoginRequiredMixin, View):
-    """Main My Locker page - redirects to appropriate tab."""
-    
+class MyTrunkView(LoginRequiredMixin, View):
+    """Unified trunk view: action-required + ready-to-ship + returns + discards in one grid."""
+    template_name = 'locker/my_trunk.html'
+
     def get(self, request):
         _sync_overdue_storage_fees(request.user)
-
-        # Check if user has action required items first
         locker = request.user.locker
-        action_count = Parcel.objects.filter(locker=locker, status='action_required').count()
-        
-        if action_count > 0:
-            return redirect('locker:action_required')
-        return redirect('locker:ready_to_ship')
 
+        items = []
+        for p in Parcel.objects.filter(locker=locker, status='action_required').prefetch_related('images'):
+            items.append({
+                'parcel': p, 'kind': 'action_required', 'status_label': 'Action Required',
+                'status_class': 'status-action', 'title': p.item_name or 'Unnamed Item',
+                'weight_kg': p.weight_kg, 'display_id': p.display_id, 'date': p.received_at,
+                'image': p.images.first(), 'pk': p.pk,
+            })
+        for p in Parcel.objects.filter(locker=locker, status='approved').prefetch_related('images'):
+            items.append({
+                'parcel': p, 'kind': 'ready_to_ship', 'status_label': 'Ready to Ship',
+                'status_class': 'status-approved', 'title': p.item_name or 'Unnamed Item',
+                'weight_kg': p.weight_kg, 'display_id': p.display_id, 'date': p.received_at,
+                'image': p.images.first(), 'pk': p.pk,
+            })
+        return_status_class = {
+            'completed': 'status-delivered', 'rejected': 'status-action',
+        }
+        for r in ReturnRequest.objects.filter(parcel__locker=locker).exclude(status='completed').select_related('parcel').prefetch_related('parcel__images'):
+            items.append({
+                'parcel': r.parcel, 'kind': 'returns', 'status_label': r.get_status_display(),
+                'status_class': return_status_class.get(r.status, 'status-pending'),
+                'title': r.parcel.item_name or r.parcel.tracking_number,
+                'weight_kg': r.parcel.weight_kg, 'display_id': r.parcel.display_id, 'date': r.requested_at,
+                'image': r.parcel.images.first(), 'pk': r.parcel.pk,
+            })
+        discard_status_class = {'discarded': 'status-delivered'}
+        for d in DiscardRequest.objects.filter(parcel__locker=locker).exclude(status='discarded').select_related('parcel').prefetch_related('parcel__images'):
+            items.append({
+                'parcel': d.parcel, 'kind': 'discards', 'status_label': d.get_status_display(),
+                'status_class': discard_status_class.get(d.status, 'status-action'),
+                'title': d.parcel.item_name or d.parcel.tracking_number,
+                'weight_kg': d.parcel.weight_kg, 'display_id': d.parcel.display_id, 'date': d.requested_at,
+                'image': d.parcel.images.first(), 'pk': d.parcel.pk,
+            })
 
-class ActionRequiredView(LoginRequiredMixin, ListView):
-    """Items requiring user action/approval."""
-    template_name = 'locker/action_required.html'
-    context_object_name = 'parcels'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        return Parcel.objects.filter(
-            locker=self.request.user.locker,
-            status='action_required'
-        ).prefetch_related('images')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        _sync_overdue_storage_fees(self.request.user)
-        locker = self.request.user.locker
-        context['tab'] = 'action_required'
+        items.sort(key=lambda i: i['date'] or timezone.now(), reverse=True)
+        total_items = len(items)
+
+        active_tab = request.GET.get('tab', 'all')
+        if active_tab in ('action_required', 'ready_to_ship', 'returns', 'discards'):
+            items = [i for i in items if i['kind'] == active_tab]
+        else:
+            active_tab = 'all'
+
+        paginator = Paginator(items, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+
+        context = {
+            'page_obj': page_obj,
+            'items': page_obj.object_list,
+            'total_items': total_items,
+            'active_tab': active_tab,
+            'locker': locker,
+            'has_kyc': request.user.kyc_documents.filter(status='approved').exists(),
+        }
         context.update(_get_locker_tab_counts(locker))
-        return context
-
-
-class ReadyToShipView(LoginRequiredMixin, ListView):
-    """Items approved and ready to ship."""
-    template_name = 'locker/ready_to_ship.html'
-    context_object_name = 'parcels'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        return Parcel.objects.filter(
-            locker=self.request.user.locker,
-            status='approved'
-        ).prefetch_related('images')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        _sync_overdue_storage_fees(self.request.user)
-        locker = self.request.user.locker
-        context['tab'] = 'ready_to_ship'
-        context.update(_get_locker_tab_counts(locker))
-        
-        # KYC status
-        context['has_kyc'] = self.request.user.kyc_documents.filter(status='approved').exists()
-        return context
-
-
-class ReturnsView(LoginRequiredMixin, ListView):
-    """Return requests."""
-    template_name = 'locker/returns.html'
-    context_object_name = 'return_requests'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        return ReturnRequest.objects.filter(
-            parcel__locker=self.request.user.locker
-        ).select_related('parcel')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        _sync_overdue_storage_fees(self.request.user)
-        locker = self.request.user.locker
-        context['tab'] = 'returns'
-        context.update(_get_locker_tab_counts(locker))
-        return context
-
-
-class DiscardsView(LoginRequiredMixin, ListView):
-    """Discard requests."""
-    template_name = 'locker/discards.html'
-    context_object_name = 'discard_requests'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        return DiscardRequest.objects.filter(
-            parcel__locker=self.request.user.locker
-        ).select_related('parcel')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        _sync_overdue_storage_fees(self.request.user)
-        locker = self.request.user.locker
-        context['tab'] = 'discards'
-        context.update(_get_locker_tab_counts(locker))
-        return context
+        return render(request, self.template_name, context)
 
 
 class ParcelDetailView(LoginRequiredMixin, DetailView):
