@@ -1,0 +1,480 @@
+/* Shipment Detail page — layout/components specific to templates/shipments/detail.html */
+
+.sd-back-link {
+    display: inline-flex;
+    margin-bottom: 1rem;
+}
+
+.sd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.sd-header-sub {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    margin-top: 0.25rem;
+}
+
+.sd-header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* ---------- Status card ---------- */
+.sd-status-card {
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.sd-status-message {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 0.6rem;
+    margin-bottom: 1.75rem;
+}
+
+.sd-tracker {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+}
+
+.sd-tracker-step {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 0;
+    padding: 0 0.5rem;
+}
+
+.sd-tracker-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: var(--surface-200);
+    z-index: 0;
+}
+
+.sd-tracker-step.complete:not(:last-child)::after {
+    background: var(--primary);
+}
+
+.sd-tracker-icon {
+    position: relative;
+    z-index: 1;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-100);
+    color: var(--text-muted);
+    border: 3px solid var(--surface-0);
+    box-shadow: 0 0 0 1px var(--surface-200);
+    margin-bottom: 0.6rem;
+    transition: 0.2s;
+}
+
+.sd-tracker-step.complete .sd-tracker-icon.icon-primary { background: var(--primary-light); color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.sd-tracker-step.complete .sd-tracker-icon.icon-success { background: var(--success-bg); color: var(--success-text); box-shadow: 0 0 0 1px var(--success-text); }
+.sd-tracker-step.complete .sd-tracker-icon.icon-warning { background: var(--warning-bg); color: var(--warning-text); box-shadow: 0 0 0 1px var(--warning-text); }
+
+.sd-tracker-label {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.sd-tracker-step.complete .sd-tracker-label {
+    color: var(--text-main);
+}
+
+.sd-tracker-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+    line-height: 1.4;
+}
+
+.sd-alert {
+    background: var(--warning-bg);
+    border: 1px solid #FCD34D;
+    color: var(--warning-text);
+    padding: 0.9rem 1.1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+/* ---------- Info row (tracking / payment / quick actions) ---------- */
+.sd-info-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    align-items: stretch;
+}
+
+.sd-info-row > .card {
+    margin-bottom: 0;
+}
+
+.sd-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sd-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.sd-info-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.sd-info-value {
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.sd-copy-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.sd-tracking-mono {
+    font-family: monospace;
+    background: var(--surface-100);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.sd-copy-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 0.2rem;
+}
+
+.sd-copy-btn:hover {
+    color: var(--primary);
+}
+
+.sd-info-total {
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--surface-200);
+}
+
+.sd-info-total .sd-info-value {
+    font-size: 1.15rem;
+}
+
+.sd-pay-btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.sd-quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sd-quick-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--surface-200);
+    border-radius: var(--radius-sm);
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 0.88rem;
+    text-decoration: none;
+    transition: 0.15s;
+}
+
+.sd-quick-action:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.sd-quick-action span {
+    color: var(--text-muted);
+}
+
+/* ---------- Shipment Information / History row ---------- */
+.sd-detail-row {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    align-items: start;
+}
+
+.sd-detail-row > .card {
+    margin-bottom: 0;
+}
+
+.sd-addr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--surface-100);
+}
+
+.sd-addr-text {
+    margin-top: 0.4rem;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.sd-addr-text strong {
+    color: var(--text-main);
+}
+
+.sd-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.1rem;
+}
+
+.sd-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sd-stat-value {
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 0.92rem;
+}
+
+.sd-insured {
+    color: var(--success-text);
+}
+
+.sd-history {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.sd-history-item {
+    display: flex;
+    gap: 0.75rem;
+    position: relative;
+}
+
+.sd-history-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--surface-300, var(--surface-200));
+    margin-top: 0.35rem;
+    flex-shrink: 0;
+}
+
+.sd-history-item.latest .sd-history-dot {
+    background: var(--accent);
+}
+
+.sd-history-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.sd-history-status {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+.sd-history-location {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.sd-empty-text {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+}
+
+/* ---------- Items table ---------- */
+.sd-items-card {
+    margin-bottom: 2rem;
+}
+
+.sd-items-table {
+    display: flex;
+    flex-direction: column;
+}
+
+.sd-items-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+    gap: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--surface-200);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.sd-items-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--surface-50);
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.sd-item-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.sd-item-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: var(--surface-50);
+    border: 1px solid var(--surface-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    font-size: 1.1rem;
+}
+
+.sd-item-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sd-view-all-btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 1.25rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+    .sd-info-row {
+        grid-template-columns: 1fr;
+    }
+
+    .sd-detail-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .sd-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .sd-header-actions {
+        display: none;
+    }
+
+    .sd-status-card {
+        padding: 1.1rem 1.1rem;
+    }
+
+    .sd-tracker-icon {
+        width: 38px;
+        height: 38px;
+    }
+
+    .sd-tracker-icon svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .sd-tracker-step:not(:last-child)::after {
+        top: 19px;
+    }
+
+    .sd-tracker-label {
+        font-size: 0.7rem;
+    }
+
+    .sd-tracker-sub {
+        font-size: 0.62rem;
+    }
+
+    .sd-addr-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .sd-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .sd-items-header {
+        display: none;
+    }
+
+    .sd-items-row {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+        padding: 1rem 0;
+    }
+
+    .sd-items-row > span:not(.sd-item-name-cell) {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .sd-items-row > span:not(.sd-item-name-cell)::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-main);
+    }
+}
+
+@media (max-width: 480px) {
+    .sd-stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}

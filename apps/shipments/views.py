@@ -1,3 +1,4 @@
+import uuid
 from django.shortcuts import render
 from django.views.generic import ListView, DetailView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -13,12 +14,10 @@ class ShipmentStatsMixin:
         context = super().get_context_data(**kwargs)
         user = self.request.user
         counts = Shipment.objects.filter(user=user).aggregate(
-            active_count=Count('id', filter=Q(
-                status__in=['packing', 'dispatched', 'in_transit', 'customs',
-                            'out_for_delivery', 'declaration_pending', 'pending_payment']
-            )),
+            total_count=Count('id'),
+            in_transit_count=Count('id', filter=Q(status__in=['in_transit', 'out_for_delivery'])),
+            customs_count=Count('id', filter=Q(status='customs')),
             delivered_count=Count('id', filter=Q(status='delivered')),
-            closed_count=Count('id', filter=Q(status__in=['returned', 'cancelled'])),
         )
         context.update(counts)
         return context
@@ -31,15 +30,11 @@ class ShipmentsListView(LoginRequiredMixin, ShipmentStatsMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        # Default to showing active shipments
-        return Shipment.objects.filter(
-            user=self.request.user,
-            status__in=['packing', 'dispatched', 'in_transit', 'customs', 'out_for_delivery', 'declaration_pending', 'pending_payment']
-        ).order_by('-created_at')
-    
+        return Shipment.objects.filter(user=self.request.user).order_by('-created_at')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tab'] = 'active'
+        context['shipment_status_choices'] = Shipment.STATUS_CHOICES
         return context
 
 
@@ -105,15 +100,23 @@ class ShipmentDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Shipment.objects.filter(
             user=self.request.user
-        ).prefetch_related('items__parcel', 'documents')
+        ).prefetch_related('items__parcel', 'documents', 'tracking_events')
 
     def get_context_data(self, **kwargs):
         from decimal import Decimal
         from django.db.models import Sum
         from apps.payments.models import StorageFee
+        from apps.notifications.models import AppSettings
 
         context = super().get_context_data(**kwargs)
         shipment = self.object
+
+        context['warehouse_address'] = AppSettings.get_settings().warehouse_address
+        # Use the prefetched .all() (cached) rather than .filter(), which would
+        # issue a fresh query and defeat the prefetch_related('documents') above.
+        prefetched_docs = list(shipment.documents.all())
+        context['invoice_document'] = next((d for d in prefetched_docs if d.document_type == 'invoice'), None)
+        context['awb_document'] = next((d for d in prefetched_docs if d.document_type == 'label'), None)
 
         parcel_ids = list(shipment.items.values_list('parcel_id', flat=True))
 
@@ -202,16 +205,29 @@ class CreateShipmentView(LoginRequiredMixin, View):
         from apps.content.models import ShippingZone
         zones = ShippingZone.objects.filter(is_active=True).order_by('order')
 
-        # Prefill form with user's default saved address (if any)
-        default_address = request.user.saved_addresses.filter(is_default=True).first()
-        if not default_address:
-            default_address = request.user.saved_addresses.first()
-        
+        # Saved addresses for the "choose delivery address" picker (default first)
+        saved_addresses = request.user.saved_addresses.order_by('-is_default', '-updated_at')
+        default_address = saved_addresses.first()
+
+        # Ship Selected on My Trunk sends the chosen parcel IDs — narrow the list
+        # to just those (still scoped to this user's locker/approved queryset above).
+        # Validate as UUIDs first so a malformed value doesn't 500 on id__in.
+        preselected_ids = set()
+        for raw_id in request.GET.getlist('parcels'):
+            try:
+                preselected_ids.add(str(uuid.UUID(raw_id)))
+            except (ValueError, TypeError, AttributeError):
+                continue
+        if preselected_ids:
+            available_parcels = available_parcels.filter(id__in=preselected_ids)
+
         return render(request, self.template_name, {
             'parcels': available_parcels,
             'has_kyc': has_kyc,
             'zones': zones,
             'default_address': default_address,
+            'saved_addresses': saved_addresses,
+            'preselected_ids': preselected_ids,
         })
     
     def post(self, request):

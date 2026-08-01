@@ -1,122 +1,154 @@
 <!-- Shipments List Partial -->
-<div class="page-header" style="margin-bottom: 2rem;">
-    <!-- Virtual Card Summary -->
-    <div class="virtual-card"
-        style="width: 100%; padding: 3rem; background: linear-gradient(135deg, #005F73 0%, #00404D 100%); overflow: hidden;">
-        <div style="position: relative; z-index: 2;">
-            <h1 class="page-title" style="color: white; margin-bottom: 0.5rem;">Shipments</h1>
-            <p class="page-subtitle" style="color: #A69FB0; max-width: 600px;">Track your international and domestic
-                shipments.</p>
+<div class="page-header" style="margin-bottom: 0;">
+    <h1 class="page-title">Shipments</h1>
+    <p class="shipments-header-sub">Track all your shipments from India to your doorstep</p>
+</div>
 
-            <div style="display: flex; gap: 3rem; margin-top: 2.5rem;">
-                <div>
-                    <span
-                        style="font-size: 2.5rem; font-weight: 700; display: block; line-height: 1;">{{active_count|default:"0"}}</span>
-                    <span
-                        style="color: #A69FB0; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Active</span>
-                </div>
-                <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
-                <div>
-                    <span
-                        style="font-size: 2.5rem; font-weight: 700; display: block; line-height: 1;">{{delivered_count|default:"0"}}</span>
-                    <span
-                        style="color: #A69FB0; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Delivered</span>
-                </div>
-                {% if closed_count %}
-                <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
-                <div>
-                    <span
-                        style="font-size: 2.5rem; font-weight: 700; display: block; line-height: 1; color: #f87171;">{{closed_count}}</span>
-                    <span
-                        style="color: #A69FB0; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Closed</span>
-                </div>
-                {% endif %}
-            </div>
+<!-- Stat Tiles -->
+<div class="shipments-stats-row">
+    <div class="shipments-stat-tile">
+        <div class="shipments-stat-icon icon-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16V6a1 1 0 011-1h9a1 1 0 011 1v10m-11 0h11m-11 0H2m12 0h4.586a1 1 0 00.707-.293l2.414-2.414A1 1 0 0022 12.586V11a1 1 0 00-1-1h-3M8 19a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4z" />
+            </svg>
         </div>
-
-        <!-- Decorative Circle -->
-        <div
-            style="position: absolute; top: -50%; right: -10%; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(255,255,255,0) 70%); filter: blur(40px);">
+        <span class="shipments-stat-info">
+            <span class="shipments-stat-value">{{ total_count|default:"0" }}</span>
+            <span class="shipments-stat-label">Total Shipments</span>
+            <span class="shipments-stat-sublabel">All time</span>
+        </span>
+    </div>
+    <div class="shipments-stat-tile">
+        <div class="shipments-stat-icon icon-gold">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
         </div>
-        <div
-            style="position: absolute; bottom: -20%; right: 20%; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, rgba(255,255,255,0) 70%); filter: blur(40px);">
+        <span class="shipments-stat-info">
+            <span class="shipments-stat-value">{{ in_transit_count|default:"0" }}</span>
+            <span class="shipments-stat-label">In Transit</span>
+            <span class="shipments-stat-sublabel">Currently moving</span>
+        </span>
+    </div>
+    <div class="shipments-stat-tile">
+        <div class="shipments-stat-icon icon-danger">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
         </div>
+        <span class="shipments-stat-info">
+            <span class="shipments-stat-value">{{ customs_count|default:"0" }}</span>
+            <span class="shipments-stat-label">Customs Clearance</span>
+            <span class="shipments-stat-sublabel">Awaiting clearance</span>
+        </span>
+    </div>
+    <div class="shipments-stat-tile">
+        <div class="shipments-stat-icon icon-success">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+        </div>
+        <span class="shipments-stat-info">
+            <span class="shipments-stat-value">{{ delivered_count|default:"0" }}</span>
+            <span class="shipments-stat-label">Delivered</span>
+            <span class="shipments-stat-sublabel">Successfully delivered</span>
+        </span>
     </div>
 </div>
 
-<!-- Tabs -->
-<div class="nav-tabs-container"
-    style="display: inline-flex; background: var(--surface-100); padding: 4px; border-radius: 12px; margin-bottom: 2rem;">
-    <a href="{% url 'shipments:active' %}" class="nav-tab {% if tab == 'active' %}active{% endif %}"
-        style="padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 500; font-size: 0.95rem; color: var(--text-secondary); text-decoration: none; transition: 0.2s;">
-        Active Shipments
-    </a>
-    <a href="{% url 'shipments:delivered' %}" class="nav-tab {% if tab == 'delivered' %}active{% endif %}"
-        style="padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 500; font-size: 0.95rem; color: var(--text-secondary); text-decoration: none; transition: 0.2s;">
-        Delivered History
-    </a>
-    {% if closed_count %}
-    <a href="{% url 'shipments:closed' %}" class="nav-tab {% if tab == 'closed' %}active{% endif %}"
-        style="padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 500; font-size: 0.95rem; color: var(--text-secondary); text-decoration: none; transition: 0.2s;">
-        Closed ({{closed_count}})
-    </a>
-    {% endif %}
+<!-- Toolbar -->
+<div class="shipments-toolbar">
+    <div class="shipments-search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="shipments-search-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text" id="shipments-search" class="form-input shipments-search-input" placeholder="Search by tracking ID..." aria-label="Search by tracking ID">
+    </div>
+
+    <select id="shipments-status-filter" class="form-input shipments-status-select" aria-label="Filter by status">
+        <option value="">All Status</option>
+        {% for value, label in shipment_status_choices %}
+        <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="button" id="shipments-filter-btn" class="btn btn-secondary shipments-filter-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M6 8h12M9 12h6M11 16h2" />
+        </svg>
+        Filter
+    </button>
+
+    <div class="shipments-filter-drawer" id="shipments-filter-drawer">
+        <div class="shipments-filter-drawer-header">
+            <h3>Filters</h3>
+            <button type="button" id="shipments-filter-close" class="shipments-filter-close" aria-label="Close filters">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <label for="shipments-destination-filter" class="shipments-filter-label">Destination</label>
+        <select id="shipments-destination-filter" class="form-input shipments-destination-select">
+            <option value="">All Destinations</option>
+        </select>
+        <label for="shipments-sort" class="shipments-filter-label">Sort</label>
+        <select id="shipments-sort" class="form-input shipments-sort-select">
+            <option value="newest">Sort by: Newest First</option>
+            <option value="oldest">Sort by: Oldest First</option>
+        </select>
+    </div>
 </div>
+<div class="shipments-filter-overlay" id="shipments-filter-overlay"></div>
 
-<style>
-    .nav-tab.active {
-        background: white;
-        color: var(--text-main) !important;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        font-weight: 600 !important;
-    }
-
-    .nav-tab:hover:not(.active) {
-        color: var(--text-main) !important;
-        background: rgba(255, 255, 255, 0.5);
-    }
-</style>
-
-<!-- Disclaimer -->
 <!-- Shipment Notices -->
 <div class="shipment-notices-grid"
-    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin: 1.5rem 0;">
     <!-- International -->
     <div class="modern-alert"
         style="background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; align-items: start;">
         <div style="font-size: 1.25rem; margin-top: 2px;">⚠️</div>
         <div style="flex: 1;">
-            <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75rem; color: #7F1D1D;">International
+            <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem; color: #7F1D1D;">International
                 Shipments</h3>
-            <p style="font-weight: 600; margin-bottom: 0.5rem;">CamelTrunk is not responsible for delivery delays,
-                customs clearance, VAT, duties, or taxes.</p>
-            <p style="font-weight: 600; margin-bottom: 1rem;">CamelTrunk is also not responsible for shipments that are
-                rejected, destroyed, or returned to India.</p>
-            <p style="font-size: 0.95rem; margin-bottom: 0.75rem; opacity: 0.9;">
-                Once a shipment has been handed over to the carrier, the receiver must work directly with the carrier to
-                clear customs, pay duties/taxes, and ensure successful delivery.
-            </p>
-            <p style="font-size: 0.95rem; margin-bottom: 1rem; opacity: 0.9;">
-                After shipping, it is the receiver's responsibility to follow up with the carrier until the package is
-                delivered to their doorstep.
-            </p>
+            <p style="font-weight: 600; margin-bottom: 0.75rem;">CamelTrunk is not responsible for delivery delays,
+                customs clearance, VAT, duties, taxes, or shipments rejected/returned to India.</p>
 
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; font-size: 0.9rem; align-items: start;">
-                <span>👉</span>
-                <span>If any additional documents, customs certifications, or declarations are required, the receiver
-                    can connect with CamelTrunk Support for assistance and we can help procure the documents if its
-                    possible.</span>
+            <button type="button" class="shipments-notice-toggle" data-target="shipments-notice-intl"
+                aria-expanded="false">
+                View details
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            <div id="shipments-notice-intl" class="shipments-notice-body" hidden>
+                <p style="font-size: 0.95rem; margin-bottom: 0.75rem; margin-top: 1rem; opacity: 0.9;">
+                    Once a shipment has been handed over to the carrier, the receiver must work directly with the carrier to
+                    clear customs, pay duties/taxes, and ensure successful delivery.
+                </p>
+                <p style="font-size: 0.95rem; margin-bottom: 1rem; opacity: 0.9;">
+                    After shipping, it is the receiver's responsibility to follow up with the carrier until the package is
+                    delivered to their doorstep.
+                </p>
+
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; font-size: 0.9rem; align-items: start;">
+                    <span>👉</span>
+                    <span>If any additional documents, customs certifications, or declarations are required, the receiver
+                        can connect with CamelTrunk Support for assistance and we can help procure the documents if its
+                        possible.</span>
+                </div>
+
+                <a href="{% url 'shipments:customs_help' %}"
+                    style="display: inline-flex; align-items: center; gap: 0.5rem; background: white; border: 1px solid #FCA5A5; padding: 0.5rem 1rem; border-radius: 8px; color: #B91C1C; font-weight: 600; text-decoration: none; font-size: 0.9rem; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    <span>ⓘ</span> Package is stuck at customs?
+                </a>
+
+                <p style="font-weight: 700; margin-top: 1rem; font-size: 0.9rem; color: #7F1D1D;">
+                    After shipping, you are responsible for following up directly with the carrier to arrange customs
+                    clearance, shipment release, and ensure delivery is completed.
+                </p>
             </div>
-
-            <a href="{% url 'shipments:customs_help' %}"
-                style="display: inline-flex; align-items: center; gap: 0.5rem; background: white; border: 1px solid #FCA5A5; padding: 0.5rem 1rem; border-radius: 8px; color: #B91C1C; font-weight: 600; text-decoration: none; font-size: 0.9rem; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                <span>ⓘ</span> Package is stuck at customs?
-            </a>
-
-            <p style="font-weight: 700; margin-top: 1rem; font-size: 0.9rem; color: #7F1D1D;">
-                After shipping, you are responsible for following up directly with the carrier to arrange customs
-                clearance, shipment release, and ensure delivery is completed.
-            </p>
         </div>
     </div>
 
@@ -125,184 +157,324 @@
         style="background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; align-items: start;">
         <div style="font-size: 1.25rem; margin-top: 2px;">🚛</div>
         <div style="flex: 1;">
-            <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75rem; color: #1E3A8A;">Domestic Within
+            <h3 style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem; color: #1E3A8A;">Domestic Within
                 India Shipments</h3>
-            <ol style="padding-left: 1.25rem; font-size: 0.95rem; margin-bottom: 1.5rem;">
-                <li style="margin-bottom: 0.5rem;">Once service charges are paid, you will need to schedule pickup from
-                    Locker address.</li>
-                <li style="margin-bottom: 0.5rem;"><strong>Pickup Address:</strong>
-                    {{ request.user.locker.locker_id }} - {{ request.user.locker.address|default:"Locker Address" }}</li>
-                <li style="margin-bottom: 0.5rem;"><strong>Pickup Time:</strong> 10 AM to 5 PM IST</li>
-                <li>
-                    Schedule pickup using any available courier service in India, some examples:
-                    <ul style="margin-top: 0.25rem; margin-bottom: 0.5rem; color: #005F73;">
-                        <li>Premium - <a href="https://www.dtdc.in/" target="_blank"
-                                style="text-decoration: underline; color: inherit;">DTDC</a>, <a
-                                href="https://www.bluedart.com/" target="_blank"
-                                style="text-decoration: underline; color: inherit;">BlueDart</a></li>
-                        <li>Low Cost - <a href="https://www.delhivery.com/" target="_blank"
-                                style="text-decoration: underline; color: inherit;">Delhivery</a></li>
-                        <li>Within Hyderabad - <a href="https://www.rapido.bike/" target="_blank"
-                                style="text-decoration: underline; color: inherit;">Rapido</a></li>
-                    </ul>
-                </li>
-            </ol>
+            <p style="font-weight: 600; margin-bottom: 0.75rem;">Pay service charges, then schedule pickup from your
+                locker address (10 AM - 5 PM IST) using any courier of your choice.</p>
 
-            <!-- Warning Box -->
-            <div
-                style="background: #FEF2F2; border: 1px solid #FECACA; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: #991B1B;">
-                <strong>CamelTrunk is not affiliated with or responsible for any third-party courier services.</strong>
-                Customers may use any domestic courier of their choice to send or collect packages. The links provided
-                are for convenience only, and CamelTrunk bears no liability for the performance or conduct of these
-                services.
+            <button type="button" class="shipments-notice-toggle" data-target="shipments-notice-domestic"
+                aria-expanded="false">
+                View details
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            <div id="shipments-notice-domestic" class="shipments-notice-body" hidden>
+                <ol style="padding-left: 1.25rem; font-size: 0.95rem; margin-bottom: 1.5rem; margin-top: 1rem;">
+                    <li style="margin-bottom: 0.5rem;">Once service charges are paid, you will need to schedule pickup from
+                        Locker address.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Pickup Address:</strong>
+                        {{ request.user.locker.locker_id }} - {{ request.user.locker.address|default:"Locker Address" }}</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Pickup Time:</strong> 10 AM to 5 PM IST</li>
+                    <li>
+                        Schedule pickup using any available courier service in India, some examples:
+                        <ul style="margin-top: 0.25rem; margin-bottom: 0.5rem; color: #005F73;">
+                            <li>Premium - <a href="https://www.dtdc.in/" target="_blank"
+                                    style="text-decoration: underline; color: inherit;">DTDC</a>, <a
+                                    href="https://www.bluedart.com/" target="_blank"
+                                    style="text-decoration: underline; color: inherit;">BlueDart</a></li>
+                            <li>Low Cost - <a href="https://www.delhivery.com/" target="_blank"
+                                    style="text-decoration: underline; color: inherit;">Delhivery</a></li>
+                            <li>Within Hyderabad - <a href="https://www.rapido.bike/" target="_blank"
+                                    style="text-decoration: underline; color: inherit;">Rapido</a></li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <!-- Warning Box -->
+                <div
+                    style="background: #FEF2F2; border: 1px solid #FECACA; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: #991B1B;">
+                    <strong>CamelTrunk is not affiliated with or responsible for any third-party courier services.</strong>
+                    Customers may use any domestic courier of their choice to send or collect packages. The links provided
+                    are for convenience only, and CamelTrunk bears no liability for the performance or conduct of these
+                    services.
+                </div>
+
+                <!-- Success/Info Box -->
+                <div
+                    style="background: #ECFDF5; border: 1px solid #6EE7B7; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; color: #065F46;">
+                    <strong>5. Share pickup labels with CamelTrunk team.</strong> We'll ensure your package is ready for
+                    handover at the scheduled time.
+                </div>
+
+                <p style="font-weight: 600; font-size: 0.9rem; color: #1E3A8A;">
+                    You are responsible for coordinating pickup with your chosen service provider during business hours (10
+                    AM - 5 PM) and ensure smooth delivery of the package to India address.
+                </p>
             </div>
-
-            <!-- Success/Info Box -->
-            <div
-                style="background: #ECFDF5; border: 1px solid #6EE7B7; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; color: #065F46;">
-                <strong>5. Share pickup labels with CamelTrunk team.</strong> We'll ensure your package is ready for
-                handover at the scheduled time.
-            </div>
-
-            <p style="font-weight: 600; font-size: 0.9rem; color: #1E3A8A;">
-                You are responsible for coordinating pickup with your chosen service provider during business hours (10
-                AM - 5 PM) and ensure smooth delivery of the package to India address.
-            </p>
         </div>
     </div>
 </div>
 
+<script>
+    document.querySelectorAll('.shipments-notice-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var target = document.getElementById(btn.dataset.target);
+            if (!target) return;
+            var expanded = btn.getAttribute('aria-expanded') === 'true';
+            btn.setAttribute('aria-expanded', String(!expanded));
+            target.hidden = expanded;
+            btn.childNodes[0].textContent = expanded ? 'View details ' : 'Hide details ';
+        });
+    });
+</script>
+
 <!-- Shipment Grid -->
 {% if shipments %}
-<div class="dashboard-grid" style="grid-template-columns: 1fr; gap: 1.5rem;">
+<h2 class="shipments-count-heading">Shipments ({% if page_obj %}{{ page_obj.paginator.count }}{% else %}{{ shipments|length }}{% endif %})</h2>
+
+<div class="dashboard-grid" style="grid-template-columns: 1fr; gap: 1.5rem;" id="shipments-grid">
     {% for shipment in shipments %}
-    <div class="card" style="margin-bottom: 0; padding: 0; display: flex; flex-direction: row; flex-wrap: wrap;">
-        <!-- Icon/Image Area -->
-        <div
-            style="width: 140px; background: var(--surface-50); border-right: 1px solid var(--surface-100); padding: 1rem; display: flex; align-items: center; justify-content: center; min-height: 140px;">
-            {% with first_item=shipment.items.first %}
-            {% if first_item and first_item.parcel.images.first %}
-            <img src="{{ first_item.parcel.images.first.image_url }}" alt="Product Image"
-                style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+    <div class="card shipments-row"
+        data-status="{{ shipment.status }}"
+        data-country="{{ shipment.country }}"
+        data-search="{{ shipment.display_id|lower }} {{ shipment.tracking_number|lower }}"
+        data-date="{{ shipment.created_at|date:'U' }}"
+        data-href="{% url 'shipments:detail' pk=shipment.pk %}">
+        <!-- Status Icon -->
+        <div class="shipments-row-thumb {% if shipment.status == 'delivered' %}icon-success{% elif shipment.status == 'customs' %}icon-warning{% elif shipment.status == 'in_transit' or shipment.status == 'out_for_delivery' or shipment.status == 'dispatched' %}icon-primary{% elif shipment.status == 'returned' %}icon-warning{% elif shipment.status == 'cancelled' %}icon-danger{% else %}icon-muted{% endif %}">
+            {% if shipment.status == 'delivered' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {% elif shipment.status == 'customs' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" />
+            </svg>
+            {% elif shipment.status == 'in_transit' or shipment.status == 'out_for_delivery' or shipment.status == 'dispatched' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16V6a1 1 0 011-1h9a1 1 0 011 1v10m-11 0h11m-11 0H2m12 0h4.586a1 1 0 00.707-.293l2.414-2.414A1 1 0 0022 12.586V11a1 1 0 00-1-1h-3M8 19a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4z" />
+            </svg>
+            {% elif shipment.status == 'returned' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l-4-4 4-4m-4 4h11a4 4 0 010 8h-1" />
+            </svg>
+            {% elif shipment.status == 'cancelled' %}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12" />
+            </svg>
             {% else %}
-            <div style="font-size: 3rem;">✈️</div>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
             {% endif %}
-            {% endwith %}
         </div>
 
-        <!-- Content Area -->
-        <div style="flex: 1; padding: 1.5rem; display: flex; flex-direction: column; justify-content: center;">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                <div>
-                    <h3 style="font-size: 1.1rem; margin-bottom: 0.25rem;">Shipment {{ shipment.display_id }}
-                    </h3>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">Created on
-                        {{ shipment.created_at|date:"M d, Y" }}</div>
-                </div>
-                <span
-                    class="status-badge {{ shipment.status }} {% if shipment.status == 'delivered' %}status-approved{% elif shipment.status == 'returned' or shipment.status == 'cancelled' %}status-action{% else %}status-pending{% endif %}">
-                    {{ shipment.get_status_display }}
-                </span>
-            </div>
+        <div class="shipments-row-id">
+            <h3>{{ shipment.display_id }}</h3>
+            <div class="shipments-row-destination">Shipped to {{ shipment.city }}, {{ shipment.country }}</div>
+            <span
+                class="status-badge {{ shipment.status }} {{ shipment.badge_class }}">
+                {{ shipment.get_status_display }}
+            </span>
+        </div>
 
-            <div
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
-                <div>
-                    <span class="stat-label">Carrier</span>
-                    <div class="stat-value" style="font-size: 1rem;">
-                        {{ shipment.get_carrier_display|default:"Pending" }}</div>
-                </div>
-                <div>
-                    <span class="stat-label">Destination</span>
-                    <div class="stat-value" style="font-size: 1rem;">{{ shipment.city }}, {{ shipment.country }}</div>
-                </div>
-                {% if shipment.tracking_number %}
-                <div>
-                    <span class="stat-label">Tracking</span>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span
-                            style="font-family: monospace; background: var(--surface-100); padding: 2px 6px; border-radius: 4px; font-size: 0.9rem;">
-                            {{ shipment.tracking_number }}</span>
-                    </div>
-                </div>
-                {% endif %}
-                <div>
-                    <span class="stat-label">Payment</span>
-                    <div class="stat-value" style="font-size: 1rem;">
-                        {% if shipment.payment_status == 'paid' %}
-                        <span style="color: var(--success-text); font-weight: 700;">Paid</span>
-                        {% elif shipment.shipping_cost %}
-                        <span style="font-weight: 600;">{{ shipment.currency }} {{ shipment.shipping_cost }}</span>
-                        {% else %}
-                        <span style="color: var(--text-secondary);">Pending amount</span>
-                        {% endif %}
-                    </div>
-                </div>
+        {% if shipment.stage %}
+        <div class="shipments-tracker">
+            {% for step in shipment.stage %}
+            <div class="shipments-tracker-step {% if step.complete %}complete{% endif %}">
+                <span class="shipments-tracker-dot"></span>
+                <span class="shipments-tracker-label">{{ step.label }}</span>
+                {% if step.date %}<span class="shipments-tracker-date">{{ step.date|date:"d M Y" }}</span>{% endif %}
             </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="shipments-tracker-closed">{{ shipment.get_status_display }} — no active tracking</div>
+        {% endif %}
 
-            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
-                {% if shipment.shipping_cost and shipment.payment_status != 'paid' %}
-                <button class="btn btn-primary btn-sm js-pay-now"
-                    data-create-url="{% url 'payments:create_order' shipment.pk %}"
-                    data-verify-url="{% url 'payments:verify' %}">
-                    Pay Now
-                </button>
-                {% elif shipment.payment_status == 'paid' %}
-                <button class="btn btn-secondary btn-sm" style="background: #ECFDF5; border-color: #6EE7B7; color: #065F46;" disabled>
-                    Paid
-                </button>
-                {% endif %}
-                {% if shipment.tracking_number %}
-                <a href="https://www.google.com/search?q=track+{{ shipment.carrier|urlencode }}+{{ shipment.tracking_number|urlencode }}"
-                   target="_blank"
-                   class="btn btn-secondary btn-sm"
-                   style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
-                    Track Shipment
-                </a>
-                {% endif %}
-                <a href="{% url 'shipments:detail' pk=shipment.pk %}" class="btn btn-primary btn-sm">
-                    View Details &rarr;
-                </a>
-            </div>
+        <div class="shipments-row-meta">
+            {% if shipment.status == 'delivered' and shipment.delivered_at %}
+            <div class="shipments-eta-label">Delivered on</div>
+            <div>{{ shipment.delivered_at|date:"d M Y" }}</div>
+            {% elif shipment.estimated_delivery_date %}
+            <div class="shipments-eta-label">Est. Delivery</div>
+            <div>{{ shipment.estimated_delivery_date|date:"d M Y" }}</div>
+            {% endif %}
+            {% if shipment.carrier %}
+            <div class="shipments-carrier">via {{ shipment.get_carrier_display }}</div>
+            {% endif %}
+        </div>
+
+        <div class="shipments-row-actions">
+            {% if shipment.shipping_cost and shipment.payment_status != 'paid' %}
+            <button class="btn btn-primary btn-sm js-pay-now"
+                data-create-url="{% url 'payments:create_order' shipment.pk %}"
+                data-verify-url="{% url 'payments:verify' %}">
+                Pay Now
+            </button>
+            {% elif shipment.tracking_number %}
+            <a href="https://www.google.com/search?q=track+{{ shipment.carrier|urlencode }}+{{ shipment.tracking_number|urlencode }}"
+               target="_blank"
+               class="btn btn-secondary btn-sm"
+               style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                Track Shipment
+            </a>
+            {% else %}
+            <a href="{% url 'shipments:detail' pk=shipment.pk %}" class="btn btn-secondary btn-sm"
+               style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                View Details
+            </a>
+            {% endif %}
         </div>
     </div>
     {% endfor %}
 </div>
+
+<p class="shipments-empty-filtered" id="shipments-empty-filtered" style="display:none;">No shipments match your filters.</p>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="shipments-pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="shipments-page-btn">&lsaquo;</a>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    <a href="?page={{ num }}" class="shipments-page-btn {% if num == page_obj.number %}active{% endif %}">{{ num }}</a>
+    {% endfor %}
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="shipments-page-btn">&rsaquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
 {% else %}
 <div class="card" style="text-align: center; padding: 4rem 2rem;">
     <div
         style="width: 80px; height: 80px; background: var(--surface-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2.5rem;">
         📦</div>
     <h3>No Shipments found</h3>
-    <p style="color: var(--text-secondary); margin-bottom: 2rem;">You haven't created any shipments in this category
-        yet.</p>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">You haven't created any shipments yet.</p>
     <a href="{% url 'locker:ready_to_ship' %}" class="btn btn-primary">
         Go to My Locker
     </a>
 </div>
 {% endif %}
 
-<style>
-    @media (max-width: 768px) {
-        .card {
-            flex-direction: column !important;
-        }
-
-        .card>div:first-child {
-            width: 100% !important;
-            border-right: none !important;
-            border-bottom: 1px solid var(--surface-100);
-            height: 120px !important;
-            min-height: auto !important;
-        }
-
-        .page-subtitle {
-            margin-bottom: 1.5rem;
-        }
-    }
-</style>
-
 {% if shipments %}
+<script>
+    (function () {
+        var grid = document.getElementById('shipments-grid');
+        if (!grid) return;
+
+        grid.addEventListener('click', function (e) {
+            if (e.target.closest('a, button')) return;
+            var row = e.target.closest('.shipments-row');
+            if (row && row.dataset.href) {
+                window.location.href = row.dataset.href;
+            }
+        });
+
+        var searchInput = document.getElementById('shipments-search');
+        var statusSelect = document.getElementById('shipments-status-filter');
+        var destinationSelect = document.getElementById('shipments-destination-filter');
+        var sortSelect = document.getElementById('shipments-sort');
+        var filterBtn = document.getElementById('shipments-filter-btn');
+        var emptyFiltered = document.getElementById('shipments-empty-filtered');
+        var rows = Array.prototype.slice.call(grid.querySelectorAll('.card[data-status]'));
+
+        // Populate destination select from rendered rows
+        var countries = [];
+        rows.forEach(function (row) {
+            var country = row.dataset.country;
+            if (country && countries.indexOf(country) === -1) countries.push(country);
+        });
+        countries.sort();
+        countries.forEach(function (country) {
+            var opt = document.createElement('option');
+            opt.value = country;
+            opt.textContent = country;
+            destinationSelect.appendChild(opt);
+        });
+
+        function applyShipmentFilters() {
+            var query = (searchInput.value || '').trim().toLowerCase();
+            var status = statusSelect.value;
+            var country = destinationSelect.value;
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var matchesSearch = !query || row.dataset.search.indexOf(query) !== -1;
+                var matchesStatus = !status || row.dataset.status === status;
+                var matchesCountry = !country || row.dataset.country === country;
+                var visible = matchesSearch && matchesStatus && matchesCountry;
+                row.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
+            });
+
+            if (emptyFiltered) {
+                emptyFiltered.style.display = visibleCount === 0 ? '' : 'none';
+            }
+        }
+
+        function applyShipmentSort() {
+            var mode = sortSelect.value;
+            var sorted = rows.slice().sort(function (a, b) {
+                var dateCmp = Number(a.dataset.date) - Number(b.dataset.date);
+                return mode === 'oldest' ? dateCmp : -dateCmp;
+            });
+            sorted.forEach(function (row) { grid.appendChild(row); });
+        }
+
+        if (searchInput) searchInput.addEventListener('input', applyShipmentFilters);
+        if (statusSelect) statusSelect.addEventListener('change', applyShipmentFilters);
+        if (destinationSelect) destinationSelect.addEventListener('change', applyShipmentFilters);
+        if (sortSelect) sortSelect.addEventListener('change', applyShipmentSort);
+
+        var filterDrawer = document.getElementById('shipments-filter-drawer');
+        var filterOverlay = document.getElementById('shipments-filter-overlay');
+        var filterClose = document.getElementById('shipments-filter-close');
+        var mobileQuery = window.matchMedia('(max-width: 768px)');
+
+        function openFilterDrawer() {
+            if (filterDrawer) filterDrawer.classList.add('open');
+            if (filterOverlay) filterOverlay.classList.add('open');
+            if (filterClose) filterClose.focus();
+        }
+
+        function closeFilterDrawer() {
+            if (filterDrawer) filterDrawer.classList.remove('open');
+            if (filterOverlay) filterOverlay.classList.remove('open');
+            if (filterBtn) filterBtn.focus();
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && filterDrawer && filterDrawer.classList.contains('open')) {
+                closeFilterDrawer();
+            }
+        });
+
+        if (filterBtn) {
+            filterBtn.addEventListener('click', function () {
+                if (mobileQuery.matches) {
+                    openFilterDrawer();
+                    return;
+                }
+                if (destinationSelect) {
+                    if (typeof destinationSelect.showPicker === 'function') {
+                        try { destinationSelect.showPicker(); return; } catch (e) { /* fall through */ }
+                    }
+                    destinationSelect.focus();
+                    destinationSelect.click();
+                }
+            });
+        }
+
+        if (filterClose) filterClose.addEventListener('click', closeFilterDrawer);
+        if (filterOverlay) filterOverlay.addEventListener('click', closeFilterDrawer);
+    })();
+</script>
+
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
     const listCsrfToken = '{{ csrf_token }}';

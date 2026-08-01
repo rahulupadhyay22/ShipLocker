@@ -170,7 +170,34 @@ class Shipment(models.Model):
     
     def __str__(self):
         return f"{self.display_id}"
-    
+
+    def approve_declaration(self):
+        """Move a declaration_pending shipment forward once staff approve the
+        customs declaration. Goes to pending_payment unless already paid (then
+        packing directly). No-op (returns False) if the shipment isn't in
+        declaration_pending, or if no shipping cost has been set yet — staff
+        must price the shipment before customers can be asked to pay."""
+        if self.status != 'declaration_pending':
+            return False
+        if self.shipping_cost is None:
+            return False
+        self.status = 'packing' if self.payment_status == 'paid' else 'pending_payment'
+        self.save(update_fields=['status'])
+        return True
+
+    def advance_after_payment(self):
+        """Called once payment_status is set to 'paid' — moves a shipment
+        waiting on payment into packing. No-op for any other status.
+
+        Note: this only mutates self.status in memory — it does NOT save.
+        Callers are expected to set payment_status/paid_at and call this in
+        the same transaction, then save once (see apps/payments/views.py),
+        so the transition batches into the same write as the payment update."""
+        if self.status == 'pending_payment':
+            self.status = 'packing'
+            return True
+        return False
+
     @property
     def item_count(self):
         return self.items.count()
@@ -178,6 +205,52 @@ class Shipment(models.Model):
     @property
     def is_active(self):
         return self.status in ['packing', 'dispatched', 'in_transit', 'customs', 'out_for_delivery']
+
+    @property
+    def stage(self):
+        """4-step tracker (Picked Up / Dispatched / Customs / Delivered) for the
+        shipments list UI. Returns None for returned/cancelled shipments, which fall
+        outside the linear happy path and render their own closed-state badge."""
+        if self.status in ('returned', 'cancelled'):
+            return None
+
+        dispatched_done = self.status in ('dispatched', 'in_transit', 'customs', 'out_for_delivery', 'delivered')
+        customs_done = self.status in ('customs', 'out_for_delivery', 'delivered')
+        delivered_done = self.status == 'delivered'
+
+        return [
+            {'key': 'picked_up', 'label': 'Picked Up', 'complete': True, 'date': self.created_at},
+            {'key': 'dispatched', 'label': 'Dispatched', 'complete': dispatched_done, 'date': self.dispatched_at},
+            {'key': 'customs', 'label': 'Customs', 'complete': customs_done, 'date': None},
+            {'key': 'delivered', 'label': 'Delivered', 'complete': delivered_done, 'date': self.delivered_at},
+        ]
+
+    @property
+    def badge_class(self):
+        """Status-badge CSS variant for this shipment's current status —
+        single source of truth so templates don't each re-derive it."""
+        return {
+            'delivered': 'status-approved',
+            'returned': 'status-returned',
+            'cancelled': 'status-action',
+        }.get(self.status, 'status-pending')
+
+    @property
+    def status_message(self):
+        """One-line human status summary for the shipment detail page header."""
+        return {
+            'draft': 'Your shipment is being prepared.',
+            'declaration_pending': 'Your customs declaration is under review.',
+            'pending_payment': 'Awaiting payment to begin processing.',
+            'packing': 'Your items are being packed at our warehouse.',
+            'dispatched': 'Your shipment has been dispatched.',
+            'in_transit': 'Your shipment is on the way.',
+            'customs': 'Your shipment is at customs, awaiting clearance.',
+            'out_for_delivery': 'Your shipment is out for delivery.',
+            'delivered': 'Your shipment has been delivered.',
+            'returned': 'Your shipment was returned to sender.',
+            'cancelled': 'This shipment was cancelled.',
+        }.get(self.status, '')
 
 
 class ShipmentItem(models.Model):

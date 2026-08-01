@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Closed Shipments - CamelTrunk{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/shipments.css' %}">
+{% endblock %}
 
 {% block content %}
 {% include 'shipments/_list_partial.html' %}
