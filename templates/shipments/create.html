@@ -5,10 +5,10 @@
 
 {% block content %}
 <div class="page-header" style="align-items: flex-start; flex-direction: column; gap: 1rem;">
-    <a href="{% url 'shipments:list' %}" class="btn btn-secondary btn-sm" style="align-self: flex-start;">← Back</a>
+    <a href="{% url 'shipments:list' %}" class="btn btn-secondary btn-sm" style="align-self: flex-start;">← Back to Shipments</a>
     <div>
         <h1 class="page-title">Create Shipment</h1>
-        <p class="page-subtitle">Select items and choose where to ship them.</p>
+        <p class="page-subtitle">Select items, provide shipment details and choose a delivery service.</p>
     </div>
 </div>
 
@@ -27,197 +27,374 @@
 {% endif %}
 
 {% if parcels %}
+<!-- Wizard Stepper -->
+<div class="wizard-stepper card" id="wizardStepper">
+    <div class="wizard-step-indicator" data-step="1">
+        <span class="wsi-circle">1</span>
+        <span class="wsi-text">
+            <strong>Select Items</strong>
+            <small>Choose from your trunk</small>
+        </span>
+    </div>
+    <div class="wizard-step-indicator" data-step="2">
+        <span class="wsi-circle">2</span>
+        <span class="wsi-text">
+            <strong>Shipment Details</strong>
+            <small>Add address &amp; preferences</small>
+        </span>
+    </div>
+    <div class="wizard-step-indicator" data-step="3">
+        <span class="wsi-circle">3</span>
+        <span class="wsi-text">
+            <strong>Choose Service</strong>
+            <small>Select delivery service</small>
+        </span>
+    </div>
+    <div class="wizard-step-indicator" data-step="4">
+        <span class="wsi-circle">4</span>
+        <span class="wsi-text">
+            <strong>Review &amp; Confirm</strong>
+            <small>Review and pay</small>
+        </span>
+    </div>
+</div>
+
 <form method="post" id="shipmentForm" enctype="multipart/form-data">
     {% csrf_token %}
-    <div class="dashboard-layout">
-        <!-- Left Column: Item Selection -->
-        <div>
-            <div class="card">
-                <div class="card-header">
-                    <h3>📦 Select Items</h3>
-                    <span class="selection-count status-badge status-pending" style="font-size: 0.8rem;">0
-                        selected</span>
-                </div>
-                <div class="card-body" style="background: var(--surface-50);">
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        {% for parcel in parcels %}
-                        <label class="parcel-select-card">
-                            <input type="checkbox" name="parcels" value="{{ parcel.id }}" class="parcel-checkbox"
-                                onchange="updateSummary()">
-                            <div class="psc-content">
-                                <div class="psc-image">
-                                    {% if parcel.images.first %}
-                                    <img src="{{ parcel.images.first.image_url }}" alt="Item">
-                                    {% else %}
-                                    <span style="font-size: 1.5rem;">📦</span>
-                                    {% endif %}
-                                </div>
-                                <div style="flex: 1;">
-                                    <div class="psc-title">{{ parcel.item_name|default:parcel.tracking_number }}</div>
-                                    <div class="psc-meta">
-                                        {{ parcel.get_category_display }} • {{ parcel.weight_kg|default:"--" }} kg
+
+    <!-- Step 1: Select Items -->
+    <div class="wizard-step active" data-step="1">
+        <div class="dashboard-layout">
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Select Items to Ship</h3>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                            <input type="checkbox" id="selectAllParcels" onchange="toggleSelectAll(this)">
+                            Select All
+                        </label>
+                    </div>
+                    <div class="card-body" style="background: var(--surface-50);">
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            {% for parcel in parcels %}
+                            <label class="parcel-select-card" data-weight="{{ parcel.weight_kg|default:'0' }}"
+                                data-price="{{ parcel.item_price|default:'0' }}">
+                                <input type="checkbox" name="parcels" value="{{ parcel.id }}" class="parcel-checkbox"
+                                    {% if parcel.id|stringformat:"s" in preselected_ids %}checked{% endif %}
+                                    onchange="updateSummary()">
+                                <div class="psc-content">
+                                    <div class="psc-image">
+                                        {% if parcel.images.first %}
+                                        <img src="{{ parcel.images.first.image_url }}" alt="Item">
+                                        {% else %}
+                                        <span style="font-size: 1.5rem;">📦</span>
+                                        {% endif %}
                                     </div>
+                                    <div style="flex: 1;">
+                                        <div class="psc-title">{{ parcel.item_name|default:parcel.tracking_number }}</div>
+                                        <div class="psc-meta">
+                                            {{ parcel.get_category_display }} • {{ parcel.weight_kg|default:"--" }} kg
+                                        </div>
+                                        <div class="psc-received">Received {{ parcel.received_at|date:"d M Y" }}</div>
+                                    </div>
+                                    <div class="psc-price">
+                                        {{ parcel.item_currency }} {{ parcel.item_price }}
+                                    </div>
+                                    <button type="button" class="psc-remove" aria-label="Remove"
+                                        onclick="event.preventDefault(); this.closest('.parcel-select-card').querySelector('.parcel-checkbox').checked=false; updateSummary();">
+                                        ✕
+                                    </button>
                                 </div>
-                                <div class="psc-price">
-                                    {{ parcel.item_currency }} {{ parcel.item_price }}
-                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="how-it-works card">
+                    <div class="card-header"><h3>How Shipping Works</h3></div>
+                    <div class="card-body how-it-works-grid">
+                        <div class="hiw-step">
+                            <span class="hiw-icon">📦</span>
+                            <strong>1. We Pack Securely</strong>
+                            <span>Your items are carefully packed at our warehouse.</span>
+                        </div>
+                        <div class="hiw-step">
+                            <span class="hiw-icon">🚚</span>
+                            <strong>2. You Ship</strong>
+                            <span>Choose a delivery service and confirm shipment.</span>
+                        </div>
+                        <div class="hiw-step">
+                            <span class="hiw-icon">🛡️</span>
+                            <strong>3. We Deliver</strong>
+                            <span>We handle customs and ship to your address.</span>
+                        </div>
+                        <div class="hiw-step">
+                            <span class="hiw-icon">🏠</span>
+                            <strong>4. You Receive</strong>
+                            <span>Your items are delivered safely to your doorstep.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="card wizard-summary-card">
+                    <div class="card-header"><h3>Shipment Summary</h3></div>
+                    <div class="card-body">
+                        <div class="summary-stats-row">
+                            <div class="summary-stat">
+                                <span class="summary-stat-label">Total Items</span>
+                                <span class="summary-stat-value js-sum-count">0</span>
                             </div>
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h3>🚀 Shipment Type</h3>
-                </div>
-                <div class="card-body">
-                    <div class="radio-group">
-                        <label class="radio-card">
-                            <input type="radio" name="shipment_type" value="international" checked>
-                            <span class="rc-content">
-                                <div class="rc-icon-wrapper">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <strong>International</strong>
-                                    <span>Global shipping</span>
-                                </div>
-                            </span>
-                        </label>
-                        <label class="radio-card">
-                            <input type="radio" name="shipment_type" value="domestic">
-                            <span class="rc-content">
-                                <div class="rc-icon-wrapper">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <strong>Domestic</strong>
-                                    <span>Within India</span>
-                                </div>
-                            </span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column: Address -->
-        <div>
-            <div class="card" style="position: sticky; top: 2rem;">
-                <div class="card-header">
-                    <h3>📍 Delivery Address</h3>
-                </div>
-                <div class="card-body">
-                    <div class="form-group">
-                        <label class="form-label">Full Name</label>
-                        <input type="text" name="recipient_name" class="form-control" required
-                            placeholder="Receiver Name" value="{{ default_address.recipient_name|default:'' }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Address</label>
-                        <input type="text" name="address_line1" class="form-control" required
-                            placeholder="Receiver Address" value="{{ default_address.address_line1|default:'' }}">
-                        <input type="text" name="address_line2" class="form-control" style="margin-top: 0.5rem;"
-                            placeholder="Apt, Suite, Unit (Optional)" value="{{ default_address.address_line2|default:'' }}">
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">City</label>
-                            <input type="text" name="city" class="form-control" required value="{{ default_address.city|default:'' }}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">State</label>
-                            <input type="text" name="state" class="form-control" required value="{{ default_address.state|default:'' }}">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">ZIP / Postal Code</label>
-                            <input type="text" name="postal_code" class="form-control" required value="{{ default_address.postal_code|default:'' }}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Country</label>
-                            <select name="country" class="form-control" required>
-                                <option value="">Select...</option>
-                                {% for zone in zones %}
-                                {% for country_code in zone.get_countries_list %}
-                                <option value="{{ country_code }}" {% if default_address and default_address.country == country_code %}selected{% endif %}>{{ country_code }}</option>
-                                {% endfor %}
-                                {% endfor %}    
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Phone Number</label>
-                        <input type="tel" name="recipient_phone" class="form-control" required
-                            placeholder="+1 234 567 8900" pattern="[+]?[0-9\s\-]{7,20}"
-                            title="Enter a valid phone number" value="{{ default_address.recipient_phone|default:'' }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="recipient_email" class="form-control" required
-                            placeholder="For tracking updates" value="{{ default_address.recipient_email|default:'' }}">
-                    </div>
-
-                    <div class="form-group" style="border: 1px solid var(--surface-200); border-radius: 10px; padding: 0.9rem;">
-                        <label style="display: flex; align-items: center; gap: 0.6rem; margin: 0; cursor: pointer;">
-                            <input type="checkbox" name="save_address" {% if default_address %}checked{% endif %}>
-                            <span style="font-weight: 600;">Save this address for next shipments</span>
-                        </label>
-                        <input type="text" name="address_label" class="form-control" style="margin-top: 0.6rem;"
-                            placeholder="Label (e.g. Home, Office)" value="{{ default_address.label|default:'' }}">
-                    </div>
-
-                    <!-- Declaration -->
-                    <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px dashed var(--surface-100);">
-                        <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">📄 Customs Declaration</h4>
-
-                        <div class="modern-alert"
-                            style="background: var(--success-bg); border: 1px solid #BBF7D0; color: #166534; flex-direction: column; align-items: flex-start;">
-                            <p style="margin: 0; font-size: 0.9rem;">Download, sign, and upload the declaration form.
-                            </p>
-                            <a href="{% static 'documents/Customer_Declaration_Authorization.pdf' %}"
-                                class="btn btn-sm btn-secondary" style="margin-top: 0.5rem; background: white;"
-                                download>
-                                📥 Download Form
-                            </a>
+                            <div class="summary-stat">
+                                <span class="summary-stat-label">Total Weight</span>
+                                <span class="summary-stat-value js-sum-weight">0.00 kg</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="summary-stat-label">Declared Value</span>
+                                <span class="summary-stat-value js-sum-value">0</span>
+                            </div>
                         </div>
 
-                        <div class="form-group" style="margin-top: 1rem;">
-                            <label class="form-label">Upload Signed Declaration *</label>
-                            <input type="file" name="declaration_file" class="form-control" required
-                                accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="modern-alert" style="background: var(--primary-light); border: 1px solid var(--primary); align-items: flex-start; margin-top: 1.5rem;">
+                            <div style="font-size: 1.1rem;">🛡️</div>
+                            <div>
+                                <strong>Your items are 100% insured</strong>
+                                <p style="margin-top: 0.25rem; font-size: 0.85rem;">We provide full insurance coverage for your shipment.</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div style="margin-top: 2rem; border-top: 1px solid var(--surface-200); padding-top: 1.5rem;">
-                        <div
-                            style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-weight: 600;">
-                            <span>Items Selected</span>
-                            <span id="summaryCount">0</span>
-                        </div>
-                        <button type="submit" class="btn btn-primary" id="submitBtn" disabled
-                            style="width: 100%; justify-content: center;">
-                            Create Shipment
+                        <button type="button" class="btn btn-primary" id="step1NextBtn" disabled
+                            style="width: 100%; justify-content: center; margin-top: 1.5rem;" onclick="goToStep(2)">
+                            Continue to Shipment Details →
                         </button>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Shipment Details (Delivery Address) -->
+    <div class="wizard-step" data-step="2" hidden>
+        <div class="dashboard-layout">
+        <div class="card">
+            <div class="card-header"><h3>📍 Delivery Address</h3></div>
+            <div class="card-body">
+                {% if saved_addresses %}
+                <div class="form-group">
+                    <label class="form-label">Choose Delivery Address</label>
+                    <div class="address-radio-group">
+                        {% for addr in saved_addresses %}
+                        <label class="address-radio-card"
+                            data-name="{{ addr.recipient_name }}"
+                            data-phone="{{ addr.recipient_phone }}"
+                            data-email="{{ addr.recipient_email }}"
+                            data-line1="{{ addr.address_line1 }}"
+                            data-line2="{{ addr.address_line2 }}"
+                            data-city="{{ addr.city }}"
+                            data-state="{{ addr.state }}"
+                            data-postal="{{ addr.postal_code }}"
+                            data-country="{{ addr.country }}">
+                            <input type="radio" name="address_choice" value="{{ addr.id }}"
+                                {% if forloop.first %}checked{% endif %} onchange="selectSavedAddress(this)">
+                            <span class="arc-content">
+                                <strong>{{ addr.label|default:"Address" }}{% if addr.is_default %} <span class="arc-default-badge">Default</span>{% endif %}</strong>
+                                <span>{{ addr.recipient_name }}</span>
+                                <span>{{ addr.address_line1 }}{% if addr.address_line2 %}, {{ addr.address_line2 }}{% endif %}</span>
+                                <span>{{ addr.city }}, {{ addr.state }} {{ addr.postal_code }}, {{ addr.country }}</span>
+                            </span>
+                        </label>
+                        {% endfor %}
+                        <label class="address-radio-card address-radio-card-new">
+                            <input type="radio" name="address_choice" value="new" onchange="selectSavedAddress(this)">
+                            <span class="arc-content arc-content-new">+ Add a New Address</span>
+                        </label>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div id="newAddressFields" class="{% if saved_addresses %}address-fields-collapsed{% endif %}">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="recipient_name" class="form-control" required
+                        placeholder="Receiver Name" value="{{ default_address.recipient_name|default:'' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <input type="text" name="address_line1" class="form-control" required
+                        placeholder="Receiver Address" value="{{ default_address.address_line1|default:'' }}">
+                    <input type="text" name="address_line2" class="form-control" style="margin-top: 0.5rem;"
+                        placeholder="Apt, Suite, Unit (Optional)" value="{{ default_address.address_line2|default:'' }}">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">City</label>
+                        <input type="text" name="city" class="form-control" required value="{{ default_address.city|default:'' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">State</label>
+                        <input type="text" name="state" class="form-control" required value="{{ default_address.state|default:'' }}">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">ZIP / Postal Code</label>
+                        <input type="text" name="postal_code" class="form-control" required value="{{ default_address.postal_code|default:'' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Country</label>
+                        <select name="country" class="form-control" required>
+                            <option value="">Select...</option>
+                            {% for zone in zones %}
+                            {% for country_code in zone.get_countries_list %}
+                            <option value="{{ country_code }}" {% if default_address and default_address.country == country_code %}selected{% endif %}>{{ country_code }}</option>
+                            {% endfor %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" name="recipient_phone" class="form-control" required
+                        placeholder="+1 234 567 8900" pattern="[+]?[0-9\s\-]{7,20}"
+                        title="Enter a valid phone number" value="{{ default_address.recipient_phone|default:'' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="recipient_email" class="form-control" required
+                        placeholder="For tracking updates" value="{{ default_address.recipient_email|default:'' }}">
+                </div>
+
+                <div class="form-group" style="border: 1px solid var(--surface-200); border-radius: 10px; padding: 0.9rem;">
+                    <label style="display: flex; align-items: center; gap: 0.6rem; margin: 0; cursor: pointer;">
+                        <input type="checkbox" name="save_address" {% if default_address %}checked{% endif %}>
+                        <span style="font-weight: 600;">Save this address for next shipments</span>
+                    </label>
+                    <input type="text" name="address_label" class="form-control" style="margin-top: 0.6rem;"
+                        placeholder="Label (e.g. Home, Office)" value="{{ default_address.label|default:'' }}">
+                </div>
+                </div>
+
+                <div class="wizard-nav-row">
+                    <button type="button" class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+                    <button type="button" class="btn btn-primary" onclick="goToStep(3)">Continue to Service →</button>
+                </div>
+            </div>
+        </div>
+        {% include 'shipments/_create_summary_sidebar.html' %}
+        </div>
+    </div>
+
+    <!-- Step 3: Choose Service -->
+    <div class="wizard-step" data-step="3" hidden>
+        <div class="dashboard-layout">
+        <div class="card">
+            <div class="card-header"><h3>🚀 Choose Service</h3></div>
+            <div class="card-body">
+                <div class="radio-group">
+                    <label class="radio-card">
+                        <input type="radio" name="shipment_type" value="international" checked>
+                        <span class="rc-content">
+                            <div class="rc-icon-wrapper">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+                                </svg>
+                            </div>
+                            <div>
+                                <strong>International</strong>
+                                <span>Global shipping</span>
+                            </div>
+                        </span>
+                    </label>
+                    <label class="radio-card">
+                        <input type="radio" name="shipment_type" value="domestic">
+                        <span class="rc-content">
+                            <div class="rc-icon-wrapper">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                                </svg>
+                            </div>
+                            <div>
+                                <strong>Domestic</strong>
+                                <span>Within India</span>
+                            </div>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="wizard-nav-row">
+                    <button type="button" class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+                    <button type="button" class="btn btn-primary" onclick="goToStep(4)">Continue to Review →</button>
+                </div>
+            </div>
+        </div>
+        {% include 'shipments/_create_summary_sidebar.html' %}
+        </div>
+    </div>
+
+    <!-- Step 4: Review & Confirm -->
+    <div class="wizard-step" data-step="4" hidden>
+        <div class="dashboard-layout">
+        <div class="card">
+            <div class="card-header"><h3>Review &amp; Confirm</h3></div>
+            <div class="card-body">
+                <div class="review-recap-row">
+                    <div class="review-recap-item">
+                        <span class="review-recap-label">Shipping to</span>
+                        <span class="review-recap-value js-recap-address">—</span>
+                    </div>
+                    <div class="review-recap-item">
+                        <span class="review-recap-label">Service</span>
+                        <span class="review-recap-value js-recap-service">—</span>
+                    </div>
+                </div>
+
+                <div style="padding-top: 1.5rem; border-top: 2px dashed var(--surface-100);">
+                    <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">📄 Customs Declaration</h4>
+
+                    <div class="modern-alert"
+                        style="background: var(--success-bg); border: 1px solid #BBF7D0; color: #166534; flex-direction: column; align-items: flex-start;">
+                        <p style="margin: 0; font-size: 0.9rem;">Download, sign, and upload the declaration form.
+                        </p>
+                        <a href="{% static 'documents/Customer_Declaration_Authorization.pdf' %}"
+                            class="btn btn-sm btn-secondary" style="margin-top: 0.5rem; background: white;"
+                            download>
+                            📥 Download Form
+                        </a>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="form-label">Upload Signed Declaration *</label>
+                        <input type="file" name="declaration_file" class="form-control" required
+                            accept=".pdf,.jpg,.jpeg,.png">
+                    </div>
+                </div>
+
+                <div class="modern-alert" style="background: var(--primary-light); border: 1px solid var(--surface-200); margin-top: 1rem;">
+                    <div style="font-size: 1.1rem;">ℹ️</div>
+                    <div>
+                        <strong>Important</strong>
+                        <p style="margin-top: 0.25rem; font-size: 0.85rem;">Please ensure all selected items are ready to ship. Items once shipped cannot be modified.</p>
+                    </div>
+                </div>
+
+                <div class="wizard-nav-row">
+                    <button type="button" class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Create Shipment</button>
+                </div>
+            </div>
+        </div>
+        {% include 'shipments/_create_summary_sidebar.html' %}
         </div>
     </div>
 </form>
@@ -234,234 +411,129 @@
 
 {% block extra_js %}
 <script>
-    function updateSummary() {
-        const checkboxes = document.querySelectorAll('.parcel-checkbox');
-        let count = 0;
+    function toggleSelectAll(checkbox) {
+        document.querySelectorAll('.parcel-checkbox').forEach(function (cb) {
+            cb.checked = checkbox.checked;
+        });
+        updateSummary();
+    }
 
-        checkboxes.forEach(cb => {
-            const card = cb.closest('.parcel-select-card');
+    function updateSummary() {
+        const cards = document.querySelectorAll('.parcel-select-card');
+        let count = 0;
+        let totalWeight = 0;
+        let totalValue = 0;
+
+        cards.forEach(function (card) {
+            const cb = card.querySelector('.parcel-checkbox');
             if (cb.checked) {
                 count++;
+                totalWeight += parseFloat(card.dataset.weight) || 0;
+                totalValue += parseFloat(card.dataset.price) || 0;
                 card.classList.add('selected');
             } else {
                 card.classList.remove('selected');
             }
         });
 
-        document.querySelector('.selection-count').textContent = count + ' selected';
-        document.getElementById('summaryCount').textContent = count;
+        const selectAll = document.getElementById('selectAllParcels');
+        if (selectAll) selectAll.checked = cards.length > 0 && count === cards.length;
 
-        const btn = document.getElementById('submitBtn');
-        if (count > 0) {
-            btn.removeAttribute('disabled');
-            btn.style.opacity = '1';
-        } else {
-            btn.setAttribute('disabled', 'true');
-            btn.style.opacity = '0.5';
+        document.querySelectorAll('.js-sum-count').forEach(function (el) { el.textContent = count; });
+        document.querySelectorAll('.js-sum-weight').forEach(function (el) { el.textContent = totalWeight.toFixed(2) + ' kg'; });
+        document.querySelectorAll('.js-sum-value').forEach(function (el) { el.textContent = totalValue.toFixed(2); });
+
+        const nextBtn = document.getElementById('step1NextBtn');
+        if (nextBtn) nextBtn.disabled = count === 0;
+    }
+
+    function updateReviewRecap() {
+        const form = document.getElementById('shipmentForm');
+        const addressEl = document.querySelector('.js-recap-address');
+        const serviceEl = document.querySelector('.js-recap-service');
+        if (addressEl) {
+            const city = form.city.value.trim();
+            const country = form.country.value.trim();
+            addressEl.textContent = (city || country) ? [city, country].filter(Boolean).join(', ') : '—';
+        }
+        if (serviceEl) {
+            const checked = form.querySelector('input[name="shipment_type"]:checked');
+            serviceEl.textContent = checked ? (checked.value === 'domestic' ? 'Domestic (Within India)' : 'International') : '—';
         }
     }
+
+    function selectSavedAddress(radio) {
+        const form = document.getElementById('shipmentForm');
+        const fieldsWrap = document.getElementById('newAddressFields');
+        const saveCheckbox = form.querySelector('input[name="save_address"]');
+
+        if (radio.value === 'new') {
+            if (fieldsWrap) fieldsWrap.classList.remove('address-fields-collapsed');
+            form.recipient_name.value = '';
+            form.address_line1.value = '';
+            form.address_line2.value = '';
+            form.city.value = '';
+            form.state.value = '';
+            form.postal_code.value = '';
+            form.country.value = '';
+            form.recipient_phone.value = '';
+            form.recipient_email.value = '';
+            if (saveCheckbox) saveCheckbox.checked = true;
+            return;
+        }
+
+        if (fieldsWrap) fieldsWrap.classList.add('address-fields-collapsed');
+        const card = radio.closest('.address-radio-card');
+        form.recipient_name.value = card.dataset.name || '';
+        form.address_line1.value = card.dataset.line1 || '';
+        form.address_line2.value = card.dataset.line2 || '';
+        form.city.value = card.dataset.city || '';
+        form.state.value = card.dataset.state || '';
+        form.postal_code.value = card.dataset.postal || '';
+        form.country.value = card.dataset.country || '';
+        form.recipient_phone.value = card.dataset.phone || '';
+        form.recipient_email.value = card.dataset.email || '';
+        if (saveCheckbox) saveCheckbox.checked = false;
+    }
+
+    function goToStep(step) {
+        const current = document.querySelector('.wizard-step.active');
+        if (current && parseInt(current.dataset.step, 10) < step) {
+            const invalid = current.querySelector(':invalid');
+            if (invalid) {
+                invalid.reportValidity();
+                invalid.focus();
+                return;
+            }
+        }
+
+        document.querySelectorAll('.wizard-step').forEach(function (el) {
+            const isTarget = parseInt(el.dataset.step, 10) === step;
+            el.hidden = !isTarget;
+            el.classList.toggle('active', isTarget);
+        });
+
+        document.querySelectorAll('.wizard-step-indicator').forEach(function (el) {
+            const n = parseInt(el.dataset.step, 10);
+            el.classList.toggle('active', n === step);
+            el.classList.toggle('complete', n < step);
+        });
+
+        if (step === 4) updateReviewRecap();
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.querySelector('.wizard-step-indicator[data-step="1"]').classList.add('active');
+    updateSummary();
+
+    (function () {
+        const checkedAddr = document.querySelector('input[name="address_choice"]:checked');
+        if (checkedAddr) selectSavedAddress(checkedAddr);
+    })();
 </script>
 {% endblock %}
 
 {% block extra_css %}
-<style>
-    /* Radio Cards */
-    .radio-group {
-        display: flex;
-        gap: 1rem;
-    }
-
-    .radio-card {
-        flex: 1;
-        cursor: pointer;
-        position: relative;
-    }
-
-    .radio-card input {
-        position: absolute;
-        opacity: 0;
-    }
-
-    .rc-content {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-        padding: 1rem;
-        border: 2px solid var(--surface-200);
-        border-radius: 12px;
-        transition: 0.2s;
-    }
-
-    .rc-icon-wrapper {
-        width: 44px;
-        height: 44px;
-        background: var(--surface-100);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-secondary);
-        transition: 0.2s;
-    }
-
-    .rc-icon-wrapper svg {
-        width: 24px;
-        height: 24px;
-    }
-
-    .radio-card input:checked+.rc-content {
-        border-color: var(--text-main);
-        background: var(--surface-50);
-    }
-
-    .radio-card input:checked+.rc-content .rc-icon-wrapper {
-        background: var(--text-main);
-        color: white;
-    }
-
-    /* Parcel Checkbox Cards */
-    .parcel-select-card {
-        display: block;
-        cursor: pointer;
-        position: relative;
-    }
-
-    .parcel-checkbox {
-        position: absolute;
-        opacity: 0;
-        height: 0;
-        width: 0;
-    }
-
-    .psc-content {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-        padding: 1rem;
-        border: 2px solid var(--surface-200);
-        border-radius: 12px;
-        transition: 0.2s;
-        background: white;
-    }
-
-    .parcel-select-card:hover .psc-content {
-        border-color: var(--text-muted);
-    }
-
-    .parcel-select-card.selected .psc-content {
-        border-color: var(--primary);
-        background: var(--primary-light);
-    }
-
-    .psc-image {
-        width: 60px;
-        height: 60px;
-        background: white;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        border: 1px solid var(--surface-200);
-        flex-shrink: 0;
-    }
-
-    .psc-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .psc-title {
-        font-weight: 600;
-        color: var(--text-main);
-        font-size: 0.95rem;
-    }
-
-    .psc-meta {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-        margin-top: 0.25rem;
-    }
-
-    .psc-price {
-        font-weight: 600;
-        color: var(--text-main);
-        font-size: 0.95rem;
-        margin-left: auto;
-        white-space: nowrap;
-    }
-
-    /* Form field grid helper */
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-    }
-
-    /* --------- Mobile Responsive --------- */
-    @media (max-width: 768px) {
-
-        /* Radio cards stack vertically */
-        .radio-group {
-            flex-direction: column;
-        }
-
-        /* Form field grids stack to single column */
-        .form-row {
-            grid-template-columns: 1fr;
-        }
-
-        /* Remove sticky on mobile — let it flow naturally */
-        .card[style*="sticky"] {
-            position: static !important;
-        }
-
-        /* Parcel cards: wrap price below on very small screens */
-        .psc-content {
-            flex-wrap: wrap;
-        }
-
-        .psc-image {
-            width: 48px;
-            height: 48px;
-        }
-
-        .psc-price {
-            width: 100%;
-            margin-left: 0;
-            text-align: right;
-            padding-top: 0.5rem;
-            border-top: 1px dashed var(--surface-200);
-            margin-top: 0.25rem;
-        }
-
-        /* Reduce card body padding */
-        .card-body {
-            padding: 1rem;
-        }
-
-        .card-header {
-            padding: 1rem;
-        }
-
-        /* Page header tighter */
-        .page-header {
-            gap: 0.75rem;
-        }
-
-        .page-title {
-            font-size: 1.4rem;
-        }
-
-        .page-subtitle {
-            font-size: 0.9rem;
-        }
-
-        /* Empty state less padding */
-        .card[style*="5rem 2rem"] {
-            padding: 2.5rem 1rem !important;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/shipment_create.css' %}">
 {% endblock %}

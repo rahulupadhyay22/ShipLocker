@@ -1,0 +1,525 @@
+/* Create Shipment page — layout/components specific to templates/shipments/create.html */
+
+/* ---------- Wizard Stepper ---------- */
+.wizard-stepper {
+    display: flex;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 2rem;
+}
+
+.wizard-step-indicator {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    position: relative;
+    flex: 1;
+    padding-right: 1.5rem;
+}
+
+/* Connector spans the full indicator width behind everything; the label
+   text sits on its own opaque background (see .wsi-text) so it visually
+   masks the segment of line running underneath it — avoids needing to
+   calculate each label's rendered width. */
+.wizard-step-indicator:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 19px;
+    left: 18px;
+    right: 0;
+    height: 2px;
+    background: var(--surface-200);
+    z-index: 0;
+}
+
+.wizard-step-indicator.complete:not(:last-child)::after {
+    background: var(--accent);
+}
+
+.wsi-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--surface-100);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+    border: 2px solid var(--surface-0);
+    box-shadow: 0 0 0 1px var(--surface-200);
+    position: relative;
+    z-index: 1;
+    transition: 0.2s;
+}
+
+.wizard-step-indicator.active .wsi-circle {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.wizard-step-indicator.complete .wsi-circle {
+    background: var(--accent);
+    color: var(--primary);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
+.wsi-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding-top: 0.35rem;
+    position: relative;
+    z-index: 1;
+    background: var(--surface-0);
+}
+
+.wsi-text strong {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+}
+
+.wizard-step-indicator.active .wsi-text strong,
+.wizard-step-indicator.complete .wsi-text strong {
+    color: var(--text-main);
+}
+
+.wsi-text small {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* ---------- Wizard nav buttons ---------- */
+.wizard-nav-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--surface-200);
+}
+
+/* ---------- Summary stats ---------- */
+.summary-stats-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.summary-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.summary-stat-label {
+    color: var(--text-secondary);
+}
+
+.summary-stat-value {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* ---------- How Shipping Works ---------- */
+.how-it-works-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+}
+
+.hiw-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.hiw-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--surface-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 0.25rem;
+}
+
+.hiw-step strong {
+    color: var(--text-main);
+    font-size: 0.88rem;
+}
+
+/* ---------- Saved address picker ---------- */
+.address-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.address-radio-card {
+    display: block;
+    cursor: pointer;
+    position: relative;
+}
+
+.address-radio-card input {
+    position: absolute;
+    opacity: 0;
+}
+
+.arc-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.85rem 1rem;
+    border: 2px solid var(--surface-200);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    transition: 0.2s;
+}
+
+.arc-content strong {
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+.address-radio-card input:checked+.arc-content {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.arc-default-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary);
+    background: var(--accent-light);
+    padding: 0.1rem 0.5rem;
+    border-radius: 100px;
+    margin-left: 0.4rem;
+}
+
+.arc-content-new {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-style: dashed;
+}
+
+.address-radio-card input:checked+.arc-content-new {
+    color: var(--primary);
+    border-color: var(--primary);
+    border-style: dashed;
+}
+
+.address-fields-collapsed {
+    display: none;
+}
+
+/* Radio Cards */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+}
+
+.radio-card {
+    flex: 1;
+    cursor: pointer;
+    position: relative;
+}
+
+.radio-card input {
+    position: absolute;
+    opacity: 0;
+}
+
+.rc-content {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    border: 2px solid var(--surface-200);
+    border-radius: 12px;
+    transition: 0.2s;
+}
+
+.rc-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    background: var(--surface-100);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: 0.2s;
+}
+
+.rc-icon-wrapper svg {
+    width: 24px;
+    height: 24px;
+}
+
+.radio-card input:checked+.rc-content {
+    border-color: var(--text-main);
+    background: var(--surface-50);
+}
+
+.radio-card input:checked+.rc-content .rc-icon-wrapper {
+    background: var(--text-main);
+    color: white;
+}
+
+/* Parcel Checkbox Cards */
+.parcel-select-card {
+    display: block;
+    cursor: pointer;
+    position: relative;
+}
+
+.parcel-checkbox {
+    position: absolute;
+    opacity: 0;
+    height: 0;
+    width: 0;
+}
+
+.psc-content {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    padding-right: 2.75rem;
+    border: 2px solid var(--surface-200);
+    border-radius: 12px;
+    transition: 0.2s;
+    background: white;
+    position: relative;
+}
+
+.parcel-select-card:hover .psc-content {
+    border-color: var(--text-muted);
+}
+
+.parcel-select-card.selected .psc-content {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.psc-image {
+    width: 60px;
+    height: 60px;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--surface-200);
+    flex-shrink: 0;
+}
+
+.psc-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.psc-title {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.psc-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.psc-received {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+}
+
+.psc-price {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    margin-left: auto;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.psc-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.15s;
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+}
+
+.psc-remove:hover {
+    color: var(--danger-text);
+    background: var(--danger-bg);
+}
+
+/* ---------- Review recap (step 4) ---------- */
+.review-recap-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.review-recap-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.review-recap-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.review-recap-value {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* Form field grid helper */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* --------- Mobile Responsive --------- */
+@media (max-width: 768px) {
+
+    .wizard-stepper {
+        padding: 1rem 0.75rem;
+    }
+
+    .wsi-text {
+        display: none;
+    }
+
+    .wizard-step-indicator {
+        padding-right: 0.75rem;
+        justify-content: center;
+    }
+
+    .wsi-circle {
+        width: 30px;
+        height: 30px;
+        font-size: 0.85rem;
+    }
+
+    .wizard-step-indicator:not(:last-child)::after {
+        top: 16px;
+        left: calc(50% + 15px + 6px);
+        right: 0;
+    }
+
+    /* Radio cards stack vertically */
+    .radio-group {
+        flex-direction: column;
+    }
+
+    /* Form field grids stack to single column */
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .how-it-works-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Parcel cards: wrap price below on very small screens */
+    .psc-content {
+        flex-wrap: wrap;
+    }
+
+    .psc-image {
+        width: 48px;
+        height: 48px;
+    }
+
+    .psc-price {
+        width: 100%;
+        margin-left: 0;
+        text-align: right;
+        padding-top: 0.5rem;
+        border-top: 1px dashed var(--surface-200);
+        margin-top: 0.25rem;
+    }
+
+    /* Reduce card body padding */
+    .card-body {
+        padding: 1rem;
+    }
+
+    .card-header {
+        padding: 1rem;
+    }
+
+    /* Page header tighter */
+    .page-header {
+        gap: 0.75rem;
+    }
+
+    .page-title {
+        font-size: 1.4rem;
+    }
+
+    .page-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .wizard-nav-row {
+        flex-direction: column-reverse;
+    }
+
+    .wizard-nav-row .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Empty state less padding */
+    .card[style*="5rem 2rem"] {
+        padding: 2.5rem 1rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .how-it-works-grid {
+        grid-template-columns: 1fr;
+    }
+}

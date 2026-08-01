@@ -209,6 +209,7 @@ class VerifyPaymentView(LoginRequiredMixin, View):
             if payment.shipment:
                 payment.shipment.payment_status = 'paid'
                 payment.shipment.paid_at = timezone.now()
+                payment.shipment.advance_after_payment()
                 payment.shipment.save()
 
         logger.info(
@@ -270,6 +271,7 @@ class RazorpayWebhookView(View):
                             if payment.shipment:
                                 payment.shipment.payment_status = 'paid'
                                 payment.shipment.paid_at = timezone.now()
+                                payment.shipment.advance_after_payment()
                                 payment.shipment.save()
                         logger.info(f"Webhook: Payment captured for order {order_id}")
                 except Payment.DoesNotExist:

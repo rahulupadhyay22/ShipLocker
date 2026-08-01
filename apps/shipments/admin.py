@@ -291,11 +291,20 @@ class ShipmentAdmin(ModelAdmin):
         return format_html('<strong>{}</strong> item{}', count, 's' if count != 1 else '')
     item_count_display.short_description = 'Items'
     
-    @admin.action(description='✅ Approve Declaration (→ Packing)')
+    @admin.action(description='✅ Approve Declaration')
     def approve_declaration(self, request, queryset):
-        updated = queryset.filter(status='declaration_pending').update(status='packing')
-        self.message_user(request, f'{updated} shipment(s) approved and moved to Packing.')
-    
+        approved = 0
+        skipped = 0
+        for shipment in queryset.filter(status='declaration_pending'):
+            if shipment.approve_declaration():
+                approved += 1
+            else:
+                skipped += 1
+        message = f'{approved} shipment(s) approved.'
+        if skipped:
+            message += f' {skipped} skipped — set Shipping Cost first.'
+        self.message_user(request, message)
+
     @admin.action(description='📦 Mark as Packing')
     def mark_packing(self, request, queryset):
         queryset.update(status='packing')
@@ -411,6 +420,12 @@ class DeclarationApprovalAdmin(ModelAdmin):
             'fields': ('declaration_document',),
             'description': 'Review the uploaded declaration form below before approving.'
         }),
+        ('💰 Pricing', {
+            'fields': ('shipping_cost', 'currency'),
+            'description': 'Set the shipping cost before approving — the shipment moves to '
+                            'Pending Payment (or straight to Packing if already paid) only once a '
+                            'price is set. Approving with no price set will skip that shipment.'
+        }),
         ('Shipment Info', {
             'fields': ('display_id', 'user', 'shipment_type', 'created_at')
         }),
@@ -420,11 +435,20 @@ class DeclarationApprovalAdmin(ModelAdmin):
         }),
     )
     
-    @admin.action(description='✅ Approve Declaration (→ Packing)')
+    @admin.action(description='✅ Approve Declaration')
     def approve_declaration(self, request, queryset):
-        updated = queryset.update(status='packing')
-        self.message_user(request, f'{updated} shipment(s) approved and moved to Packing.')
-    
+        approved = 0
+        skipped = 0
+        for shipment in queryset:
+            if shipment.approve_declaration():
+                approved += 1
+            else:
+                skipped += 1
+        message = f'{approved} shipment(s) approved.'
+        if skipped:
+            message += f' {skipped} skipped — set Shipping Cost first (open the shipment and fill in Shipping Cost before approving).'
+        self.message_user(request, message)
+
     def has_add_permission(self, request):
         return False  # Can't add from this view
     

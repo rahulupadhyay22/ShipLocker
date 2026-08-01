@@ -1,0 +1,610 @@
+/* Shipments page — layout/components specific to templates/shipments/_list_partial.html */
+
+.shipments-header-sub {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    margin-top: 0.15rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ---------- Stat tiles ---------- */
+.shipments-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.shipments-stat-tile {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--surface-0);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 0.7rem 0.9rem;
+    min-height: 64px;
+    box-sizing: border-box;
+}
+
+.shipments-stat-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.shipments-stat-icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+.shipments-stat-icon.icon-primary { background: var(--primary-light); color: var(--primary); }
+.shipments-stat-icon.icon-gold { background: var(--accent-light); color: var(--accent-hover); }
+.shipments-stat-icon.icon-danger { background: var(--danger-bg); color: var(--danger-text); }
+.shipments-stat-icon.icon-success { background: var(--success-bg); color: var(--success-text); }
+
+.shipments-stat-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.shipments-stat-value {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.1;
+}
+
+.shipments-stat-label {
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-top: 0.15rem;
+    white-space: nowrap;
+}
+
+.shipments-stat-sublabel {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+/* ---------- Toolbar ---------- */
+.shipments-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    background: var(--surface-0);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.shipments-toolbar .form-input {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 0.85rem;
+    height: 38px;
+}
+
+.shipments-search-wrap {
+    position: relative;
+    flex: 1 1 200px;
+    min-width: 160px;
+}
+
+.shipments-search-icon {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.shipments-search-input {
+    padding-left: 2.35rem !important;
+}
+
+.shipments-status-select {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 130px;
+}
+
+.shipments-toolbar .btn {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+}
+
+.shipments-filter-btn {
+    flex-shrink: 0;
+}
+
+/* ---------- Filter drawer (inline on desktop, slide-in on mobile) ---------- */
+.shipments-filter-drawer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.shipments-filter-drawer-header {
+    display: none;
+}
+
+.shipments-filter-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.shipments-filter-overlay {
+    display: none;
+}
+
+.shipments-destination-select,
+.shipments-sort-select {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 160px;
+}
+
+/* ---------- Shipments count heading ---------- */
+.shipments-count-heading {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+}
+
+/* ---------- Shipment row ---------- */
+.shipments-row {
+    margin-bottom: 0;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.25rem;
+    cursor: pointer;
+}
+
+.shipments-row-thumb {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    background: var(--surface-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+
+.shipments-row-thumb.icon-primary { background: var(--primary-light); color: var(--primary); }
+.shipments-row-thumb.icon-gold { background: var(--accent-light); color: var(--accent-hover); }
+.shipments-row-thumb.icon-warning { background: var(--warning-bg); color: var(--warning-text); }
+.shipments-row-thumb.icon-danger { background: var(--danger-bg); color: var(--danger-text); }
+.shipments-row-thumb.icon-success { background: var(--success-bg); color: var(--success-text); }
+.shipments-row-thumb.icon-muted { background: var(--surface-100); color: var(--text-main); }
+
+.shipments-row-id {
+    flex: 0 0 auto;
+    width: 190px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.shipments-row-id h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.2;
+}
+
+.shipments-row-id .status-badge {
+    align-self: flex-start;
+}
+
+.shipments-row-destination {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.shipments-row-meta {
+    flex: 0 0 auto;
+    width: 130px;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.shipments-row-meta .shipments-eta-label {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+}
+
+.shipments-row-meta .shipments-carrier {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.shipments-row-actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 0.6rem;
+}
+
+/* ---------- Progress tracker ---------- */
+.shipments-tracker {
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.shipments-tracker-closed {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.shipments-tracker-step {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 0;
+}
+
+.shipments-tracker-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background: var(--surface-200);
+    z-index: 0;
+}
+
+.shipments-tracker-step.complete:not(:last-child)::after {
+    background: var(--primary);
+}
+
+.shipments-tracker-dot {
+    position: relative;
+    z-index: 1;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--surface-0);
+    border: 2px solid var(--surface-200);
+    margin-bottom: 0.4rem;
+}
+
+.shipments-tracker-step.complete .shipments-tracker-dot {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.shipments-tracker-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.shipments-tracker-step.complete .shipments-tracker-label {
+    color: var(--text-main);
+}
+
+.shipments-tracker-date {
+    font-size: 0.66rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+    white-space: nowrap;
+}
+
+/* ---------- Notice collapse toggle ---------- */
+.shipments-notice-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.shipments-notice-toggle svg {
+    transition: transform 0.2s;
+}
+
+.shipments-notice-toggle[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
+/* ---------- Empty / filtered states ---------- */
+.shipments-empty-filtered {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem 0;
+}
+
+/* ---------- Pagination ---------- */
+.shipments-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin: 2rem 0;
+}
+
+.shipments-page-btn {
+    min-width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--surface-200);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.shipments-page-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--primary);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+    .shipments-stats-row {
+        gap: 0.85rem;
+    }
+}
+
+@media (max-width: 900px) {
+    .shipments-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .shipments-toolbar {
+        gap: 0.6rem;
+        padding: 0.9rem;
+    }
+
+    .shipments-search-wrap {
+        flex: 1 1 100%;
+    }
+
+    /* Status select shares its line with the Filter button instead of
+       stretching full-width on its own row. */
+    .shipments-status-select {
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
+    }
+
+    .shipments-filter-btn {
+        flex: 0 0 auto;
+    }
+
+    /* Destination + sort move into a slide-in drawer; status stays inline */
+    .shipments-filter-drawer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(85vw, 320px);
+        background: var(--surface-0);
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.25rem;
+        padding: 1.25rem;
+        box-shadow: var(--shadow-md);
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 200;
+        overflow-y: auto;
+    }
+
+    .shipments-filter-drawer.open {
+        transform: translateX(0);
+    }
+
+    .shipments-filter-drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .shipments-filter-label {
+        position: static;
+        width: auto;
+        height: auto;
+        padding: 0;
+        margin: 0 0 -0.75rem;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+    }
+
+    .shipments-filter-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: var(--surface-50);
+        color: var(--text-main);
+        cursor: pointer;
+    }
+
+    .shipments-destination-select,
+    .shipments-sort-select {
+        width: 100%;
+    }
+
+    .shipments-filter-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 190;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+
+    .shipments-filter-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Flex-wrap re-flow: [icon][id.....][meta] on line 1, tracker full-width on
+       line 2, actions full-width on line 3 — order controls visual position,
+       DOM order stays icon/id/tracker/meta/actions for the desktop single-row layout. */
+    .shipments-row {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        padding: 0.9rem 1rem;
+        row-gap: 0.5rem;
+    }
+
+    .shipments-row-thumb {
+        order: 1;
+    }
+
+    .shipments-row-id {
+        order: 2;
+        width: auto;
+        /* basis 0 so id contributes nothing to flex line-break test — keeps
+           meta on line 1 (top-right); id then grows to fill remaining width */
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .shipments-row-meta {
+        order: 3;
+        width: auto;
+        flex: 0 0 auto;
+        text-align: right;
+    }
+
+    .shipments-tracker {
+        order: 4;
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .shipments-tracker-closed {
+        order: 4;
+        flex: 1 1 100%;
+    }
+
+    .shipments-row-actions {
+        order: 5;
+        flex: 1 1 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 640px) {
+    .shipments-stat-tile {
+        padding: 0.8rem;
+        gap: 0.4rem;
+    }
+
+    .shipments-stat-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .shipments-stat-value {
+        font-size: 1.15rem;
+    }
+
+    .shipments-stat-label {
+        font-size: 0.78rem;
+    }
+
+    .shipments-stat-sublabel {
+        display: none;
+    }
+
+    .shipments-tracker-step {
+        padding: 0 2px;
+    }
+
+    .shipments-tracker-label {
+        font-size: 0.56rem;
+        white-space: normal;
+        line-height: 1.15;
+    }
+
+    .shipments-tracker-date {
+        font-size: 0.58rem;
+        white-space: normal;
+    }
+
+    .shipments-tracker-dot {
+        width: 8px;
+        height: 8px;
+    }
+
+    .shipments-pagination {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 380px) {
+    .shipments-stats-row {
+        gap: 0.5rem;
+    }
+
+    .shipments-stat-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    .shipments-stat-value {
+        font-size: 1.05rem;
+    }
+}

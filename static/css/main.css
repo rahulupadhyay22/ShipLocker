@@ -786,6 +786,11 @@ a {
     color: var(--danger-text);
 }
 
+.status-returned {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+}
+
 /* Alerts */
 .alert,
 .modern-alert {

@@ -118,7 +118,7 @@
             <input type="checkbox" id="trunk-select-all">
             Select All
         </label>
-        <a href="{% url 'shipments:create' %}" class="btn btn-primary">
+        <a href="{% url 'shipments:create' %}" id="trunk-ship-selected" class="btn btn-primary" data-base-url="{% url 'shipments:create' %}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6m16 0l-2 5H6l-2-5m16 0H4" />
             </svg>
@@ -210,6 +210,19 @@
                 document.querySelectorAll('.trunk-item-checkbox').forEach(function (cb) {
                     cb.checked = selectAll.checked;
                 });
+            });
+        }
+
+        // Ship Selected → carry the checked parcel IDs through to Create Shipment
+        var shipSelectedBtn = document.getElementById('trunk-ship-selected');
+        if (shipSelectedBtn) {
+            shipSelectedBtn.addEventListener('click', function (e) {
+                var checked = Array.prototype.slice.call(document.querySelectorAll('.trunk-item-checkbox:checked'));
+                if (!checked.length) return; // no selection — fall through to plain link (shows all items)
+                e.preventDefault();
+                var params = new URLSearchParams();
+                checked.forEach(function (cb) { params.append('parcels', cb.value); });
+                window.location.href = shipSelectedBtn.dataset.baseUrl + '?' + params.toString();
             });
         }
 
