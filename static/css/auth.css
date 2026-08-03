@@ -18,8 +18,8 @@
     position: relative;
     padding: 3rem;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 2rem;
+    justify-content: flex-start;
+    gap: 1.75rem;
     color: #fff;
     overflow: hidden;
 }
@@ -34,8 +34,7 @@
     background: linear-gradient(90deg, #f3ae31 0%, transparent 70%);
 }
 
-.auth-brand,
-.auth-mobile-brand {
+.auth-brand {
     display: inline-flex;
     align-items: center;
     gap: 0.6rem;
@@ -43,10 +42,10 @@
     font-weight: 700;
     font-size: 1.25rem;
     color: #fff;
+    text-decoration: none;
 }
 
-.auth-brand span span,
-.auth-mobile-brand span span {
+.auth-brand span span {
     color: #f3ae31;
 }
 
@@ -62,75 +61,72 @@
     height: 100%;
 }
 
-.auth-mobile-brand {
+.auth-left-content {
+    flex: 1;
     display: flex;
-    padding: 1.5rem 1.5rem 0;
-    color: #082b3a;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.75rem;
 }
 
-.auth-mobile-brand .auth-brand-mark {
-    color: #082b3a;
-}
-
-.auth-feature-card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 24px;
-    padding: 2rem;
-    position: relative;
-    z-index: 10;
-    margin-top: auto;
-    margin-bottom: auto;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-    max-width: 500px;
-}
-
-.auth-feature-img {
-    width: 100%;
-    height: 260px;
-    object-fit: cover;
-    border-radius: 16px;
-    margin-bottom: 1.5rem;
-}
-
-.auth-feature-overlay {
-    background: rgba(8, 43, 58, 0.92);
-    border: 1px solid rgba(243, 174, 49, 0.4);
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    text-align: center;
-}
-
-.auth-feature-emoji {
-    font-size: 2rem;
-    margin-bottom: 0.25rem;
-}
-
-.auth-feature-title {
-    font-weight: 700;
-    font-size: 1.05rem;
-    margin-bottom: 0.25rem;
-}
-
-.auth-feature-subtitle {
-    font-size: 0.85rem;
-    opacity: 0.85;
-}
-
-.auth-copy h2 {
+.auth-copy h1 {
     font-family: 'Fraunces', serif;
-    font-size: 2.1rem;
+    font-size: 3.2rem;
     font-weight: 700;
     line-height: 1.2;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    color: #fff;
 }
 
-.auth-copy p {
-    font-size: 1.05rem;
+.auth-copy .accent {
+    color: #f3ae31;
+}
+
+.auth-copy-sub {
+    font-size: 1rem;
     opacity: 0.8;
-    line-height: 1.6;
-    max-width: 480px;
+}
+
+.auth-feature-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.auth-feature-list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+}
+
+.auth-feature-icon-box {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f3ae31;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-feature-icon-box svg {
+    width: 20px;
+    height: 20px;
+}
+
+.auth-feature-list-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 0.15rem;
+}
+
+.auth-feature-list-subtitle {
+    font-size: 0.82rem;
+    opacity: 0.75;
+    line-height: 1.4;
 }
 
 .auth-right {
@@ -203,48 +199,211 @@
     margin-bottom: 0;
 }
 
-.auth-otp-input {
-    text-align: center;
-    font-size: 1.75rem;
-    letter-spacing: 0.6rem;
-    height: 64px;
-    font-weight: 600;
-    font-family: monospace;
-}
-
 .auth-otp-hint {
     font-size: 0.85rem;
     color: var(--text-muted, #8b8296);
     margin-top: 0.75rem;
 }
 
-.auth-support {
-    text-align: center;
-    margin-top: 3rem;
+/* Email input with leading icon */
+.auth-input-icon {
+    position: relative;
 }
 
-.auth-support a {
-    font-size: 0.85rem;
+.auth-input-icon svg {
+    position: absolute;
+    top: 50%;
+    left: 1rem;
+    transform: translateY(-50%);
+    color: var(--text-muted, #8b8296);
+    pointer-events: none;
+}
+
+.auth-input-icon .form-control {
+    padding-left: 2.75rem;
+}
+
+/* Social login row */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+    color: var(--text-muted, #8b8296);
+    font-size: 0.82rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--surface-100, #eee);
+}
+
+.auth-social-row {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.auth-social-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* OTP box grid */
+.auth-otp-boxes {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.auth-otp-box {
+    width: 3rem;
+    height: 3.5rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    border: 2px solid var(--surface-100, #eee);
+    border-radius: 12px;
+    background: var(--surface-50, #f9f9f9);
+}
+
+.auth-otp-box:focus {
+    outline: none;
+    border-color: #082b3a;
+    box-shadow: 0 0 0 4px #e4eef1;
+}
+
+.auth-lock-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 2rem;
+    font-size: 0.8rem;
     color: var(--text-muted, #8b8296);
 }
 
-/* Desktop: two-pane split, matches homepage marketing panel */
+/* Trust badges row — bottom of the login card, both breakpoints */
+.auth-trust-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--surface-100, #eee);
+}
+
+.auth-trust-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    color: #082b3a;
+}
+
+.auth-trust-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.auth-trust-subtitle {
+    font-size: 0.7rem;
+    color: var(--text-muted, #8b8296);
+}
+
+/* Desktop: two-pane split, marketing panel with feature list + illustration */
 @media (min-width: 1024px) {
     .auth-left {
         display: flex;
     }
 
-    .auth-mobile-brand {
-        display: none;
+    .auth-form-container {
+        background: #fff;
+        border: 1px solid var(--surface-100, #eee);
+        border-radius: 24px;
+        box-shadow: 0 25px 50px -12px rgba(8, 43, 58, 0.18);
+        padding: 2.5rem;
     }
 }
 
-/* Mobile / tablet: single column, form-first, sticky brand header */
+/* Mobile hero panel above the login card (hidden on desktop) */
+.auth-mobile-hero {
+    display: none;
+}
+
+/* Mobile / tablet: hero + overlapping white card */
 @media (max-width: 1023px) {
     .auth-right {
         justify-content: flex-start;
-        padding: 2rem 1.5rem 3rem;
+        padding: 0;
         min-height: 100vh;
+        align-items: stretch;
+    }
+
+    .auth-mobile-hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        color: #fff;
+        padding: 3rem 1.5rem 4rem;
+        background:
+            radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+            linear-gradient(160deg, #082b3a 0%, #07293a 65%, #0d3e52 100%);
+        background-size: 16px 16px, 100% 100%;
+    }
+
+    .auth-mobile-back {
+        position: absolute;
+        top: 1.5rem;
+        left: 1.5rem;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .auth-mobile-camel {
+        width: 96px;
+        height: 58px;
+        margin-bottom: 0.5rem;
+    }
+
+    .auth-mobile-brand-text {
+        font-family: 'Fraunces', serif;
+        font-weight: 700;
+        font-size: 1.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .auth-mobile-brand-text span {
+        color: #f3ae31;
+    }
+
+    .auth-mobile-tagline {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        max-width: 280px;
+        line-height: 1.4;
+    }
+
+    .auth-form-container {
+        background: #fff;
+        border-radius: 24px 24px 0 0;
+        margin-top: -2rem;
+        padding: 2rem 1.5rem 1.5rem;
+        position: relative;
+        z-index: 2;
+        flex: 1;
     }
 }
 
@@ -253,8 +412,13 @@
         font-size: 1.6rem;
     }
 
-    .auth-otp-input {
-        letter-spacing: 0.4rem;
-        font-size: 1.5rem;
+    .auth-copy h1 {
+        font-size: 1.9rem;
+    }
+
+    .auth-otp-box {
+        width: 2.5rem;
+        height: 3rem;
+        font-size: 1.25rem;
     }
 }
