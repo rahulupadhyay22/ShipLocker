@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Address - INDIBOX{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Delete Address</h1>
+        <p class="page-subtitle">This can't be undone.</p>
+    </div>
+</div>
+
+<div class="card" style="max-width: 560px;">
+    <div class="card-body">
+        <p style="margin-bottom: 1.5rem;">
+            Delete <strong>{{ object.recipient_name }}</strong>
+            {% if object.label %}({{ object.label }}){% endif %}
+            — {{ object.city }}, {{ object.country }}?
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-secondary" style="border-color: var(--danger-text); color: var(--danger-text);">
+                    Delete Address
+                </button>
+                <a href="{% url 'accounts:profile' %}?tab=addresses" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
