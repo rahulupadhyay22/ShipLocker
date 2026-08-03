@@ -1,16 +1,17 @@
 {% extends "accounts/auth_base.html" %}
 {% block title %}Verify OTP - CamelTrunk{% endblock %}
 
-{% block marketing_icon %}<div class="auth-feature-emoji">📦</div>{% endblock %}
-{% block marketing_title %}Smart Locker #402{% endblock %}
-{% block marketing_subtitle %}Status: Ready for pickup{% endblock %}
-{% block marketing_headline %}Seamless Logistics Management{% endblock %}
-{% block marketing_body %}Track shipments, manage lockers, and automate your delivery workflows in real-time with our intelligent platform.{% endblock %}
+{% block marketing_headline %}Almost there.<br>Verify to <span class="accent">continue</span>{% endblock %}
+{% block marketing_body %}Secure. Reliable. Worldwide.{% endblock %}
 
 {% block form_content %}
+<div class="auth-otp-label-row">
+    <a href="{% url 'accounts:login' %}" class="auth-link-sm">&larr; Back</a>
+</div>
+
 <div class="auth-heading">
-    <h1>One-Time Password</h1>
-    <p>We sent a code to <strong>{{ email }}</strong></p>
+    <h1>Verify OTP</h1>
+    <p>We've sent a 6-digit code to <strong>{{ email }}</strong></p>
 </div>
 
 {% if messages %}
@@ -23,19 +24,17 @@
 </div>
 {% endif %}
 
-<form method="post" action="{% url 'accounts:verify_otp' %}">
+<form method="post" action="{% url 'accounts:verify_otp' %}" id="otp-form">
     {% csrf_token %}
     <input type="hidden" name="otp_session_token" value="{{ otp_session_token }}">
+    <input type="hidden" name="otp" id="otp-combined">
 
     <div class="form-group">
-        <div class="auth-otp-label-row">
-            <label class="form-label" for="otp">Secure Code</label>
-            <a href="{% url 'accounts:login' %}" class="auth-link-sm">Change email</a>
+        <div class="auth-otp-boxes">
+            {% for i in "123456" %}
+            <input type="text" class="auth-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+            {% endfor %}
         </div>
-
-        <input type="text" id="otp" name="otp" class="form-control auth-otp-input" placeholder="0 0 0 0 0 0"
-            pattern="[0-9]{6}" maxlength="6" required autofocus autocomplete="one-time-code" inputmode="numeric">
-
         <p class="auth-otp-hint">Code expires in 5 minutes</p>
     </div>
 
@@ -47,7 +46,47 @@
     <a href="{% url 'accounts:login' %}" class="auth-link">Resend</a>
 </p>
 
-<div class="auth-support">
-    <a href="#">Having trouble? Contact Support</a>
+<div class="auth-lock-note">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="5" y="10" width="14" height="10" rx="2"/>
+        <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+    </svg>
+    Your information is secure and encrypted
 </div>
+
+<script>
+(function () {
+    var boxes = Array.prototype.slice.call(document.querySelectorAll('.auth-otp-box'));
+    var combined = document.getElementById('otp-combined');
+
+    function sync() {
+        combined.value = boxes.map(function (b) { return b.value; }).join('');
+    }
+
+    boxes.forEach(function (box, i) {
+        box.addEventListener('input', function () {
+            box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+            if (box.value && boxes[i + 1]) boxes[i + 1].focus();
+            sync();
+        });
+        box.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && !box.value && boxes[i - 1]) {
+                boxes[i - 1].focus();
+            }
+        });
+        box.addEventListener('paste', function (e) {
+            var digits = (e.clipboardData.getData('text') || '').replace(/[^0-9]/g, '').split('');
+            if (!digits.length) return;
+            e.preventDefault();
+            boxes.forEach(function (b, j) { b.value = digits[j] || ''; });
+            sync();
+            var next = boxes[Math.min(digits.length, boxes.length - 1)];
+            if (next) next.focus();
+        });
+    });
+
+    if (boxes[0]) boxes[0].focus();
+    document.getElementById('otp-form').addEventListener('submit', sync);
+})();
+</script>
 {% endblock %}
