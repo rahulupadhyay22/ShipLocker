@@ -1,14 +1,17 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, CreateView, UpdateView, DeleteView
 from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Count, Q, Sum
+from django.urls import reverse
 import logging
 
-from .models import User, Locker
+from indiabox.mixins import ObjectOwnershipRequiredMixin, SecureActionMixin
+from .models import User, Locker, SavedAddress
+from .forms import SavedAddressForm
 from .services import SupabaseAuth
 
 logger = logging.getLogger('security')
@@ -260,6 +263,11 @@ class ProfileView(LoginRequiredMixin, View):
         return render(request, self.template_name, {
             'user': request.user,
             'locker': request.user.locker,
+            'kyc_verified': request.user.kyc_documents.filter(status='approved').exists(),
+            'total_shipments': request.user.shipments.count(),
+            'total_parcels': request.user.locker.parcels.count(),
+            'saved_addresses': request.user.saved_addresses.all(),
+            'payments': request.user.payments.all()[:10],
         })
     
     def post(self, request):
@@ -288,6 +296,60 @@ class ProfileView(LoginRequiredMixin, View):
                 return redirect('accounts:profile')
         
         user.save()
-        
+
         messages.success(request, 'Profile updated successfully.')
         return redirect('accounts:profile')
+
+
+class SavedAddressCreateView(LoginRequiredMixin, SecureActionMixin, CreateView):
+    model = SavedAddress
+    form_class = SavedAddressForm
+    template_name = 'accounts/address_form.html'
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        messages.success(self.request, 'Address saved.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('accounts:profile') + '?tab=addresses'
+
+
+class SavedAddressUpdateView(LoginRequiredMixin, ObjectOwnershipRequiredMixin, SecureActionMixin, UpdateView):
+    model = SavedAddress
+    form_class = SavedAddressForm
+    template_name = 'accounts/address_form.html'
+
+    def get_queryset(self):
+        return SavedAddress.objects.filter(user=self.request.user)
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Address updated.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('accounts:profile') + '?tab=addresses'
+
+
+class SavedAddressDeleteView(LoginRequiredMixin, ObjectOwnershipRequiredMixin, SecureActionMixin, DeleteView):
+    model = SavedAddress
+    template_name = 'accounts/address_confirm_delete.html'
+
+    def get_queryset(self):
+        return SavedAddress.objects.filter(user=self.request.user)
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Address deleted.')
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('accounts:profile') + '?tab=addresses'
+
+
+class SavedAddressSetDefaultView(LoginRequiredMixin, SecureActionMixin, View):
+    def post(self, request, pk):
+        address = get_object_or_404(SavedAddress, pk=pk, user=request.user)
+        address.is_default = True
+        address.save()
+        messages.success(request, 'Default address updated.')
+        return redirect(reverse('accounts:profile') + '?tab=addresses')

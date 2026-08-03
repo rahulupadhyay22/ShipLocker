@@ -1,17 +1,20 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}My Profile - INDIBOX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
         <h1 class="page-title">My Profile</h1>
-        <p class="page-subtitle">Manage your account settings and preferences.</p>
+        <p class="page-subtitle">Manage your personal information and account settings.</p>
     </div>
     {% if user.is_staff %}
-    <a href="/manage-rb-panel/" class="btn btn-secondary">
-        Admin Panel
-    </a>
+    <a href="/manage-rb-panel/" class="btn btn-secondary">Admin Panel</a>
     {% endif %}
 </div>
 
@@ -25,116 +28,151 @@
 </div>
 {% endif %}
 
-<div class="dashboard-layout">
-    <!-- Left Column: Virtual ID Card -->
-    <div>
-        <div class="virtual-card" style="margin-bottom: 2rem;">
-            <!-- Header -->
-            <div
-                style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; position: relative; z-index: 2;">
-                <div>
-                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700;">INDIABOX VIP</h3>
-                    <p style="margin: 0.25rem 0 0; font-size: 0.85rem; opacity: 0.8;">Global Shipping Membership</p>
-                </div>
-                <div
-                    style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; backdrop-filter: blur(4px);">
-                    ACTIVE
-                </div>
+<!-- Profile summary header -->
+<div class="profile-header-card">
+    <div class="profile-identity">
+        <div class="profile-avatar">{{ user.first_name|first|default:user.email|first|upper }}</div>
+        <div>
+            <div class="profile-name-row">
+                <h2>{{ user.get_full_name }}</h2>
+                {% if kyc_verified %}
+                <span class="status-badge status-approved">Verified</span>
+                {% endif %}
             </div>
-
-            <!-- Locker ID -->
-            <div style="position: relative; z-index: 2; margin-bottom: 2rem;">
-                <label
-                    style="display: block; font-size: 0.75rem; opacity: 0.8; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-weight: 600;">YOUR
-                    LOCKER ID</label>
-                <div
-                    style="font-family: 'Courier New', monospace; font-size: 2rem; font-weight: 700; letter-spacing: 0.05em; background: rgba(0,0,0,0.2); display: inline-block; padding: 0.5rem 1rem; border-radius: 8px;">
-                    {{ locker.locker_id }}
-                </div>
+            <div class="profile-contact-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                {{ user.email }}
+                {% if user.email_verified %}
+                <svg class="profile-verified-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {% endif %}
             </div>
-
-            <!-- Address Fields -->
-            <div style="position: relative; z-index: 2; margin-bottom: 1.5rem;">
-                <label
-                    style="display: block; font-size: 0.75rem; opacity: 0.8; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-weight: 600;">SHIPPING
-                    ADDRESS (Your Warehouse)</label>
-                <div style="font-size: 0.95rem; line-height: 1.6; opacity: 0.95;">
-                    <strong style="font-size: 1.1rem; display: block; margin-bottom: 0.25rem;">
-                    {{ user.full_name|default:"Your Name" }}</strong>
-                    {% if locker.address %}
-                    {{ locker.address|linebreaksbr }}
-                    {% else %}
-                    Reference Code: {{ locker.locker_id }}<br>
-                    INDIBOX Warehouse<br>
-                    Plot No 123, Export Zone<br>
-                    Hyderabad, Telangana 500081<br>
-                    India
-                    {% endif %}
-                </div>
+            {% if user.phone %}
+            <div class="profile-contact-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 011 .76l1.12 4.49a1 1 0 01-.54 1.13l-1.9.95a11.05 11.05 0 005.52 5.52l.95-1.9a1 1 0 011.13-.54l4.49 1.12a1 1 0 01.76 1v3.28a2 2 0 01-2 2h-1C9.72 21 3 14.28 3 6V5z" />
+                </svg>
+                {{ user.phone }}
+                <svg class="profile-verified-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
             </div>
-
-            <div
-                style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 1.5rem; display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.9; position: relative; z-index: 2;">
-                <span>📞 {{ locker.phone }}</span>
-                <span>Use this for all deliveries</span>
-            </div>
-        </div>
-
-        <!-- Account Info Card -->
-        <div class="card">
-            <div class="card-header">
-                <h3>Account Details</h3>
-            </div>
-            <div class="card-body">
-                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-                    <div
-                        style="width: 64px; height: 64px; background: var(--surface-100); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: var(--primary);">
-                        {{ user.first_name|first|default:user.email|first|upper }}
-                    </div>
-                    <div>
-                        <div style="font-weight: 600; font-size: 1.1rem;">{{ user.email }}</div>
-                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Member since {{ user.date_joined|date:"M Y" }}</div>
-                    </div>
-                </div>
-
-                <hr style="border: none; border-top: 1px solid var(--surface-100); margin: 1.5rem 0;">
-
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: var(--text-secondary);">Security</span>
-                    <form method="post" action="{% url 'accounts:logout' %}" style="margin: 0; display: inline;">
-                        {% csrf_token %}
-                        <button type="submit"
-                            style="color: var(--danger-text); font-weight: 500; font-size: 0.9rem; background: none; border: none; cursor: pointer; font-family: inherit;">
-                            Sign Out
-                        </button>
-                    </form>
-                </div>
+            {% endif %}
+            <div class="profile-contact-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Member since {{ user.date_joined|date:"M Y" }}
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Edit Profile -->
-    <div>
+    <div class="profile-summary-stats">
+        <div class="profile-summary-row">
+            <span class="profile-summary-label">Account Status</span>
+            <span class="status-badge status-approved">Active</span>
+        </div>
+        <div class="profile-summary-row">
+            <span class="profile-summary-label">KYC Status</span>
+            <span class="status-badge {% if kyc_verified %}status-approved{% else %}status-pending{% endif %}">
+                {% if kyc_verified %}Verified{% else %}Pending{% endif %}
+            </span>
+        </div>
+        <div class="profile-summary-row">
+            <span class="profile-summary-label">Trunk ID</span>
+            <span>
+                <span class="profile-summary-value">{{ locker.locker_id }}</span>
+                <button type="button" class="profile-copy-btn"
+                    onclick="copyToClipboard('{{ locker.locker_id|escapejs }}', this)" aria-label="Copy Trunk ID">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V5a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-2M8 7h7a2 2 0 012 2v7" />
+                    </svg>
+                </button>
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Section tabs / accordion -->
+<div class="profile-tabs" id="profile-tabs">
+    <button type="button" class="profile-tab active" data-tab="personal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        Personal Information
+        <svg class="profile-tab-chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+    <button type="button" class="profile-tab" data-tab="security">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v2" />
+        </svg>
+        Security
+        <svg class="profile-tab-chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+    <button type="button" class="profile-tab" data-tab="addresses">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Addresses
+        <svg class="profile-tab-chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+    <button type="button" class="profile-tab" data-tab="payment">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h5M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        Payment Methods
+        <svg class="profile-tab-chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+    <button type="button" class="profile-tab" data-tab="preferences">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Preferences
+        <svg class="profile-tab-chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+</div>
+
+<div id="profile-panels">
+<!-- Personal Information panel -->
+<div class="profile-tab-panel active" data-panel="personal">
+    <div class="dashboard-layout">
         <div class="card">
             <div class="card-header">
-                <h3>Edit Profile</h3>
+                <h3>Personal Information</h3>
             </div>
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
-
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
                         <input type="text" name="full_name" class="form-control" value="{{ user.full_name }}"
                             placeholder="e.g. Alex Morris">
                     </div>
-
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Phone Number</label>
                         <input type="tel" name="phone" class="form-control" value="{{ user.phone }}"
                             placeholder="+91 99999 99999">
                     </div>
-
                     <div class="form-group">
                         <label class="form-label">WhatsApp Number</label>
                         <input type="tel" name="whatsapp_number" class="form-control" value="{{ user.whatsapp_number }}"
@@ -143,33 +181,270 @@
                             Used for urgent shipment updates and notifications.
                         </p>
                     </div>
-
                     <div style="margin-top: 2rem;">
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">
-                            Save Changes
-                        </button>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Save Changes</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Need Help -->
-        <div class="card" style="background: var(--surface-50); border-style: dashed;">
-            <div class="card-body" style="text-align: center;">
-                <h3 style="margin-bottom: 0.5rem;">Need Help?</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Our support team is available 7AM - 7PM
-                    IST</p>
-                <a href="https://wa.me/{{ whatsapp_link }}" target="_blank" class="btn btn-secondary"
-                    style="width: 100%; border-color: #25D366; color: #15803d; background: white;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                        viewBox="0 0 16 16" style="margin-right: 0.5rem;">
-                        <path
-                            d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z" />
-                    </svg>
-                    Chat on WhatsApp
-                </a>
+        <div>
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <h3>Profile Photo</h3>
+                </div>
+                <div class="card-body">
+                    <div class="profile-photo-row">
+                        <div class="profile-avatar">{{ user.first_name|first|default:user.email|first|upper }}</div>
+                        <div>
+                            <p class="profile-photo-hint">JPG, PNG or GIF. Max size 5MB.</p>
+                            <button type="button" class="btn btn-secondary" disabled title="Coming soon">Change Photo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Account Summary</h3>
+                </div>
+                <div class="card-body">
+                    <div class="account-summary-row">
+                        <span class="account-summary-label">Total Shipments</span>
+                        <span class="account-summary-value">{{ total_shipments }}</span>
+                    </div>
+                    <div class="account-summary-row">
+                        <span class="account-summary-label">Total Parcels</span>
+                        <span class="account-summary-value">{{ total_parcels }}</span>
+                    </div>
+                    <div class="account-summary-row">
+                        <span class="account-summary-label">Trunk ID</span>
+                        <span class="account-summary-value">{{ locker.locker_id }}</span>
+                    </div>
+                    <div class="account-summary-row">
+                        <span class="account-summary-label">Member Since</span>
+                        <span class="account-summary-value">{{ user.date_joined|date:"M Y" }}</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Security placeholder (no backing feature: OTP-only auth, no 2FA field) -->
+<div class="profile-tab-panel" data-panel="security">
+    <div class="profile-placeholder-panel">Security settings are coming soon.</div>
+</div>
+
+<!-- Addresses -->
+<div class="profile-tab-panel" data-panel="addresses">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+        <a href="{% url 'accounts:address_add' %}" class="btn btn-primary">+ Add Address</a>
+    </div>
+    {% if saved_addresses %}
+    <div class="address-list">
+        {% for address in saved_addresses %}
+        <div class="address-card">
+            <div class="address-card-header">
+                <span class="address-card-name">
+                    {{ address.recipient_name }}
+                    {% if address.label %}<span class="address-card-label">{{ address.label }}</span>{% endif %}
+                </span>
+                {% if address.is_default %}
+                <span class="status-badge status-approved">Default</span>
+                {% endif %}
+            </div>
+            <p class="address-card-body">
+                {{ address.address_line1 }}{% if address.address_line2 %}, {{ address.address_line2 }}{% endif %}<br>
+                {{ address.city }}, {{ address.state }} {{ address.postal_code }}<br>
+                {{ address.country }}<br>
+                {{ address.recipient_phone }}
+            </p>
+            <div class="address-card-actions">
+                <a href="{% url 'accounts:address_edit' address.pk %}" class="btn btn-secondary">Edit</a>
+                {% if not address.is_default %}
+                <form method="post" action="{% url 'accounts:address_set_default' address.pk %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary">Set Default</button>
+                </form>
+                {% endif %}
+                <a href="{% url 'accounts:address_delete' address.pk %}" class="btn btn-secondary"
+                    style="border-color: var(--danger-text); color: var(--danger-text);">Delete</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="profile-placeholder-panel">No saved addresses yet. Add one to reuse it when creating a shipment.</div>
+    {% endif %}
+</div>
+
+<!-- Payment history -->
+<div class="profile-tab-panel" data-panel="payment">
+    {% if payments %}
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            <table class="payment-history-table">
+                <thead>
+                    <tr>
+                        <th>Payment ID</th>
+                        <th>Date</th>
+                        <th>Method</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td>{{ payment.display_id|default:"—" }}</td>
+                        <td>{{ payment.created_at|date:"d M Y" }}</td>
+                        <td>{{ payment.get_payment_method_display }}</td>
+                        <td>{{ payment.currency }} {{ payment.amount }}</td>
+                        <td>
+                            <span class="status-badge {% if payment.status == 'captured' %}status-approved{% elif payment.status == 'failed' %}status-action{% else %}status-pending{% endif %}">
+                                {{ payment.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="profile-placeholder-panel">No payments yet. Payment history will appear here once you complete a shipment payment.</div>
+    {% endif %}
+</div>
+<div class="profile-tab-panel" data-panel="preferences">
+    <div class="profile-placeholder-panel">Preferences are coming soon.</div>
+</div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions-row">
+    <button type="button" class="quick-action-item disabled" disabled title="Coming soon">
+        <span class="quick-action-icon">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+        </span>
+        <span>
+            <span class="quick-action-title">Change Password</span>
+            <span class="quick-action-subtitle">Coming soon</span>
+        </span>
+    </button>
+    <button type="button" class="quick-action-item disabled" disabled title="Coming soon">
+        <span class="quick-action-icon">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+        </span>
+        <span>
+            <span class="quick-action-title">Two-Factor Auth</span>
+            <span class="quick-action-subtitle">Coming soon</span>
+        </span>
+    </button>
+    <button type="button" class="quick-action-item disabled" disabled title="Coming soon">
+        <span class="quick-action-icon">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+        </span>
+        <span>
+            <span class="quick-action-title">Download My Data</span>
+            <span class="quick-action-subtitle">Coming soon</span>
+        </span>
+    </button>
+    <form method="post" action="{% url 'accounts:logout' %}" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit" class="quick-action-item danger" style="width: 100%;">
+            <span class="quick-action-icon">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+            </span>
+            <span>
+                <span class="quick-action-title">Sign Out</span>
+                <span class="quick-action-subtitle">End your session</span>
+            </span>
+        </button>
+    </form>
+</div>
+
+<!-- Need Help -->
+<div class="card" style="background: var(--surface-50); border-style: dashed; margin-top: 1.5rem;">
+    <div class="card-body" style="text-align: center;">
+        <h3 style="margin-bottom: 0.5rem;">Need Help?</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Our support team is available 7AM - 7PM IST</p>
+        <a href="https://wa.me/{{ whatsapp_link }}" target="_blank" class="btn btn-secondary"
+            style="border-color: #25D366; color: #15803d; background: white;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"
+                style="margin-right: 0.5rem;">
+                <path
+                    d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z" />
+            </svg>
+            Chat on WhatsApp
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function isAccordionLayout() {
+        return window.matchMedia('(max-width: 768px)').matches;
+    }
+
+    function activateTab(key) {
+        var tab = document.querySelector('.profile-tab[data-tab="' + key + '"]');
+        var panel = document.querySelector('.profile-tab-panel[data-panel="' + key + '"]');
+        var panelsContainer = document.getElementById('profile-panels');
+        if (!tab || !panel) return;
+
+        document.querySelectorAll('.profile-tab').forEach(function (t) { t.classList.remove('active'); });
+        document.querySelectorAll('.profile-tab-panel').forEach(function (p) { p.classList.remove('active'); });
+        tab.classList.add('active');
+        panel.classList.add('active');
+
+        // On mobile, drop the panel directly under its own tab (true accordion).
+        // On desktop, keep it in the shared panels area below the whole tab row.
+        if (isAccordionLayout()) {
+            tab.insertAdjacentElement('afterend', panel);
+        } else {
+            panelsContainer.appendChild(panel);
+        }
+    }
+
+    function closeAllTabs() {
+        document.querySelectorAll('.profile-tab').forEach(function (t) { t.classList.remove('active'); });
+        document.querySelectorAll('.profile-tab-panel').forEach(function (p) { p.classList.remove('active'); });
+    }
+
+    document.querySelectorAll('.profile-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            if (isAccordionLayout() && tab.classList.contains('active')) {
+                closeAllTabs();
+            } else {
+                activateTab(tab.getAttribute('data-tab'));
+            }
+        });
+    });
+
+    var requestedTab = new URLSearchParams(window.location.search).get('tab');
+    activateTab(requestedTab || 'personal');
+
+    var resizeTimer;
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () {
+            var activeTab = document.querySelector('.profile-tab.active');
+            if (activeTab) activateTab(activeTab.getAttribute('data-tab'));
+        }, 150);
+    });
+</script>
 {% endblock %}

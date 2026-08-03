@@ -1,0 +1,439 @@
+/* My Profile page */
+
+.profile-header-card {
+    background: var(--surface-0);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.profile-identity {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+}
+
+.profile-avatar {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.profile-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.profile-name-row h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.profile-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.35rem;
+}
+
+.profile-contact-row svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+.profile-verified-icon {
+    color: var(--success-text);
+}
+
+.profile-summary-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 180px;
+}
+
+.profile-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    font-size: 0.85rem;
+}
+
+.profile-summary-label {
+    color: var(--text-secondary);
+}
+
+.profile-summary-value {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.profile-copy-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    margin-left: 0.35rem;
+}
+
+.profile-copy-btn:hover {
+    color: var(--primary);
+}
+
+/* Tabs (desktop) / accordion (mobile) */
+
+.profile-tabs {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--surface-100);
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+}
+
+.profile-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.85rem 1.1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.profile-tab svg {
+    width: 16px;
+    height: 16px;
+}
+
+.profile-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.profile-tab-chevron {
+    display: none;
+}
+
+.profile-tab-panel {
+    display: none;
+}
+
+.profile-tab-panel.active {
+    display: block;
+}
+
+.profile-placeholder-panel {
+    background: var(--surface-0);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-lg);
+    padding: 3rem 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+/* Profile photo card */
+
+.profile-photo-row {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.profile-photo-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0 0 0.75rem;
+}
+
+/* Account summary */
+
+.account-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--surface-100);
+    font-size: 0.9rem;
+}
+
+.account-summary-row:last-child {
+    border-bottom: none;
+}
+
+.account-summary-label {
+    color: var(--text-secondary);
+}
+
+.account-summary-value {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Quick actions */
+
+.quick-actions-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.quick-action-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--surface-0);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.1rem;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    color: inherit;
+}
+
+.quick-action-item.disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.quick-action-item.danger .quick-action-title {
+    color: var(--danger-text);
+}
+
+.quick-action-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--primary);
+}
+
+.quick-action-item.danger .quick-action-icon {
+    color: var(--danger-text);
+}
+
+.quick-action-title {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.quick-action-subtitle {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* Saved addresses */
+
+.address-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.address-card {
+    background: var(--surface-0);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+}
+
+.address-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+}
+
+.address-card-name {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.address-card-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-left: 0.4rem;
+}
+
+.address-card-body {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 0 1rem;
+}
+
+.address-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.address-card-actions .btn {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.82rem;
+}
+
+/* Payment history */
+
+.payment-history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.payment-history-table th,
+.payment-history-table td {
+    padding: 0.9rem 1.25rem;
+    text-align: left;
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--surface-100);
+}
+
+.payment-history-table th {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.payment-history-table tr:last-child td {
+    border-bottom: none;
+}
+
+@media (max-width: 1024px) {
+    .address-list {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-history-table {
+        display: block;
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 1024px) {
+    .profile-header-card {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+
+    .profile-identity {
+        width: 100%;
+    }
+
+    .profile-summary-stats {
+        width: 100%;
+        min-width: 0;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--surface-100);
+    }
+
+    .quick-actions-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-header-card {
+        padding: 1.25rem;
+    }
+
+    .profile-avatar {
+        width: 56px;
+        height: 56px;
+        font-size: 1.35rem;
+    }
+
+    .profile-name-row h2 {
+        font-size: 1.15rem;
+    }
+
+    .profile-identity {
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .profile-tabs {
+        flex-direction: column;
+        border-bottom: none;
+        gap: 0.5rem;
+    }
+
+    .profile-tab {
+        border: 1px solid var(--surface-100);
+        border-radius: var(--radius-md);
+        justify-content: space-between;
+    }
+
+    .profile-tab.active {
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .profile-tab-chevron {
+        display: inline-flex;
+        margin-left: auto;
+    }
+
+    .profile-photo-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    /* Panel re-parented directly under its tab button (true accordion) */
+    #profile-tabs .profile-tab-panel.active {
+        margin: -0.25rem 0 0.5rem;
+        padding: 1rem 0.75rem;
+        border: 1px solid var(--surface-100);
+        border-top: none;
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        background: var(--surface-0);
+    }
+}
