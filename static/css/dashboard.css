@@ -75,14 +75,20 @@ body.dashboard-page .announcement-card {
 }
 
 .db-trunk-overview-body {
+    position: relative;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 1.5rem;
     margin: 1.25rem 0;
+    min-height: 220px;
 }
 
 .db-trunk-overview-stats {
-    flex-shrink: 0;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
     text-align: right;
 }
 
@@ -186,12 +192,11 @@ a.db-stat-card-sm:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 1;
     min-width: 0;
 }
 
 .db-trunk-img {
-    max-width: 220px;
+    max-width: 340px;
     width: 100%;
     height: auto;
     filter: drop-shadow(0 10px 18px rgba(13, 43, 60, 0.18));
@@ -432,9 +437,12 @@ a.db-stat-card-sm:hover {
     .db-trunk-overview-body {
         flex-direction: column;
         gap: 0.75rem;
+        min-height: 0;
     }
 
     .db-trunk-overview-stats {
+        position: static;
+        transform: none;
         text-align: center;
     }
 

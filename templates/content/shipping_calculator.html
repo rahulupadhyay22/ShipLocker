@@ -1,391 +1,1050 @@
 {% extends base_template|default:'public_base.html' %}
 
-{% block title %}Shipping Calculator - CamelTrunk{% endblock %}
+{% block title %}Shipment Calculator - CamelTrunk{% endblock %}
 
 {% block extra_css %}
 <style>
-    .calc-container {
+    .shipcalc-header {
+        margin-bottom: 1.75rem;
+    }
+
+    .shipcalc-header h1 {
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin: 0 0 0.4rem;
+    }
+
+    .shipcalc-header p {
+        color: var(--text-secondary);
+        font-size: 0.98rem;
+        margin: 0;
+    }
+
+    .shipcalc-grid {
         display: grid;
         grid-template-columns: 1.5fr 1fr;
-        gap: 3rem;
+        gap: 1.5rem;
         align-items: start;
+        min-width: 0;
     }
 
-    .form-group {
-        margin-bottom: 1.5rem;
+    .shipcalc-grid>* {
+        min-width: 0;
     }
 
-    .form-label {
+    .shipcalc-card {
+        background: var(--surface-0);
+        border: 1px solid var(--surface-100);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        padding: 1.5rem;
+    }
+
+    /* Accordion sections */
+    .shipcalc-section {
+        border: none;
+        margin-bottom: 0;
+    }
+
+    .shipcalc-section + .shipcalc-section {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--surface-100);
+    }
+
+    .shipcalc-section summary {
+        list-style: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        font-family: 'Fraunces', serif;
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: var(--text-main);
+    }
+
+    .shipcalc-section summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .shipcalc-chevron {
+        width: 18px;
+        height: 18px;
+        color: var(--text-muted);
+        transition: transform 0.2s;
+        flex-shrink: 0;
+    }
+
+    .shipcalc-section[open] .shipcalc-chevron {
+        transform: rotate(180deg);
+    }
+
+    .shipcalc-section-body {
+        padding-top: 1.25rem;
+    }
+
+    .shipcalc-field {
+        margin-bottom: 1.25rem;
+    }
+
+    .shipcalc-field:last-child {
+        margin-bottom: 0;
+    }
+
+    .shipcalc-label {
         display: block;
-        font-weight: 600;
-        font-size: 0.95rem;
+        font-weight: 700;
+        font-size: 0.85rem;
         color: var(--text-main);
         margin-bottom: 0.5rem;
     }
 
-    .form-control {
+    .shipcalc-input,
+    .shipcalc-select {
         width: 100%;
-        padding: 0.875rem 1rem;
-        font-size: 1rem;
+        padding: 0.75rem 0.9rem;
+        font-size: 0.95rem;
         border: 1px solid var(--surface-200);
-        border-radius: var(--radius-sm, 8px);
-        background: var(--surface-50);
+        border-radius: var(--radius-sm);
+        background: var(--surface-0);
         color: var(--text-main);
-        transition: all 0.2s;
         font-family: inherit;
+        transition: border-color 0.2s, box-shadow 0.2s;
     }
 
-    .form-control:focus {
+    .shipcalc-input:focus,
+    .shipcalc-select:focus {
         outline: none;
-        border-color: var(--primary, #005F73);
-        background: white;
-        box-shadow: 0 0 0 3px rgba(0, 95, 115, 0.15);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
     }
 
-    .form-select {
+    .shipcalc-select {
         appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3F%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2352666B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
-        background-position: right 1rem center;
-        background-size: 1.25em;
+        background-position: right 0.9rem center;
+        background-size: 1.1em;
+        padding-right: 2.5rem;
     }
 
-    .tips-card {
-        background: var(--surface-50);
-        border: 1px solid var(--surface-200);
-        border-radius: var(--radius-md, 16px);
-        padding: 2rem;
+    .shipcalc-row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.9rem;
     }
 
-    .tip-item {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
+    .shipcalc-row3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0.9rem;
     }
 
-    .tip-item:last-child {
-        margin-bottom: 0;
+    .shipcalc-row3>* {
+        min-width: 0;
     }
 
-    .tip-icon {
-        width: 32px;
-        height: 32px;
-        background: white;
-        border-radius: 8px;
+    .shipcalc-unit-input {
+        position: relative;
+        min-width: 0;
+    }
+
+    .shipcalc-unit-input .shipcalc-input {
+        min-width: 0;
+    }
+
+    .shipcalc-unit-input .shipcalc-input {
+        padding-right: 2.75rem;
+    }
+
+    .shipcalc-unit {
+        position: absolute;
+        right: 0.9rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        pointer-events: none;
+    }
+
+    .shipcalc-declared-value {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.6rem;
+        min-width: 0;
+    }
+
+    .shipcalc-declared-value input {
+        min-width: 0;
+    }
+
+    .shipcalc-declared-value select {
+        width: 90px;
+        min-width: 0;
+    }
+
+    /* Toggle button groups (radio-styled) */
+    .shipcalc-toggle-group {
+        display: grid;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .shipcalc-toggle-group.cols-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .shipcalc-toggle-group.cols-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .shipcalc-toggle {
+        position: relative;
+        min-width: 0;
+        height: 100%;
+        display: block;
+    }
+
+    .shipcalc-toggle input {
+        position: absolute;
+        opacity: 0;
+        inset: 0;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .shipcalc-toggle-card {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        gap: 0.6rem;
+        padding: 0.85rem 0.9rem;
         border: 1px solid var(--surface-200);
+        border-radius: var(--radius-sm);
+        background: var(--surface-0);
+        transition: all 0.15s;
+        min-width: 0;
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    .shipcalc-toggle-card>span {
+        min-width: 0;
+    }
+
+    .shipcalc-toggle-card svg {
+        width: 20px;
+        height: 20px;
+        color: var(--text-secondary);
         flex-shrink: 0;
     }
 
-    .result-card {
-        background: white;
+    .shipcalc-toggle-card strong {
+        display: block;
+        font-size: 0.88rem;
+        color: var(--text-main);
+    }
+
+    .shipcalc-toggle-card span {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .shipcalc-toggle-group.cols-4 .shipcalc-toggle-card {
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.4rem;
+        text-align: center;
+        padding: 0.7rem 0.35rem;
+    }
+
+    .shipcalc-toggle-group.cols-4 .shipcalc-toggle-card strong {
+        font-size: 0.72rem;
+        font-weight: 600;
+        white-space: normal;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+
+    .shipcalc-toggle input:checked+.shipcalc-toggle-card {
+        border-color: var(--primary);
+        background: var(--primary-light);
+        box-shadow: 0 0 0 1px var(--primary);
+    }
+
+    .shipcalc-toggle input:checked+.shipcalc-toggle-card svg {
+        color: var(--primary);
+    }
+
+    .shipcalc-toggle input:focus-visible+.shipcalc-toggle-card {
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    /* Checkbox options */
+    .shipcalc-options-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.9rem;
+    }
+
+    .shipcalc-checkbox-card {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.9rem;
         border: 1px solid var(--surface-200);
-        border-radius: 12px;
-        padding: 1.25rem;
+        border-radius: var(--radius-sm);
+        background: var(--surface-0);
+        cursor: pointer;
+    }
+
+    .shipcalc-checkbox-card input {
+        margin-top: 0.15rem;
+        width: 16px;
+        height: 16px;
+        accent-color: var(--primary);
+        flex-shrink: 0;
+    }
+
+    .shipcalc-checkbox-card strong {
+        display: block;
+        font-size: 0.88rem;
+        color: var(--text-main);
+        margin-bottom: 0.15rem;
+    }
+
+    .shipcalc-checkbox-card span {
+        display: block;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+    }
+
+    .shipcalc-submit {
+        width: 100%;
+        margin-top: 1.5rem;
+        padding: 0.95rem;
+        font-size: 0.95rem;
+    }
+
+    /* Estimate card */
+    .shipcalc-estimate-card {
+        position: sticky;
+        top: 1.5rem;
+    }
+
+    .shipcalc-estimate-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .shipcalc-estimate-head h3 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .shipcalc-badge {
+        background: var(--primary-light);
+        color: var(--primary);
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .shipcalc-price {
+        font-family: 'Fraunces', serif;
+        font-weight: 800;
+        font-size: 2.1rem;
+        color: var(--text-main);
+        font-variant-numeric: tabular-nums;
+        margin-bottom: 1rem;
+    }
+
+    .shipcalc-delivery-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--surface-50);
+        border-radius: var(--radius-sm);
+        padding: 0.7rem 0.9rem;
+        margin-bottom: 1.25rem;
+        font-size: 0.85rem;
+    }
+
+    .shipcalc-delivery-row .shipcalc-delivery-left {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+    }
+
+    .shipcalc-delivery-row svg {
+        width: 16px;
+        height: 16px;
+        color: var(--primary);
+    }
+
+    .shipcalc-delivery-row strong {
+        color: var(--text-main);
+        font-weight: 700;
+    }
+
+    .shipcalc-breakdown {
+        font-size: 0.85rem;
+    }
+
+    .shipcalc-breakdown-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        color: var(--text-secondary);
+    }
+
+    .shipcalc-breakdown-row strong {
+        color: var(--text-main);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .shipcalc-breakdown-divider {
+        border: none;
+        border-top: 1px solid var(--surface-100);
+        margin: 0.5rem 0;
+    }
+
+    .shipcalc-total-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1rem;
-        transition: transform 0.2s;
+        padding-top: 0.75rem;
+        margin-top: 0.25rem;
+        border-top: 1px solid var(--surface-100);
+        font-weight: 700;
     }
 
-    .result-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    .shipcalc-total-row .shipcalc-total-value {
+        font-size: 1.15rem;
+        color: var(--primary);
+        font-variant-numeric: tabular-nums;
     }
 
-    .result-card.featured {
-        background: var(--primary-light, #E0EEF0);
-        border-color: rgba(0, 95, 115, 0.2);
+    .shipcalc-info-box {
+        display: flex;
+        gap: 0.65rem;
+        background: var(--primary-light);
+        border-radius: var(--radius-sm);
+        padding: 0.9rem;
+        margin-top: 1.25rem;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .shipcalc-info-box svg {
+        width: 18px;
+        height: 18px;
+        color: var(--primary);
+        flex-shrink: 0;
+    }
+
+    .shipcalc-info-box strong {
+        color: var(--text-main);
+    }
+
+    .shipcalc-empty-state {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: var(--text-muted);
+        font-size: 0.88rem;
+    }
+
+    .shipcalc-empty-state svg {
+        width: 32px;
+        height: 32px;
+        margin-bottom: 0.75rem;
+        color: var(--surface-200);
+    }
+
+    /* How Shipping Works strip */
+    .shipcalc-how {
+        margin-top: 1.5rem;
+    }
+
+    .shipcalc-how h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0 0 1.5rem;
+    }
+
+    .shipcalc-how-steps {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+
+    .shipcalc-how-step {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        position: relative;
+    }
+
+    .shipcalc-how-step:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 26px;
+        right: -0.9rem;
+        width: 1.1rem;
+        height: 1px;
+        background: var(--surface-200);
+    }
+
+    .shipcalc-how-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--surface-50);
+        border: 1px solid var(--surface-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .shipcalc-how-icon svg {
+        width: 22px;
+        height: 22px;
+        color: var(--primary);
+    }
+
+    .shipcalc-how-step strong {
+        display: block;
+        font-size: 0.92rem;
+        color: var(--text-main);
+        margin-bottom: 0.2rem;
+    }
+
+    .shipcalc-how-step p {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    /* Desktop: sections always expanded, no chevron/click affordance */
+    @media (min-width: 901px) {
+        .shipcalc-section summary {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .shipcalc-chevron {
+            display: none;
+        }
+
+        .shipcalc-section:not([open])>*:not(summary) {
+            display: block !important;
+        }
     }
 
     @media (max-width: 900px) {
-        .calc-container {
+        .shipcalc-grid {
             grid-template-columns: 1fr;
-            gap: 2rem;
+            gap: 1.25rem;
+        }
+
+        .shipcalc-estimate-card {
+            position: static;
+        }
+
+        .shipcalc-row3 {
+            gap: 0.5rem;
+        }
+
+        .shipcalc-toggle-group.cols-4 {
+            gap: 0.5rem;
+        }
+
+        .shipcalc-options-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .shipcalc-how-steps {
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+        }
+
+        .shipcalc-how-step::after {
+            display: none;
+        }
+    }
+
+    @media (max-width: 380px) {
+        .shipcalc-toggle-group.cols-4 .shipcalc-toggle-card svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .shipcalc-toggle-group.cols-4 .shipcalc-toggle-card strong {
+            font-size: 0.68rem;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-header" style="margin-bottom: 3rem; text-align: center;">
-    <h1 style="font-size: 2.5rem; font-weight: 800; color: var(--text-main); margin-bottom: 1rem;">Shipping
-        Calculator</h1>
-    <p style="font-size: 1.1rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
-        Get instant estimates for shipping your packages from India to anywhere in the world.
-    </p>
+<div class="shipcalc-header">
+    <h1>Shipment Calculator</h1>
+    <p>Estimate shipping cost from India to your doorstep.</p>
 </div>
 
-<div class="calc-container">
-    <!-- Calculator Form -->
-    <div
-        style="background: white; padding: 2rem; border-radius: 16px; border: 1px solid var(--surface-200); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+<div class="shipcalc-grid">
+    <!-- Left: Form -->
+    <div class="shipcalc-card">
         <form id="calculatorForm">
-            <div class="form-group">
-                <label class="form-label">Destination Country</label>
-                <select class="form-control form-select" id="country" required>
-                    <option value="">Select destination...</option>
-                    {% for zone in zones %}
-                    {% for country_code in zone.get_countries_list %}
-                    <option value="{{ country_code }}">{{ country_code }}</option>
-                    {% endfor %}
-                    {% endfor %}
-                </select>
-            </div>
+            <details class="shipcalc-section" open>
+                <summary>
+                    1. Shipment Details
+                    <svg class="shipcalc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </summary>
+                <div class="shipcalc-section-body">
+                    <div class="shipcalc-field">
+                        <label class="shipcalc-label">Shipping Type</label>
+                        <div class="shipcalc-toggle-group cols-2">
+                            <label class="shipcalc-toggle">
+                                <input type="radio" name="shippingType" value="international" checked>
+                                <span class="shipcalc-toggle-card">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                    </svg>
+                                    <span>
+                                        <strong>International</strong>
+                                        <span>To other countries</span>
+                                    </span>
+                                </span>
+                            </label>
+                            <label class="shipcalc-toggle">
+                                <input type="radio" name="shippingType" value="domestic">
+                                <span class="shipcalc-toggle-card">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 17h8m-8 0a2 2 0 11-4 0 2 2 0 014 0zm8 0a2 2 0 104 0 2 2 0 00-4 0zM3 17V9a1 1 0 011-1h8v9M3 9h13m3 8V9h-3m3 0l-3-4h-3" />
+                                    </svg>
+                                    <span>
+                                        <strong>Domestic</strong>
+                                        <span>Within India</span>
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
 
-            <div class="form-group">
-                <label class="form-label">Package Weight (kg)</label>
-                <div style="position: relative;">
-                    <input type="number" class="form-control" id="weight" step="0.1" min="0.1" max="100"
-                        placeholder="e.g. 2.5" required style="padding-right: 3rem;">
-                    <span
-                        style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 500;">KG</span>
+                    <div class="shipcalc-field" id="destinationField">
+                        <label class="shipcalc-label" for="country">Destination Country</label>
+                        <select class="shipcalc-select" id="country" required>
+                            <option value="">Select destination...</option>
+                            {% for zone in zones %}
+                            {% for country_code in zone.get_countries_list %}
+                            <option value="{{ country_code }}">{{ country_code }}</option>
+                            {% endfor %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="shipcalc-field">
+                        <label class="shipcalc-label" for="weight">Total Weight</label>
+                        <div class="shipcalc-unit-input">
+                            <input type="number" class="shipcalc-input" id="weight" step="0.1" min="0.1" max="100"
+                                placeholder="e.g. 2.5" required>
+                            <span class="shipcalc-unit">kg</span>
+                        </div>
+                    </div>
+
+                    <div class="shipcalc-field">
+                        <div class="shipcalc-row3">
+                            <div>
+                                <label class="shipcalc-label" for="length">Length</label>
+                                <div class="shipcalc-unit-input">
+                                    <input type="number" class="shipcalc-input" id="length" placeholder="0">
+                                    <span class="shipcalc-unit">cm</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="shipcalc-label" for="width">Width</label>
+                                <div class="shipcalc-unit-input">
+                                    <input type="number" class="shipcalc-input" id="width" placeholder="0">
+                                    <span class="shipcalc-unit">cm</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="shipcalc-label" for="height">Height</label>
+                                <div class="shipcalc-unit-input">
+                                    <input type="number" class="shipcalc-input" id="height" placeholder="0">
+                                    <span class="shipcalc-unit">cm</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="shipcalc-field">
+                        <label class="shipcalc-label">Package Type</label>
+                        <div class="shipcalc-toggle-group cols-4">
+                            <label class="shipcalc-toggle">
+                                <input type="radio" name="packageType" value="box" checked>
+                                <span class="shipcalc-toggle-card">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                    <strong>Box</strong>
+                                </span>
+                            </label>
+                            <label class="shipcalc-toggle">
+                                <input type="radio" name="packageType" value="envelope">
+                                <span class="shipcalc-toggle-card">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    <strong>Envelope</strong>
+                                </span>
+                            </label>
+                            <label class="shipcalc-toggle">
+                                <input type="radio" name="packageType" value="soft">
+                                <span class="shipcalc-toggle-card">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M20.24 12.24a6 6 0 00-8.49-8.49L5 10.5V19h8.5l6.74-6.76zM16 8L2 22" />
+                                    </svg>
+                                    <strong>Soft Package</strong>
+                                </span>
+                            </label>
+                            <label class="shipcalc-toggle">
+                                <input type="radio" name="packageType" value="other">
+                                <span class="shipcalc-toggle-card">
+                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 6V4m0 2a2 2 0 100 4 2 2 0 000-4zm0 10v-4m0 4a2 2 0 100 4 2 2 0 000-4zm-6-6a2 2 0 104 0 2 2 0 00-4 0zm12 0a2 2 0 104 0 2 2 0 00-4 0z" />
+                                    </svg>
+                                    <strong>Other</strong>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="shipcalc-field">
+                        <label class="shipcalc-label" for="declaredValue">Declared Value (Optional)</label>
+                        <div class="shipcalc-declared-value">
+                            <input type="number" class="shipcalc-input" id="declaredValue" placeholder="0" min="0">
+                            <select class="shipcalc-select" id="declaredCurrency">
+                                <option value="INR">INR</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </details>
 
-            <div class="form-group">
-                <label class="form-label">Dimensions (Optional)</label>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
-                    <div style="position: relative;">
-                        <input type="number" class="form-control" id="length" placeholder="L">
-                        <span
-                            style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted);">cm</span>
-                    </div>
-                    <div style="position: relative;">
-                        <input type="number" class="form-control" id="width" placeholder="W">
-                        <span
-                            style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted);">cm</span>
-                    </div>
-                    <div style="position: relative;">
-                        <input type="number" class="form-control" id="height" placeholder="H">
-                        <span
-                            style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted);">cm</span>
+            <details class="shipcalc-section">
+                <summary>
+                    2. Additional Options
+                    <svg class="shipcalc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </summary>
+                <div class="shipcalc-section-body">
+                    <div class="shipcalc-options-grid">
+                        <label class="shipcalc-checkbox-card">
+                            <input type="checkbox" id="insurance" checked>
+                            <span>
+                                <strong>Add Shipment Insurance</strong>
+                                <span>Protect your shipment against loss or damage.</span>
+                            </span>
+                        </label>
+                        <label class="shipcalc-checkbox-card">
+                            <input type="checkbox" id="expressDelivery">
+                            <span>
+                                <strong>Express Delivery</strong>
+                                <span>Faster delivery at an additional cost.</span>
+                            </span>
+                        </label>
                     </div>
                 </div>
-            </div>
+            </details>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
-                Calculate Shipping Rates
+            <button type="submit" class="btn btn-primary shipcalc-submit">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Calculate Shipping Cost
             </button>
         </form>
-
-        <!-- Results Section -->
-        <div id="results"
-            style="display: none; margin-top: 2.5rem; border-top: 1px solid var(--surface-200); padding-top: 2rem; animation: fadeIn 0.3s ease;">
-            <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">Estimated Shipping Costs</h3>
-            <div id="ratesContainer"></div>
-
-            <div
-                style="margin-top: 1.5rem; background: #F0FDF4; border: 1px solid #BBF7D0; padding: 1rem; border-radius: 8px; font-size: 0.9rem; color: #166534; display: flex; gap: 0.75rem;">
-                <span>✨</span>
-                <span><strong>Pro Tip:</strong> Rates drop significantly for weights above 10kg. Try consolidating more
-                    items!</span>
-            </div>
-        </div>
     </div>
 
-    <!-- Right Column: Tips -->
-    <div>
-        <div class="tips-card">
-            <h3
-                style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
-                <span style="color: #F59E0B;">💡</span> Smart Shipping Tips
-            </h3>
+    <!-- Right: Estimate -->
+    <div class="shipcalc-card shipcalc-estimate-card">
+        <div class="shipcalc-estimate-head">
+            <h3>Estimated Charges</h3>
+            <span class="shipcalc-badge">Estimate Only</span>
+        </div>
 
-            <div class="tip-item">
-                <div class="tip-icon">📦</div>
-                <div>
-                    <strong style="display: block; margin-bottom: 0.25rem;">Consolidate & Save</strong>
-                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Combine multiple packages into one
-                        shipment to save up to 80% on shipping costs.</p>
-                </div>
+        <div id="estimateEmpty" class="shipcalc-empty-state">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <p>Fill in your shipment details and calculate to see estimated charges.</p>
+        </div>
+
+        <div id="estimateResult" style="display: none;">
+            <div class="shipcalc-price" id="estTotalPrice">INR 0.00</div>
+
+            <div class="shipcalc-delivery-row">
+                <span class="shipcalc-delivery-left">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Estimated Delivery
+                </span>
+                <strong id="estDelivery">-</strong>
             </div>
 
-            <div class="tip-item">
-                <div class="tip-icon">⚖️</div>
-                <div>
-                    <strong style="display: block; margin-bottom: 0.25rem;">Volumetric Weight</strong>
-                    <p style="font-size: 0.9rem; color: var(--text-secondary);">For light but bulky items (like
-                        pillows), carriers charge based on size, the formula is LxWxH/5000.</p>
+            <div class="shipcalc-breakdown">
+                <div class="shipcalc-breakdown-row">
+                    <span>Service Type</span>
+                    <strong id="estServiceType">-</strong>
                 </div>
-            </div>
-
-            <div class="tip-item">
-                <div class="tip-icon">🎁</div>
-                <div>
-                    <strong style="display: block; margin-bottom: 0.25rem;">Free Repacking</strong>
-                    <p style="font-size: 0.9rem; color: var(--text-secondary);">We discard unnecessary shoe boxes and
-                        packaging to reduce weight before shipping.</p>
+                <div class="shipcalc-breakdown-row">
+                    <span>Total Weight</span>
+                    <strong id="estActualWeight">-</strong>
                 </div>
-            </div>
+                <div class="shipcalc-breakdown-row">
+                    <span>Chargeable Weight</span>
+                    <strong id="estChargeableWeight">-</strong>
+                </div>
+                <div class="shipcalc-breakdown-row">
+                    <span>Declared Value</span>
+                    <strong id="estDeclaredValue">-</strong>
+                </div>
 
-            <div class="tip-item">
-                <div class="tip-icon">👮</div>
-                <div>
-                    <strong style="display: block; margin-bottom: 0.25rem;">Customs & Duties</strong>
-                    <p style="font-size: 0.9rem; color: var(--text-secondary);">Import duties are not included in
-                        shipping rates and must be paid by the receiver.</p>
+                <hr class="shipcalc-breakdown-divider">
+
+                <div class="shipcalc-breakdown-row">
+                    <span>Base Shipping Charges</span>
+                    <strong id="estBaseCharge">-</strong>
+                </div>
+                <div class="shipcalc-breakdown-row">
+                    <span>Fuel Surcharge</span>
+                    <strong id="estFuelSurcharge">-</strong>
+                </div>
+                <div class="shipcalc-breakdown-row" id="estInsuranceRow">
+                    <span>Insurance (1%)</span>
+                    <strong id="estInsurance">-</strong>
+                </div>
+                <div class="shipcalc-breakdown-row">
+                    <span>Other Charges</span>
+                    <strong id="estOtherCharges">-</strong>
+                </div>
+
+                <div class="shipcalc-total-row">
+                    <span>Total Estimated Cost</span>
+                    <span class="shipcalc-total-value" id="estTotalCost">-</span>
                 </div>
             </div>
         </div>
 
-        <div style="margin-top: 2rem; text-align: center;">
-            <p style="margin-bottom: 1rem; font-weight: 600;">Ready to start shopping?</p>
-            {% if not user.is_authenticated %}
-            <a href="{% url 'accounts:login' %}" class="btn btn-outline" style="width: 100%;">Create Free Account</a>
-            {% endif %}
+        <div class="shipcalc-info-box">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>
+                <strong>This is an estimate only.</strong>
+                Final charges may vary based on actual weight, dimensions, and customs regulations.
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="shipcalc-card shipcalc-how">
+    <h3>How Shipping Works</h3>
+    <div class="shipcalc-how-steps">
+        <div class="shipcalc-how-step">
+            <div class="shipcalc-how-icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <strong>You Send</strong>
+                <p>Ship your items to our India warehouse</p>
+            </div>
+        </div>
+        <div class="shipcalc-how-step">
+            <div class="shipcalc-how-icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div>
+                <strong>We Receive</strong>
+                <p>We inspect, measure and process your items</p>
+            </div>
+        </div>
+        <div class="shipcalc-how-step">
+            <div class="shipcalc-how-icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+            </div>
+            <div>
+                <strong>We Ship</strong>
+                <p>Your items are shipped to your address</p>
+            </div>
+        </div>
+        <div class="shipcalc-how-step">
+            <div class="shipcalc-how-icon">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+            </div>
+            <div>
+                <strong>You Receive</strong>
+                <p>Get your items delivered to you</p>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Load backend data
     const ZONES_DATA = JSON.parse('{{ zones_json|escapejs }}');
+
+    // Domestic has no per-country rate table in the backend yet, so it uses a flat estimate.
+    // ponytail: flat domestic rate, replace with a real ShippingZone once domestic rates are modeled.
+    const DOMESTIC_RATE_PER_KG = 40;
+    const DOMESTIC_MIN_CHARGE = 60;
+
+    const destinationField = document.getElementById('destinationField');
+    const countrySelect = document.getElementById('country');
+
+    document.querySelectorAll('input[name="shippingType"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            const isDomestic = input.value === 'domestic' && input.checked;
+            if (isDomestic) {
+                destinationField.style.display = 'none';
+                countrySelect.required = false;
+            } else if (input.checked) {
+                destinationField.style.display = '';
+                countrySelect.required = true;
+            }
+        });
+    });
+
+    function fmtMoney(amount) {
+        return 'INR ' + amount.toFixed(2);
+    }
 
     document.getElementById('calculatorForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const country = document.getElementById('country').value;
+        const isDomestic = document.querySelector('input[name="shippingType"]:checked').value === 'domestic';
+        const country = countrySelect.value;
         const actualWeight = parseFloat(document.getElementById('weight').value) || 0;
 
-        // Get dimensions
         const length = parseFloat(document.getElementById('length').value) || 0;
         const width = parseFloat(document.getElementById('width').value) || 0;
         const height = parseFloat(document.getElementById('height').value) || 0;
 
-        // Calculate Volumetric Weight: (L x W x H) / 5000
         let volumetricWeight = 0;
         if (length > 0 && width > 0 && height > 0) {
             volumetricWeight = (length * width * height) / 5000;
         }
 
-        // Chargeable Weight is the higher of Actual or Volumetric
         const chargeableWeight = Math.max(actualWeight, volumetricWeight);
-        const finalWeight = Math.ceil(chargeableWeight * 2) / 2; // Round up to nearest 0.5kg
+        const finalWeight = Math.ceil(chargeableWeight * 2) / 2; // round up to nearest 0.5kg
 
-        // --- Backend Data Logic ---
+        const declaredValue = parseFloat(document.getElementById('declaredValue').value) || 0;
+        const wantsInsurance = document.getElementById('insurance').checked;
+        const wantsExpress = document.getElementById('expressDelivery').checked;
 
-        // 1. Find the zone
-        const zone = ZONES_DATA.find(z => z.countries.includes(country));
-
-        if (!zone) {
-            alert('Sorry, we currently do not have shipping rates for ' + country + '. Please contact support.');
-            return;
-        }
-
-        // 2. Find the rate
-        const rate = zone.rates.find(r => finalWeight >= r.min_weight && finalWeight < r.max_weight);
-
-        if (!rate) {
-            alert('Sorry, no rate found for this weight (' + finalWeight + ' kg). Please contact support for heavy shipments.');
-            return;
-        }
-
-        // 3. Calculate Cost
         let baseCost = 0;
-        if (rate.rate_type === 'fixed') {
-            baseCost = rate.price;
+        let deliveryMin = 2;
+        let deliveryMax = 5;
+        let zoneName = 'Domestic';
+        let serviceType = 'Domestic Shipping';
+
+        if (isDomestic) {
+            baseCost = Math.max(finalWeight * DOMESTIC_RATE_PER_KG, DOMESTIC_MIN_CHARGE);
         } else {
-            baseCost = finalWeight * rate.price;
+            if (!country) {
+                alert('Please select a destination country.');
+                return;
+            }
+
+            const zone = ZONES_DATA.find(z => z.countries.includes(country));
+            if (!zone) {
+                alert('Sorry, we currently do not have shipping rates for ' + country + '. Please contact support.');
+                return;
+            }
+
+            const rate = zone.rates.find(r => finalWeight >= r.min_weight && finalWeight < r.max_weight);
+            if (!rate) {
+                alert('Sorry, no rate found for this weight (' + finalWeight + ' kg). Please contact support for heavy shipments.');
+                return;
+            }
+
+            baseCost = rate.rate_type === 'fixed' ? rate.price : finalWeight * rate.price;
+            deliveryMin = rate.delivery_min;
+            deliveryMax = rate.delivery_max;
+            zoneName = zone.name;
+            serviceType = 'Standard Air Shipping';
         }
 
-        const standardRate = Math.round(baseCost);
-        const expressRate = Math.round(baseCost * 1.4) + 500;
-        const economyRate = Math.round(baseCost * 0.85);
-
-        document.getElementById('results').style.display = 'block';
-
-        // Build weight breakdown HTML
-        let weightHtml = `
-            <div style="margin-bottom: 1.5rem; background: var(--surface-50); border-radius: 8px; padding: 1rem; font-size: 0.9rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span style="color: var(--text-secondary);">Actual Weight:</span>
-                    <strong>${actualWeight} kg</strong>
-                </div>
-        `;
-
-        if (volumetricWeight > 0) {
-            weightHtml += `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span style="color: var(--text-secondary);">Volumetric Weight (${length}x${width}x${height}/5000):</span>
-                    <strong>${volumetricWeight.toFixed(2)} kg</strong>
-                </div>
-            `;
+        if (wantsExpress) {
+            baseCost = baseCost * 1.4 + 500;
+            deliveryMin = Math.max(1, Math.round(deliveryMin * 0.4));
+            deliveryMax = Math.max(deliveryMin, Math.round(deliveryMax * 0.4));
+            serviceType = isDomestic ? 'Express Delivery' : 'Express Air Shipping';
         }
 
-        weightHtml += `
-            <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--surface-200); padding-top: 0.5rem; margin-top: 0.5rem;">
-                <span style="color: var(--text-main); font-weight: 600;">Chargeable Weight:</span>
-                <strong style="color: var(--primary); font-size: 1.1rem;">${finalWeight.toFixed(1)} kg</strong>
-            </div>
-        </div>
-        `;
+        const fuelSurcharge = Math.round(baseCost * 0.08);
+        const insuranceCharge = wantsInsurance ? Math.round(declaredValue * 0.01) : 0;
+        const otherCharges = 150;
 
-        document.getElementById('ratesContainer').innerHTML = weightHtml + `
-            <div class="result-card featured">
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <div style="background: white; padding: 0.5rem; border-radius: 6px;">🚀</div>
-                    <div>
-                        <div style="font-weight: 700; color: var(--primary-hover);">Express</div>
-                        <div style="font-size: 0.85rem; color: var(--text-secondary);">3-6 Business Days</div>
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 800; font-size: 1.25rem; color: var(--primary);">₹${expressRate}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">DHL / FedEx</div>
-                </div>
-            </div>
+        const totalCost = Math.round(baseCost + fuelSurcharge + insuranceCharge + otherCharges);
 
-            <div class="result-card">
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <div style="background: #F1E9DA; padding: 0.5rem; border-radius: 6px;">✈️</div>
-                    <div>
-                        <div style="font-weight: 700;">Standard</div>
-                        <div style="font-size: 0.85rem; color: var(--text-secondary);">${rate.delivery_min}-${rate.delivery_max} Business Days</div>
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 800; font-size: 1.25rem;">₹${standardRate}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">Aramex / UPS</div>
-                </div>
-            </div>
+        document.getElementById('estimateEmpty').style.display = 'none';
+        document.getElementById('estimateResult').style.display = 'block';
 
-            <div class="result-card">
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <div style="background: #F1E9DA; padding: 0.5rem; border-radius: 6px;">📦</div>
-                    <div>
-                        <div style="font-weight: 700;">Economy</div>
-                        <div style="font-size: 0.85rem; color: var(--text-secondary);">15-20 Business Days</div>
-                    </div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 800; font-size: 1.25rem;">₹${economyRate}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">Postal / EMS</div>
-                </div>
-            </div>
-            
-            <p style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
-                * Rates are estimates based on Chargeable Weight (Final Weight). Final Zone: ${zone.name}
-            </p>
-        `;
+        document.getElementById('estTotalPrice').textContent = fmtMoney(totalCost);
+        document.getElementById('estDelivery').textContent = deliveryMin + ' - ' + deliveryMax + ' Days';
+        document.getElementById('estServiceType').textContent = serviceType;
+        document.getElementById('estActualWeight').textContent = actualWeight.toFixed(2) + ' kg';
+        document.getElementById('estChargeableWeight').textContent = finalWeight.toFixed(2) + ' kg';
+        document.getElementById('estDeclaredValue').textContent = fmtMoney(declaredValue);
+        document.getElementById('estBaseCharge').textContent = fmtMoney(Math.round(baseCost));
+        document.getElementById('estFuelSurcharge').textContent = fmtMoney(fuelSurcharge);
+        document.getElementById('estInsuranceRow').style.display = wantsInsurance ? 'flex' : 'none';
+        document.getElementById('estInsurance').textContent = fmtMoney(insuranceCharge);
+        document.getElementById('estOtherCharges').textContent = fmtMoney(otherCharges);
+        document.getElementById('estTotalCost').textContent = fmtMoney(totalCost);
 
-        // Smooth scroll to results
-        document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('estimateResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
-
-    // Add simple animation styles
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    `;
-    document.head.appendChild(style);
 </script>
 {% endblock %}

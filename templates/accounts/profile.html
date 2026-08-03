@@ -97,6 +97,37 @@
     </div>
 </div>
 
+<!-- Locker Address (always visible, no tab click needed) -->
+<div class="card locker-address-card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+        <h3>Locker Address</h3>
+    </div>
+    <div class="card-body">
+        <div class="locker-address-trunk-row">
+            <span class="locker-address-trunk-label">Trunk ID</span>
+            <span class="profile-summary-value">{{ locker.locker_id }}</span>
+            <button type="button" class="profile-copy-btn"
+                onclick="copyToClipboard('{{ locker.locker_id|escapejs }}', this)" aria-label="Copy Trunk ID">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V5a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-2M8 7h7a2 2 0 012 2v7" />
+                </svg>
+            </button>
+        </div>
+        <div class="locker-address-block">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <p>{{ locker.address|linebreaksbr }}</p>
+        </div>
+        <button type="button" class="btn btn-secondary"
+            onclick="copyToClipboard('Trunk ID: {{ locker.locker_id|escapejs }}\n{{ locker.address|escapejs }}', this)">
+            Copy Address
+        </button>
+    </div>
+</div>
+
 <!-- Section tabs / accordion -->
 <div class="profile-tabs" id="profile-tabs">
     <button type="button" class="profile-tab active" data-tab="personal">

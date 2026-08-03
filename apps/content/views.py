@@ -70,6 +70,8 @@ class ShippingCalculatorView(TemplateView):
         
         context['zones_json'] = json.dumps(zones_data)
         context['zones'] = ShippingZone.objects.filter(is_active=True)
+        if self.request.user.is_authenticated:
+            context['base_template'] = 'base.html'
         return context
 
 

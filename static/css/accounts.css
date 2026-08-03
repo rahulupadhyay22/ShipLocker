@@ -265,6 +265,45 @@
     color: var(--text-muted);
 }
 
+/* Locker address card */
+
+.locker-address-trunk-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--surface-100);
+}
+
+.locker-address-trunk-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-right: auto;
+}
+
+.locker-address-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.locker-address-block svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+    color: var(--primary);
+}
+
+.locker-address-block p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-main);
+}
+
 /* Saved addresses */
 
 .address-list {

@@ -166,7 +166,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Customs
+                    KYC
                 </a>
 
                 <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border-color);">
@@ -176,7 +176,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    Invoices
+                    Prohibited Items
                 </a>
 
                 <a href="{% url 'content:shipping_calculator' %}" class="nav-item {% if 'shipping-calculator' in request.path %}active{% endif %}">
@@ -184,7 +184,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
-                    Addresses
+                    Shipping Calculator
                 </a>
 
                 <a href="{% url 'content:service_charges' %}" class="nav-item {% if 'service-charges' in request.path %}active{% endif %}">
@@ -192,7 +192,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Notifications
+                    Service Charges
                 </a>
 
                 <a href="{% url 'content:refund_policy' %}" class="nav-item {% if 'refund-policy' in request.path %}active{% endif %}">
@@ -200,39 +200,11 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Support
+                    Refund Policy
                 </a>
             </nav>
 
             <div class="sidebar-bottom">
-                <div class="sidebar-trunk-card">
-                    <div>
-                        <span class="sidebar-trunk-label">Trunk ID</span>
-                        <span class="sidebar-trunk-value">{{ user.locker.locker_id|default:"—" }}</span>
-                    </div>
-                    <button type="button" class="sidebar-copy-btn"
-                        onclick="copyToClipboard('{{ user.locker.locker_id|default:""|escapejs }}', this)"
-                        aria-label="Copy Trunk ID">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V5a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-2M8 7h7a2 2 0 012 2v7" />
-                        </svg>
-                    </button>
-                </div>
-
-                <a href="{% url 'accounts:profile' %}" class="sidebar-profile-card">
-                    <span class="sidebar-profile-avatar">{{ user.first_name|first|default:user.email|first|upper }}</span>
-                    <span class="sidebar-profile-info">
-                        <span class="sidebar-profile-name">{{ user.get_short_name|default:user.email|title }}</span>
-                        <span class="sidebar-profile-link">View Profile</span>
-                    </span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </a>
-
                 <form method="post" action="{% url 'accounts:logout' %}" style="margin: 0;">
                     {% csrf_token %}
                     <button type="submit" class="sidebar-logout-btn">
