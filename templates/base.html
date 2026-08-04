@@ -133,14 +133,13 @@
                     My Trunk
                 </a>
 
-                <a href="{% url 'locker:action_required' %}"
+                <a href="#"
                     class="nav-item {% if request.resolver_match.url_name == 'action_required' %}active{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M5 8l7 4 7-4M5 8v8a1 1 0 001 1h12a1 1 0 001-1V8M5 8l7-4 7 4" />
                     </svg>
-                    Incoming Parcels
-                    {% if incoming_parcels_count %}<span class="nav-badge">{{ incoming_parcels_count }}</span>{% endif %}
+                    Personal Shopping
                 </a>
 
                 <a href="{% url 'shipments:list' %}"

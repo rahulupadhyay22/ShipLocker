@@ -617,38 +617,6 @@
                     </svg>
                 </summary>
                 <div class="shipcalc-section-body">
-                    <div class="shipcalc-field">
-                        <label class="shipcalc-label">Shipping Type</label>
-                        <div class="shipcalc-toggle-group cols-2">
-                            <label class="shipcalc-toggle">
-                                <input type="radio" name="shippingType" value="international" checked>
-                                <span class="shipcalc-toggle-card">
-                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                    </svg>
-                                    <span>
-                                        <strong>International</strong>
-                                        <span>To other countries</span>
-                                    </span>
-                                </span>
-                            </label>
-                            <label class="shipcalc-toggle">
-                                <input type="radio" name="shippingType" value="domestic">
-                                <span class="shipcalc-toggle-card">
-                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 17h8m-8 0a2 2 0 11-4 0 2 2 0 014 0zm8 0a2 2 0 104 0 2 2 0 00-4 0zM3 17V9a1 1 0 011-1h8v9M3 9h13m3 8V9h-3m3 0l-3-4h-3" />
-                                    </svg>
-                                    <span>
-                                        <strong>Domestic</strong>
-                                        <span>Within India</span>
-                                    </span>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
                     <div class="shipcalc-field" id="destinationField">
                         <label class="shipcalc-label" for="country">Destination Country</label>
                         <select class="shipcalc-select" id="country" required>
@@ -754,33 +722,6 @@
                 </div>
             </details>
 
-            <details class="shipcalc-section">
-                <summary>
-                    2. Additional Options
-                    <svg class="shipcalc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </summary>
-                <div class="shipcalc-section-body">
-                    <div class="shipcalc-options-grid">
-                        <label class="shipcalc-checkbox-card">
-                            <input type="checkbox" id="insurance" checked>
-                            <span>
-                                <strong>Add Shipment Insurance</strong>
-                                <span>Protect your shipment against loss or damage.</span>
-                            </span>
-                        </label>
-                        <label class="shipcalc-checkbox-card">
-                            <input type="checkbox" id="expressDelivery">
-                            <span>
-                                <strong>Express Delivery</strong>
-                                <span>Faster delivery at an additional cost.</span>
-                            </span>
-                        </label>
-                    </div>
-                </div>
-            </details>
-
             <button type="submit" class="btn btn-primary shipcalc-submit">
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -843,18 +784,6 @@
                 <div class="shipcalc-breakdown-row">
                     <span>Base Shipping Charges</span>
                     <strong id="estBaseCharge">-</strong>
-                </div>
-                <div class="shipcalc-breakdown-row">
-                    <span>Fuel Surcharge</span>
-                    <strong id="estFuelSurcharge">-</strong>
-                </div>
-                <div class="shipcalc-breakdown-row" id="estInsuranceRow">
-                    <span>Insurance (1%)</span>
-                    <strong id="estInsurance">-</strong>
-                </div>
-                <div class="shipcalc-breakdown-row">
-                    <span>Other Charges</span>
-                    <strong id="estOtherCharges">-</strong>
                 </div>
 
                 <div class="shipcalc-total-row">
@@ -933,27 +862,7 @@
 
 <script>
     const ZONES_DATA = JSON.parse('{{ zones_json|escapejs }}');
-
-    // Domestic has no per-country rate table in the backend yet, so it uses a flat estimate.
-    // ponytail: flat domestic rate, replace with a real ShippingZone once domestic rates are modeled.
-    const DOMESTIC_RATE_PER_KG = 40;
-    const DOMESTIC_MIN_CHARGE = 60;
-
-    const destinationField = document.getElementById('destinationField');
     const countrySelect = document.getElementById('country');
-
-    document.querySelectorAll('input[name="shippingType"]').forEach(function (input) {
-        input.addEventListener('change', function () {
-            const isDomestic = input.value === 'domestic' && input.checked;
-            if (isDomestic) {
-                destinationField.style.display = 'none';
-                countrySelect.required = false;
-            } else if (input.checked) {
-                destinationField.style.display = '';
-                countrySelect.required = true;
-            }
-        });
-    });
 
     function fmtMoney(amount) {
         return 'INR ' + amount.toFixed(2);
@@ -962,7 +871,6 @@
     document.getElementById('calculatorForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const isDomestic = document.querySelector('input[name="shippingType"]:checked').value === 'domestic';
         const country = countrySelect.value;
         const actualWeight = parseFloat(document.getElementById('weight').value) || 0;
 
@@ -979,54 +887,30 @@
         const finalWeight = Math.ceil(chargeableWeight * 2) / 2; // round up to nearest 0.5kg
 
         const declaredValue = parseFloat(document.getElementById('declaredValue').value) || 0;
-        const wantsInsurance = document.getElementById('insurance').checked;
-        const wantsExpress = document.getElementById('expressDelivery').checked;
 
-        let baseCost = 0;
-        let deliveryMin = 2;
-        let deliveryMax = 5;
-        let zoneName = 'Domestic';
-        let serviceType = 'Domestic Shipping';
-
-        if (isDomestic) {
-            baseCost = Math.max(finalWeight * DOMESTIC_RATE_PER_KG, DOMESTIC_MIN_CHARGE);
-        } else {
-            if (!country) {
-                alert('Please select a destination country.');
-                return;
-            }
-
-            const zone = ZONES_DATA.find(z => z.countries.includes(country));
-            if (!zone) {
-                alert('Sorry, we currently do not have shipping rates for ' + country + '. Please contact support.');
-                return;
-            }
-
-            const rate = zone.rates.find(r => finalWeight >= r.min_weight && finalWeight < r.max_weight);
-            if (!rate) {
-                alert('Sorry, no rate found for this weight (' + finalWeight + ' kg). Please contact support for heavy shipments.');
-                return;
-            }
-
-            baseCost = rate.rate_type === 'fixed' ? rate.price : finalWeight * rate.price;
-            deliveryMin = rate.delivery_min;
-            deliveryMax = rate.delivery_max;
-            zoneName = zone.name;
-            serviceType = 'Standard Air Shipping';
+        if (!country) {
+            alert('Please select a destination country.');
+            return;
         }
 
-        if (wantsExpress) {
-            baseCost = baseCost * 1.4 + 500;
-            deliveryMin = Math.max(1, Math.round(deliveryMin * 0.4));
-            deliveryMax = Math.max(deliveryMin, Math.round(deliveryMax * 0.4));
-            serviceType = isDomestic ? 'Express Delivery' : 'Express Air Shipping';
+        const zone = ZONES_DATA.find(z => z.countries.includes(country));
+        if (!zone) {
+            alert('Sorry, we currently do not have shipping rates for ' + country + '. Please contact support.');
+            return;
         }
 
-        const fuelSurcharge = Math.round(baseCost * 0.08);
-        const insuranceCharge = wantsInsurance ? Math.round(declaredValue * 0.01) : 0;
-        const otherCharges = 150;
+        const rate = zone.rates.find(r => finalWeight >= r.min_weight && finalWeight < r.max_weight);
+        if (!rate) {
+            alert('Sorry, no rate found for this weight (' + finalWeight + ' kg). Please contact support for heavy shipments.');
+            return;
+        }
 
-        const totalCost = Math.round(baseCost + fuelSurcharge + insuranceCharge + otherCharges);
+        const baseCost = rate.rate_type === 'fixed' ? rate.price : finalWeight * rate.price;
+        const deliveryMin = rate.delivery_min;
+        const deliveryMax = rate.delivery_max;
+        const serviceType = 'Standard Shipping';
+
+        const totalCost = Math.round(baseCost);
 
         document.getElementById('estimateEmpty').style.display = 'none';
         document.getElementById('estimateResult').style.display = 'block';
@@ -1037,11 +921,7 @@
         document.getElementById('estActualWeight').textContent = actualWeight.toFixed(2) + ' kg';
         document.getElementById('estChargeableWeight').textContent = finalWeight.toFixed(2) + ' kg';
         document.getElementById('estDeclaredValue').textContent = fmtMoney(declaredValue);
-        document.getElementById('estBaseCharge').textContent = fmtMoney(Math.round(baseCost));
-        document.getElementById('estFuelSurcharge').textContent = fmtMoney(fuelSurcharge);
-        document.getElementById('estInsuranceRow').style.display = wantsInsurance ? 'flex' : 'none';
-        document.getElementById('estInsurance').textContent = fmtMoney(insuranceCharge);
-        document.getElementById('estOtherCharges').textContent = fmtMoney(otherCharges);
+        document.getElementById('estBaseCharge').textContent = fmtMoney(totalCost);
         document.getElementById('estTotalCost').textContent = fmtMoney(totalCost);
 
         document.getElementById('estimateResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });

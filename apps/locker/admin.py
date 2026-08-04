@@ -79,18 +79,18 @@ class ParcelImageInline(TabularInline):
 
 @admin.register(Parcel)
 class ParcelAdmin(ModelAdmin):
-    list_display = ['display_id', 'locker', 'user_email', 'status_badge', 'item_name', 'weight_kg', 'storage_info', 'received_at']
+    list_display = ['display_id', 'trunk_id', 'customer_name', 'status_badge', 'item_name', 'weight_kg', 'storage_info', 'received_at']
     list_filter = ['status', 'category', 'received_at']
     search_fields = ['display_id', 'locker__locker_id', 'locker__user__email', 'item_name']
-    readonly_fields = ['display_id', 'created_at', 'updated_at', 'received_at']
+    readonly_fields = ['display_id', 'trunk_id', 'customer_name', 'created_at', 'updated_at', 'received_at']
     autocomplete_fields = ['locker']
     inlines = [ParcelImageInline]
     date_hierarchy = 'received_at'
     list_per_page = 25
-    
+
     fieldsets = (
         ('Locker Info', {
-            'fields': ('locker', 'status')
+            'fields': ('locker', 'trunk_id', 'customer_name', 'status')
         }),
         ('Inspection', {
             'fields': ('weight_kg', 'inspection_notes')
@@ -114,7 +114,7 @@ class ParcelAdmin(ModelAdmin):
     def get_queryset(self, request):
         """Optimize admin list queries with select_related.
 
-        Prevents N+1 queries for user_email and storage_info columns.
+        Prevents N+1 queries for trunk_id, customer_name, and storage_info columns.
         Without this: 51 queries for 25 rows → with this: 2 queries.
         """
         return super().get_queryset(request).select_related('locker', 'locker__user')
@@ -134,10 +134,21 @@ class ParcelAdmin(ModelAdmin):
     def status_badge(self, obj):
         return obj.status
     
-    def user_email(self, obj):
-        return obj.locker.user.email
-    user_email.short_description = 'User'
-    user_email.admin_order_field = 'locker__user__email'
+    def trunk_id(self, obj):
+        # obj is None on the add-parcel form (no Parcel exists yet), not a missing relation
+        if obj is None:
+            return '-'
+        return obj.locker.locker_id
+    trunk_id.short_description = 'Trunk ID'
+    trunk_id.admin_order_field = 'locker__locker_id'
+
+    def customer_name(self, obj):
+        # obj is None on the add-parcel form (no Parcel exists yet), not a missing relation
+        if obj is None:
+            return '-'
+        return obj.locker.user.get_full_name()
+    customer_name.short_description = 'Customer'
+    customer_name.admin_order_field = 'locker__user__full_name'
     
     def storage_info(self, obj):
         days = obj.storage_days
