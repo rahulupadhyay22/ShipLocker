@@ -1,6 +1,5 @@
+import secrets
 import uuid
-import random
-import string
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.conf import settings
@@ -63,12 +62,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.full_name.split()[0] if self.full_name else self.email.split('@')[0]
 
 
+TRUNK_ID_PREFIX = "CT-HYD"
+
+
 def generate_locker_id():
-    """Generate a unique locker ID like RB-12345 with collision retry."""
+    """Generate a unique Trunk ID like CT-HYD-483921 with collision retry."""
     from apps.accounts.models import Locker
     for _ in range(10):
-        number = ''.join(random.choices(string.digits, k=5))
-        new_id = f"RB-{number}"
+        number = f"{secrets.randbelow(1_000_000):06d}"
+        new_id = f"{TRUNK_ID_PREFIX}-{number}"
         if not Locker.objects.filter(locker_id=new_id).exists():
             return new_id
     raise ValueError("Unable to generate unique locker ID after 10 attempts")
@@ -88,7 +90,7 @@ class Locker(models.Model):
         verbose_name_plural = 'Lockers'
     
     def __str__(self):
-        return f"{self.locker_id} - {self.user.email}"
+        return f"{self.locker_id} - {self.user.get_full_name()}"
     
     @property
     def address(self):
