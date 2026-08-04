@@ -112,8 +112,7 @@ def upload_parcel_image(file: UploadedFile, locker_id: str, parcel_display_id: s
             content_type = 'image/jpeg'
             filename = os.path.splitext(filename)[0] + '.jpg'  # Force jpg extension
         except Exception as e:
-            print(f"Image compression failed, uploading original: {e}")
-            pass
+            logger.error(f"Image compression failed, uploading original: {e}")
     
     storage.upload_file(
         bucket_name='parcel-images',

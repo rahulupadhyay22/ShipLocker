@@ -34,11 +34,15 @@ class KYCUploadView(LoginRequiredMixin, View):
         
         doc_type = request.POST.get('document_type')
         file = request.FILES.get('document')
-        
+
         if not doc_type or not file:
             messages.error(request, 'Please select document type and file.')
             return render(request, self.template_name)
-        
+
+        if doc_type not in dict(KYCDocument.DOCUMENT_TYPES):
+            messages.error(request, 'Invalid document type.')
+            return render(request, self.template_name)
+
         # Validate file using security validators
         try:
             validate_file_upload(file)
@@ -79,7 +83,7 @@ class KYCUploadView(LoginRequiredMixin, View):
             security_logger.error(
                 f"KYC upload failed: {request.user.email} - {e}"
             )
-            messages.error(request, f'Upload failed: {str(e)}')
+            messages.error(request, 'Upload failed. Please try again in a moment.')
             return render(request, self.template_name)
 
 

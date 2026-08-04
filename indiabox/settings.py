@@ -13,11 +13,16 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key')
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.getenv('SECRET_KEY', '')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-dev-key'
+    else:
+        raise RuntimeError('SECRET_KEY environment variable must be set when DEBUG=False.')
 
 allowed_hosts_env = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') if host.strip()]
 
@@ -205,6 +210,27 @@ WHATSAPP_VERIFY_TOKEN = os.getenv('WHATSAPP_VERIFY_TOKEN', '')
 # Login URLs
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
+
+# Rate limiting: per-category thresholds, all overridable via env.
+# auth = login/OTP (per-IP AND per-account, exponential backoff on repeat abuse)
+# public = unauthenticated read/calculator endpoints (fixed window, per-IP)
+# authenticated = logged-in user actions (fixed window, per-IP, looser)
+RATE_LIMIT_SETTINGS = {
+    'auth': {
+        'max_attempts': int(os.getenv('RATE_LIMIT_AUTH_MAX_ATTEMPTS', '5')),
+        'window': int(os.getenv('RATE_LIMIT_AUTH_WINDOW', '300')),
+        'backoff_base': int(os.getenv('RATE_LIMIT_AUTH_BACKOFF_BASE', '60')),
+        'backoff_max': int(os.getenv('RATE_LIMIT_AUTH_BACKOFF_MAX', '3600')),
+    },
+    'public': {
+        'max_attempts': int(os.getenv('RATE_LIMIT_PUBLIC_MAX_ATTEMPTS', '30')),
+        'window': int(os.getenv('RATE_LIMIT_PUBLIC_WINDOW', '3600')),
+    },
+    'authenticated': {
+        'max_attempts': int(os.getenv('RATE_LIMIT_AUTHENTICATED_MAX_ATTEMPTS', '50')),
+        'window': int(os.getenv('RATE_LIMIT_AUTHENTICATED_WINDOW', '3600')),
+    },
+}
 LOGOUT_REDIRECT_URL = '/'
 
 # =============================================================================

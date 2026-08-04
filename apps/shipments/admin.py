@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import admin
 from django.utils.html import format_html, mark_safe
 from django import forms
@@ -7,6 +9,8 @@ from unfold.decorators import display
 from .models import Shipment, ShipmentItem, ShipmentDocument, TrackingEvent
 from apps.payments.models import StorageFee
 from apps.payments.services import _get_daily_storage_fee_amount
+
+logger = logging.getLogger('security')
 
 
 # ---- Shipment status color map ----
@@ -392,7 +396,8 @@ class DeclarationApprovalAdmin(ModelAdmin):
             try:
                 signed_url = get_signed_shipment_doc_url(doc.document_url)
                 return format_html('<a href="{}" target="_blank" style="color: #10B981; font-weight: 600;">📄 View Declaration</a>', signed_url)
-            except:
+            except Exception as e:
+                logger.error(f'declaration_link failed for shipment {obj.pk}: {e}')
                 return mark_safe('<span style="color: #6B7280;">Document unavailable</span>')
         return mark_safe('<span style="color: #EF4444;">No document</span>')
     declaration_link.short_description = "Declaration Form"
@@ -411,7 +416,8 @@ class DeclarationApprovalAdmin(ModelAdmin):
                     signed_url
                 )
             except Exception as e:
-                return format_html('<span style="color: #EF4444;">Error loading document: {}</span>', str(e))
+                logger.error(f'declaration_document failed for shipment {obj.pk}: {e}')
+                return mark_safe('<span style="color: #EF4444;">Error loading document</span>')
         return mark_safe('<span style="color: #EF4444;">No declaration document uploaded</span>')
     declaration_document.short_description = "Declaration Document"
     

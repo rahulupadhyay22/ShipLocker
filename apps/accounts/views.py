@@ -271,12 +271,20 @@ class ProfileView(LoginRequiredMixin, View):
         })
     
     def post(self, request):
-        from indiabox.validators import validate_phone, sanitize_text_input
+        from indiabox.validators import validate_phone, validate_text_input
         from django.core.exceptions import ValidationError
-        
+
         user = request.user
-        user.full_name = sanitize_text_input(request.POST.get('full_name', user.full_name), max_length=255)
-        
+        try:
+            full_name = validate_text_input(
+                request.POST.get('full_name', user.full_name),
+                field_name='Full name', min_length=2, max_length=255,
+            )
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('accounts:profile')
+        user.full_name = full_name
+
         phone = request.POST.get('phone', user.phone)
         if phone:
             try:

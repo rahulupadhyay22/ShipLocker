@@ -253,7 +253,8 @@ class ApproveParcelView(LoginRequiredMixin, View):
                     )
                     parcel.invoice_url = invoice_url
                 except Exception as e:
-                    messages.warning(request, f'Invoice upload failed: {str(e)}. Parcel still approved.')
+                    logger.error(f'Invoice upload failed for parcel {parcel.pk}: {e}')
+                    messages.warning(request, 'Invoice upload failed. Parcel still approved.')
             
             parcel.status = 'approved'
             parcel.approved_at = timezone.now()

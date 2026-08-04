@@ -1,6 +1,7 @@
 """Security middleware for IndiaBox."""
 
 import logging
+from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponseForbidden
 from django.utils import timezone
@@ -9,56 +10,89 @@ security_logger = logging.getLogger('security')
 
 
 class RateLimitMiddleware:
-    """Rate limiting middleware for login and sensitive endpoints."""
-    
-    # Rate limit settings: (max_attempts, time_window_seconds)
-    RATE_LIMITS = {
-        '/accounts/login/': (10, 300),      # 10 attempts per 5 minutes
-        '/accounts/verify-otp/': (5, 300),  # 5 attempts per 5 minutes
-        '/accounts/login/google/': (10, 300),
-        '/kyc/upload/': (10, 3600),         # 10 uploads per hour
-        '/shipments/create/': (20, 3600),   # 20 shipments per hour
-        '/locker/parcel/': (50, 3600),      # 50 parcel actions per hour
+    """Rate limiting middleware, tiered by endpoint sensitivity.
+
+    Thresholds come from settings.RATE_LIMIT_SETTINGS (env-configurable).
+    'auth' routes are checked per-IP AND per-account, with exponential
+    backoff lockouts on repeat abuse; 'public'/'authenticated' routes use a
+    plain fixed window per-IP.
+    """
+
+    # path prefix -> category key in settings.RATE_LIMIT_SETTINGS
+    PATH_CATEGORIES = {
+        '/accounts/login/': 'auth',
+        '/accounts/verify-otp/': 'auth',
+        '/accounts/login/google/': 'auth',
+        '/shipping-calculator/': 'public',
+        '/kyc/upload/': 'authenticated',
+        '/shipments/create/': 'authenticated',
+        '/locker/parcel/': 'authenticated',
     }
-    
+
     def __init__(self, get_response):
         self.get_response = get_response
-    
+
     def __call__(self, request):
-        # Check rate limit for POST requests on sensitive endpoints
         if request.method == 'POST':
-            for path, (max_attempts, window) in self.RATE_LIMITS.items():
+            for path, category in self.PATH_CATEGORIES.items():
                 if request.path.startswith(path):
-                    if not self._check_rate_limit(request, path, max_attempts, window):
+                    if not self._check(request, path, category):
                         security_logger.warning(
-                            f"Rate limit exceeded: {self._get_client_ip(request)} on {path}"
+                            f"Rate limit exceeded: {self._get_client_ip(request)} on {path} ({category})"
                         )
                         return HttpResponseForbidden(
                             '<h1>Too Many Requests</h1>'
                             '<p>Please wait a few minutes before trying again.</p>'
                         )
-        
-        response = self.get_response(request)
-        return response
-    
+                    break
+
+        return self.get_response(request)
+
     def _get_client_ip(self, request):
         """Get client IP address."""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
             return x_forwarded_for.split(',')[0].strip()
         return request.META.get('REMOTE_ADDR', 'unknown')
-    
-    def _check_rate_limit(self, request, path, max_attempts, window):
-        """Check if request is within rate limit."""
+
+    def _check(self, request, path, category):
+        limits = settings.RATE_LIMIT_SETTINGS[category]
         ip = self._get_client_ip(request)
-        cache_key = f"rate_limit:{path}:{ip}"
-        
-        attempts = cache.get(cache_key, 0)
-        if attempts >= max_attempts:
-            return False
-        
-        cache.set(cache_key, attempts + 1, window)
+
+        keys = [f"rl:{category}:{path}:ip:{ip}"]
+        if category == 'auth':
+            account = (
+                request.POST.get('email', '').strip().lower()
+                or request.session.get('pending_email', '')
+            )
+            if account:
+                keys.append(f"rl:{category}:{path}:acct:{account}")
+
+        # any tripped key (IP or account) blocks the request
+        for key in keys:
+            if not self._check_one(key, limits, category):
+                return False
         return True
+
+    def _check_one(self, key, limits, category):
+        """Fixed-window counter; 'auth' category adds exponential-backoff lockout."""
+        lockout_key = f"{key}:lockout"
+        if category == 'auth' and cache.get(lockout_key):
+            return False
+
+        attempts = cache.get(key, 0) + 1
+        cache.set(key, attempts, limits['window'])
+        if attempts <= limits['max_attempts']:
+            return True
+
+        if category == 'auth':
+            violations_key = f"{key}:violations"
+            violations = cache.get(violations_key, 0) + 1
+            backoff_max = limits['backoff_max']
+            cache.set(violations_key, violations, backoff_max)
+            lockout = min(limits['backoff_base'] * (2 ** (violations - 1)), backoff_max)
+            cache.set(lockout_key, True, lockout)
+        return False
 
 
 class SecurityHeadersMiddleware:

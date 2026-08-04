@@ -1,3 +1,4 @@
+import logging
 import uuid
 from django.shortcuts import render
 from django.views.generic import ListView, DetailView, TemplateView
@@ -5,6 +6,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Q
 
 from .models import Shipment, ShipmentItem, ShipmentDocument
+
+logger = logging.getLogger('security')
 
 
 class ShipmentStatsMixin:
@@ -231,43 +234,55 @@ class CreateShipmentView(LoginRequiredMixin, View):
         })
     
     def post(self, request):
+        from django.core.exceptions import ValidationError
+        from indiabox.validators import validate_file_upload, validate_address, validate_phone, validate_email
+
         # Get selected parcel IDs
         parcel_ids = request.POST.getlist('parcels')
         shipment_type = request.POST.get('shipment_type', 'international')
-        
+
         if not parcel_ids:
             messages.error(request, 'Please select at least one parcel.')
             return redirect('shipments:create')
-        
+
+        if shipment_type not in dict(Shipment.TYPE_CHOICES):
+            messages.error(request, 'Invalid shipment type.')
+            return redirect('shipments:create')
+
         # Check for declaration file
         declaration_file = request.FILES.get('declaration_file')
         if not declaration_file:
             messages.error(request, 'Please upload the signed declaration form.')
             return redirect('shipments:create')
-        
+
         # Validate declaration file
-        from indiabox.validators import validate_file_upload
-        from django.core.exceptions import ValidationError
         try:
             validate_file_upload(declaration_file)
         except ValidationError as e:
             messages.error(request, str(e))
             return redirect('shipments:create')
-        
-        # Validate address fields
-        from indiabox.validators import validate_address
+
+        # Validate address + contact fields against a strict schema
         try:
             address_data = validate_address({
                 'recipient_name': request.POST.get('recipient_name', ''),
                 'address_line1': request.POST.get('address_line1', ''),
+                'address_line2': request.POST.get('address_line2', ''),
                 'city': request.POST.get('city', ''),
+                'state': request.POST.get('state', ''),
                 'postal_code': request.POST.get('postal_code', ''),
                 'country': request.POST.get('country', ''),
             })
+            recipient_phone = request.POST.get('recipient_phone', '')
+            if recipient_phone:
+                validate_phone(recipient_phone)
+            recipient_email = request.POST.get('recipient_email', '')
+            if recipient_email:
+                validate_email(recipient_email)
         except ValidationError as e:
             messages.error(request, str(e))
             return redirect('shipments:create')
-        
+
         # Validate parcels belong to user
         locker = request.user.locker
         parcels = Parcel.objects.filter(
@@ -288,13 +303,13 @@ class CreateShipmentView(LoginRequiredMixin, View):
                 status='declaration_pending',
                 recipient_name=address_data.get('recipient_name', ''),
                 address_line1=address_data.get('address_line1', ''),
-                address_line2=request.POST.get('address_line2', ''),
+                address_line2=address_data.get('address_line2', ''),
                 city=address_data.get('city', ''),
-                state=request.POST.get('state', ''),
+                state=address_data.get('state', ''),
                 postal_code=address_data.get('postal_code', ''),
                 country=address_data.get('country', ''),
-                recipient_phone=request.POST.get('recipient_phone', ''),
-                recipient_email=request.POST.get('recipient_email', ''),
+                recipient_phone=recipient_phone,
+                recipient_email=recipient_email,
             )
 
             # Optionally save as default address for quick reuse
@@ -340,7 +355,8 @@ class CreateShipmentView(LoginRequiredMixin, View):
                     document_url=declaration_path  # This is the file path in storage
                 )
             except Exception as e:
-                messages.warning(request, f'Declaration upload failed: {str(e)}. Shipment created without document.')
+                logger.error(f'Declaration upload failed for shipment {shipment.pk}: {e}')
+                messages.warning(request, 'Declaration upload failed. Shipment created without document.')
             
             # Add parcels to shipment
             for parcel in parcels:

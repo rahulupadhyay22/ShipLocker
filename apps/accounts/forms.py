@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from indiabox.validators import validate_phone, sanitize_text_input
+from indiabox.validators import validate_phone, validate_text_input
 from .models import SavedAddress
 
 
@@ -34,7 +34,18 @@ class SavedAddressForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        optional_fields = {'label', 'address_line2', 'state'}
         for field in ['label', 'recipient_name', 'address_line1', 'address_line2', 'city', 'state', 'country']:
-            if cleaned_data.get(field):
-                cleaned_data[field] = sanitize_text_input(cleaned_data[field], max_length=255)
+            if field not in cleaned_data:
+                continue
+            try:
+                cleaned_data[field] = validate_text_input(
+                    cleaned_data[field],
+                    field_name=field.replace('_', ' ').title(),
+                    min_length=1 if field in optional_fields else 2,
+                    max_length=255,
+                    required=field not in optional_fields,
+                )
+            except ValidationError as e:
+                self.add_error(field, e)
         return cleaned_data
