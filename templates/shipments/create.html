@@ -85,7 +85,7 @@
                                 <div class="psc-content">
                                     <div class="psc-image">
                                         {% if parcel.images.first %}
-                                        <img src="{{ parcel.images.first.image_url }}" alt="Item">
+                                        <img src="{{ parcel.images.first.image_url }}" alt="Item" loading="lazy" width="80" height="80">
                                         {% else %}
                                         <span style="font-size: 1.5rem;">📦</span>
                                         {% endif %}

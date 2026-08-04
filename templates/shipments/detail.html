@@ -245,7 +245,7 @@
                 <span class="sd-item-name-cell">
                     <span class="sd-item-thumb">
                         {% if item.parcel.images.first %}
-                        <img src="{{ item.parcel.images.first.image_url }}" alt="">
+                        <img src="{{ item.parcel.images.first.image_url }}" alt="" loading="lazy" width="60" height="60">
                         {% else %}
                         📦
                         {% endif %}
@@ -268,7 +268,7 @@
 {% block extra_js %}
 {{ block.super }}
 {% if shipment.shipping_cost and shipment.payment_status != 'paid' %}
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
 <script>
     const csrfToken = '{{ csrf_token }}';
 

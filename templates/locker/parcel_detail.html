@@ -27,7 +27,7 @@
         <div class="pd-hero-card">
             <div class="pd-hero-image">
                 {% if primary_image %}
-                <img src="{{ primary_image.image_url }}" alt="{{ parcel.item_name|default:'Parcel photo' }}">
+                <img src="{{ primary_image.image_url }}" alt="{{ parcel.item_name|default:'Parcel photo' }}" width="600" height="600">
                 {% else %}
                 <div class="pd-hero-noimage">📦</div>
                 {% endif %}
@@ -95,7 +95,7 @@
                     {% for image in parcel.images.all %}
                     <div class="pd-photo-tile {% if forloop.counter0 >= 4 %}pd-photo-tile-hidden{% endif %}">
                         <img src="{{ image.image_url }}" alt="Inspection photo"
-                            class="inspection-photo-item"
+                            class="inspection-photo-item" loading="lazy" width="200" height="200"
                             data-index="{{ forloop.counter0 }}"
                             onclick="openImagePreview(this)">
                         {% if image.is_primary %}<span class="pd-photo-primary-tag">Primary</span>{% endif %}

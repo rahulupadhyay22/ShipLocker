@@ -140,7 +140,7 @@
             </label>
             {% endif %}
             {% if item.image %}
-            <img src="{{ item.image.image_url }}" alt="{{ item.title }}">
+            <img src="{{ item.image.image_url }}" alt="{{ item.title }}" loading="lazy" width="160" height="160">
             {% else %}
             <div class="trunk-card-noimage">📦</div>
             {% endif %}

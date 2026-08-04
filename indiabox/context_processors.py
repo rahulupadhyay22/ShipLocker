@@ -26,9 +26,16 @@ def nav_counts(request):
     """Incoming-parcel count for the sidebar/bottom-nav badge, shown on every authenticated page."""
     incoming_parcels_count = 0
     if request.user.is_authenticated:
+        from django.core.cache import cache
         from apps.locker.models import Parcel
-        incoming_parcels_count = Parcel.objects.filter(
-            locker__user=request.user, status='action_required'
-        ).count()
+
+        cache_key = f'nav_incoming:{request.user.id}'
+        incoming_parcels_count = cache.get(cache_key)
+        if incoming_parcels_count is None:
+            incoming_parcels_count = Parcel.objects.filter(
+                locker__user=request.user, status='action_required'
+            ).count()
+            # ponytail: 30s staleness window instead of signal-based invalidation, tighten if users report stale badge
+            cache.set(cache_key, incoming_parcels_count, 30)
 
     return {'incoming_parcels_count': incoming_parcels_count}

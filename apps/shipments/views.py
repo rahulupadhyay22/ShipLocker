@@ -103,7 +103,7 @@ class ShipmentDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         return Shipment.objects.filter(
             user=self.request.user
-        ).prefetch_related('items__parcel', 'documents', 'tracking_events')
+        ).prefetch_related('items__parcel__images', 'documents', 'tracking_events')
 
     def get_context_data(self, **kwargs):
         from decimal import Decimal
@@ -199,7 +199,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
             status='approved'
         ).exclude(
             shipment_items__isnull=False
-        )
+        ).prefetch_related('images')
         
         # Check if user has approved KYC
         has_kyc = request.user.kyc_documents.filter(status='approved').exists()
@@ -285,13 +285,13 @@ class CreateShipmentView(LoginRequiredMixin, View):
 
         # Validate parcels belong to user
         locker = request.user.locker
-        parcels = Parcel.objects.filter(
+        parcels = list(Parcel.objects.filter(
             id__in=parcel_ids,
             locker=locker,
             status='approved'
-        )
-        
-        if parcels.count() != len(parcel_ids):
+        ))
+
+        if len(parcels) != len(parcel_ids):
             messages.error(request, 'Invalid parcel selection.')
             return redirect('shipments:create')
         
