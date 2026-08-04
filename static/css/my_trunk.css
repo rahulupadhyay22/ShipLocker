@@ -35,12 +35,12 @@
 .trunk-stat-tile {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.6rem;
     background: var(--surface-0);
     border: 1px solid var(--surface-100);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     box-shadow: var(--shadow-sm);
-    padding: 1rem 1.1rem;
+    padding: 0.65rem 0.85rem;
     transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
@@ -55,14 +55,14 @@
 
 .trunk-stat-icon {
     flex-shrink: 0;
-    width: 34px;
-    height: 34px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 0.78rem;
     color: #fff;
 }
 
@@ -78,14 +78,14 @@
 }
 
 .trunk-stat-value {
-    font-size: 1.3rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--text-main);
     line-height: 1.1;
 }
 
 .trunk-stat-label {
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -97,7 +97,7 @@
     border: 1px solid var(--surface-100);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
-    padding: 1.1rem 1.25rem;
+    padding: 0.75rem 0.9rem;
     margin-bottom: 1.5rem;
 }
 
@@ -105,7 +105,7 @@
 .trunk-toolbar {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.6rem;
     flex-wrap: wrap;
 }
 
@@ -117,26 +117,47 @@
 
 .trunk-search-icon {
     position: absolute;
-    left: 0.9rem;
+    left: 0.7rem;
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
     pointer-events: none;
+    width: 14px;
+    height: 14px;
+}
+
+/* Compact toolbar controls — override .form-input's page-form sizing
+   (2px border, 0.875rem padding) which reads oversized in a toolbar chip. */
+.trunk-search-input,
+.trunk-category-select,
+.trunk-sort-select {
+    padding: 0.45rem 0.75rem !important;
+    border-width: 1px !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: 0.85rem !important;
+    background: var(--surface-0) !important;
 }
 
 .trunk-search-input {
-    padding-left: 2.5rem !important;
+    padding-left: 2.1rem !important;
 }
 
 .trunk-category-select,
 .trunk-sort-select {
     flex: 0 0 auto;
     width: auto;
-    min-width: 150px;
+    min-width: 130px;
 }
 
 .trunk-filter-btn {
     flex-shrink: 0;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8rem;
+}
+
+.trunk-filter-btn svg {
+    width: 13px;
+    height: 13px;
 }
 
 /* ---------- Filter drawer (inline on desktop, slide-in on mobile) ---------- */
@@ -182,13 +203,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
     background: var(--surface-0);
     color: var(--text-secondary);
     border: none;
     cursor: pointer;
     transition: 0.2s;
+}
+
+.trunk-view-btn svg {
+    width: 14px;
+    height: 14px;
 }
 
 .trunk-view-btn:first-child {
@@ -205,8 +231,8 @@
     align-items: center;
     justify-content: space-between;
     border-top: 1px dashed var(--surface-200);
-    margin-top: 1.1rem;
-    padding-top: 1.1rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
     gap: 1rem;
     flex-wrap: wrap;
 }
@@ -542,22 +568,22 @@
 
 @media (max-width: 640px) {
     .trunk-stat-tile {
-        padding: 0.8rem;
-        gap: 0.5rem;
+        padding: 0.55rem 0.65rem;
+        gap: 0.45rem;
     }
 
     .trunk-stat-icon {
-        width: 28px;
-        height: 28px;
-        font-size: 0.82rem;
+        width: 24px;
+        height: 24px;
+        font-size: 0.72rem;
     }
 
     .trunk-stat-value {
-        font-size: 1.05rem;
+        font-size: 0.95rem;
     }
 
     .trunk-stat-label {
-        font-size: 0.7rem;
+        font-size: 0.66rem;
     }
 
     .trunk-grid {
