@@ -14,6 +14,10 @@ No GST/invoice concept exists in the codebase today (verified via grep — only 
 - **Invoice numbering**: sequential per financial year (Apr 1 – Mar 31), e.g. `INV/2026-27/0001`. Race-safe generation, same pattern as `generate_shipment_id`/`generate_shipment_doc_id` in `apps/shipments/models.py` (`select_for_update` on the last invoice of the current FY).
 - **CGST/SGST vs IGST**: full split. Compare `AppSettings.company_state` to `shipment.state` — same state → CGST+SGST (half the configured rate each); different state → IGST (full rate).
 - **Taxable amount** = `shipping_amount + storage_fee_amount + consolidation_fee_amount` (all service charges billed by ShipLocker for this shipment). GST (or the zero-rated note) applies to that sum, not to each line individually.
+- **State comparison for CGST/SGST vs IGST**: `Shipment.state` is free-text (user-typed at shipment creation, no fixed choices), so compare normalized (`.strip().upper()`) against `AppSettings.company_state` (also normalized the same way), not a raw string `==`. This doesn't fix a "Telangana" vs "TG" abbreviation mismatch — that would need a canonical state-code table, which is out of scope here (see Out of Scope) — but it does fix the much more common casing/whitespace mismatch.
+- **Invoice number generation lives in a service function, not on the model.** `apps/payments/models.py` stays a plain model definition; `generate_invoice_number()` (FY-aware, race-safe) lives in `apps/payments/services.py` next to `InvoiceService`, called by it. Keeps the model file free of business logic.
+- **Invoice snapshots customer + payment details too, not just charges.** A `Shipment`'s recipient fields (or the `User`'s account) can change after the invoice is issued (saved address edited, email changed, etc.) — the invoice must freeze what was true at generation time, same reasoning already applied to the charge amounts.
+- **Automated tests required** for this feature specifically (numbering, GST calculation, idempotency, failure handling) — see Testing section below. This is new to the repo (no test suite exists elsewhere per CLAUDE.md) but the user explicitly asked for it here given the financial/legal stakes.
 
 ## Architecture (revised after review)
 
@@ -88,6 +92,18 @@ class Invoice(models.Model):
     invoice_number = models.CharField(max_length=30, unique=True, db_index=True)
     invoice_date = models.DateTimeField()  # the payment's paid_at, NOT generation time
 
+    # Snapshotted customer details — frozen at generation time, independent of
+    # later edits to the User/Shipment (name change, saved-address edit, etc.)
+    customer_name = models.CharField(max_length=255)
+    customer_email = models.EmailField(blank=True)
+    billing_address = models.TextField()  # recipient_name/address_line1-2/city/state/postal/country, formatted
+    customer_gstin = models.CharField(max_length=20, blank=True)  # optional, if ShipLocker later collects it
+
+    # Snapshotted payment reference — frozen, independent of the Payment row's own lifecycle
+    payment_reference = models.CharField(max_length=100, blank=True)  # razorpay_payment_id
+    payment_method = models.CharField(max_length=50, blank=True)  # e.g. "Razorpay"
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
+
     # Snapshotted charges — independent of whatever the shipment looks like later
     shipping_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     storage_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -120,9 +136,9 @@ class Invoice(models.Model):
 
 - `apps/notifications/models.py` — AppSettings fields
 - `apps/notifications/admin.py` — expose new fields (check current registration before editing)
-- `apps/payments/models.py` — `Invoice` model + `generate_invoice_number()` helper (FY-aware, `select_for_update`, same shape as `generate_shipment_id`)
-- `apps/payments/tax.py` (new) — `calculate_gst(shipment, taxable_amount, settings)` pure function
-- `apps/payments/services.py` — `InvoiceService` class/functions: `build_charge_snapshot`, `generate_pdf`, `upload_pdf`, `generate_for_shipment` (orchestrator with the idempotency check)
+- `apps/payments/models.py` — `Invoice` model only, no numbering logic here
+- `apps/payments/tax.py` (new) — `calculate_gst(shipment, taxable_amount, settings)` pure function, normalizes state strings before comparing
+- `apps/payments/services.py` — `generate_invoice_number()` (FY-aware, `select_for_update`, same shape as `generate_shipment_id` but as a plain function, not a model method), `InvoiceService` class/functions: `build_charge_snapshot`, `build_customer_snapshot`, `generate_pdf`, `upload_pdf`, `generate_for_shipment` (orchestrator with the idempotency check)
 - `apps/payments/admin.py` — register `Invoice` (read-only list, links to PDF) for visibility/audit
 - `apps/shipments/signals.py` — thin `payment_status` transition detector + call into `InvoiceService`
 - `apps/shipments/admin.py` — `generate_invoice` manual action on `ShipmentAdmin`
@@ -131,6 +147,7 @@ class Invoice(models.Model):
 ## Files to create
 
 - `apps/payments/tax.py`
+- `apps/payments/tests.py` (or `apps/payments/tests/` package if it grows past one file)
 - `apps/notifications/migrations/00XX_appsettings_gst_fields.py` (auto-generated)
 - `apps/payments/migrations/00XX_invoice.py` (auto-generated)
 
@@ -144,6 +161,13 @@ class Invoice(models.Model):
 - Reuse `upload_shipment_document` (apps/locker/utils.py) for the actual Supabase upload — don't reimplement
 - Log invoice generation (success/failure) through the `security` logger, consistent with other financial state changes in this codebase
 
+## Testing (`apps/payments/tests.py`, Django `TestCase`, no fixtures beyond what each test sets up)
+
+- **Numbering**: sequential within a financial year (`INV/2026-27/0001`, `.../0002`, ...); rolls to a new FY prefix across the Apr 1 boundary; two `generate_invoice_number()` calls under `select_for_update` contention don't collide (simulate via nested transactions or at least assert uniqueness under a tight loop — a true concurrency test isn't feasible in SQLite/test runner, so this covers sequential correctness and leans on `select_for_update` code review for the race case).
+- **GST calculation** (`calculate_gst`, pure function — no DB needed for most cases): international → zero-rated, no CGST/SGST/IGST; domestic + same state (post-normalization, including a mixed-case/whitespace input) → CGST+SGST split correctly summing to the full rate; domestic + different state → IGST at full rate; confirm `cgst + sgst` (or `igst`) always equals `taxable_amount * gst_rate / 100`.
+- **Idempotency**: calling `InvoiceService.generate_for_shipment` twice for the same shipment creates exactly one `Invoice` and one `ShipmentDocument`; the signal firing twice (e.g. shipment saved again while already `paid`) doesn't double-generate.
+- **Failure scenario**: `upload_pdf` (or `generate_pdf`) raising an exception must not leave a partial `Invoice`/`ShipmentDocument` row in the DB (nothing gets written before both PDF steps succeed) — assert zero `Invoice` rows exist after a simulated upload failure, and that the signal's `try/except` logs but doesn't raise out of the `Shipment.save()` call.
+
 ## Out of scope (explicitly)
 
 - Invoice regeneration/versioning — corrections are a future Credit/Debit Note feature, not built now
@@ -151,7 +175,6 @@ class Invoice(models.Model):
 - GST for `international` shipments beyond the zero-rated note — no reverse-charge/export-specific compliance logic beyond what's stated
 
 ## Definition of done
-
 - [ ] Migrations for `notifications` and `payments` apps apply cleanly
 - [ ] Admin can fill in company GSTIN/PAN/legal name/registered address/state/GST rate on AppSettings
 - [ ] Marking a **domestic** shipment's payment as paid (via the real Razorpay verify flow, not just admin) generates an `Invoice` row + PDF, with correct CGST+SGST split when `shipment.state == company_state`, correct IGST when different
@@ -162,3 +185,4 @@ class Invoice(models.Model):
 - [ ] `invoice_date` reflects the actual payment time, not whenever the PDF happened to be generated
 - [ ] The manual "Generate Invoice" admin action successfully backfills an invoice for an already-paid shipment that has none
 - [ ] Deleting a shipment with an invoice is blocked/protected at the DB level (`on_delete=PROTECT`)
+- [ ] `python manage.py test apps.payments` passes, covering numbering, GST calculation (zero-rated/CGST+SGST/IGST), idempotency, and the upload-failure scenario
