@@ -175,14 +175,14 @@ class Invoice(models.Model):
 - GST for `international` shipments beyond the zero-rated note — no reverse-charge/export-specific compliance logic beyond what's stated
 
 ## Definition of done
-- [ ] Migrations for `notifications` and `payments` apps apply cleanly
-- [ ] Admin can fill in company GSTIN/PAN/legal name/registered address/state/GST rate on AppSettings
-- [ ] Marking a **domestic** shipment's payment as paid (via the real Razorpay verify flow, not just admin) generates an `Invoice` row + PDF, with correct CGST+SGST split when `shipment.state == company_state`, correct IGST when different
-- [ ] Marking an **international** shipment's payment as paid generates an invoice PDF showing 0% / zero-rated, no CGST/SGST/IGST amounts
-- [ ] The shipment detail page's "Download Invoice" Quick Action links to the generated PDF (no template changes needed)
-- [ ] Marking the same shipment paid twice (e.g. duplicate signal fire) does not create a second `Invoice` or duplicate `ShipmentDocument`
-- [ ] Invoice numbers are sequential within a financial year and don't collide under concurrent generation (verify via the same race-safety approach as `generate_shipment_id`)
-- [ ] `invoice_date` reflects the actual payment time, not whenever the PDF happened to be generated
-- [ ] The manual "Generate Invoice" admin action successfully backfills an invoice for an already-paid shipment that has none
-- [ ] Deleting a shipment with an invoice is blocked/protected at the DB level (`on_delete=PROTECT`)
-- [ ] `python manage.py test apps.payments` passes, covering numbering, GST calculation (zero-rated/CGST+SGST/IGST), idempotency, and the upload-failure scenario
+- [x] Migrations for `notifications` and `payments` apps apply cleanly
+- [x] Admin can fill in company GSTIN/PAN/legal name/registered address/state/GST rate on AppSettings
+- [x] Marking a **domestic** shipment's payment as paid (via the real Razorpay verify flow, not just admin) generates an `Invoice` row + PDF, with correct CGST+SGST split when `shipment.state == company_state`, correct IGST when different
+- [x] Marking an **international** shipment's payment as paid generates an invoice PDF showing 0% / zero-rated, no CGST/SGST/IGST amounts
+- [x] The shipment detail page's "Download Invoice" Quick Action links to the generated PDF (no template changes needed)
+- [x] Marking the same shipment paid twice (e.g. duplicate signal fire) does not create a second `Invoice` or duplicate `ShipmentDocument`
+- [x] Invoice numbers are sequential within a financial year and don't collide under concurrent generation (verify via the same race-safety approach as `generate_shipment_id`)
+- [x] `invoice_date` reflects the actual payment time, not whenever the PDF happened to be generated
+- [x] The manual "Generate Invoice" admin action successfully backfills an invoice for an already-paid shipment that has none
+- [x] Deleting a shipment with an invoice is blocked/protected at the DB level (`on_delete=PROTECT`)
+- [x] `python manage.py test apps.payments` passes, covering numbering, GST calculation (zero-rated/CGST+SGST/IGST), idempotency, and the upload-failure scenario
