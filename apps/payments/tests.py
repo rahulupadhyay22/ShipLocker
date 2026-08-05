@@ -115,3 +115,67 @@ class GenerateInvoiceNumberTests(TestCase):
         march_date = timezone.make_aware(datetime(2027, 3, 15))
         number = generate_invoice_number(march_date)
         self.assertEqual(number, 'INV/2026-27/0001')
+
+
+from unittest.mock import patch
+
+from apps.notifications.models import AppSettings
+from apps.payments.models import Payment
+from apps.shipments.models import ShipmentDocument
+from apps.payments.services import InvoiceService
+
+
+class InvoiceServiceTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email='invoice-service-test@example.com', is_active=True)
+        settings = AppSettings.get_settings()
+        settings.company_legal_name = 'ShipLocker Logistics Pvt Ltd'
+        settings.company_gstin = '36AAAAA0000A1Z5'
+        settings.company_pan = 'AAAAA0000A'
+        settings.company_registered_address = 'Hyderabad, Telangana, India'
+        settings.company_state = 'Telangana'
+        settings.gst_rate_percent = Decimal('18.00')
+        settings.save()
+
+        self.shipment = _make_shipment(self.user)
+        self.shipment.shipping_cost = Decimal('1000.00')
+        self.shipment.payment_status = 'paid'
+        self.shipment.save()
+
+        Payment.objects.create(
+            user=self.user, shipment=self.shipment, amount=Decimal('1000.00'),
+            payment_method='razorpay', status='captured',
+            razorpay_payment_id='pay_test123', paid_at=timezone.now(),
+        )
+
+    def test_generate_for_shipment_creates_invoice_and_document(self):
+        invoice = InvoiceService.generate_for_shipment(self.shipment, paid_at=timezone.now())
+
+        self.assertIsNotNone(invoice)
+        self.assertEqual(invoice.shipment, self.shipment)
+        self.assertTrue(invoice.invoice_number.startswith('INV/'))
+        self.assertEqual(invoice.customer_name, 'Test Recipient')
+        self.assertEqual(invoice.payment_reference, 'pay_test123')
+        self.assertEqual(invoice.shipping_amount, Decimal('1000.00'))
+        self.assertEqual(invoice.cgst_amount, Decimal('90.00'))
+        self.assertEqual(invoice.sgst_amount, Decimal('90.00'))
+        self.assertTrue(invoice.pdf_document_url)
+
+        doc = ShipmentDocument.objects.get(shipment=self.shipment, document_type='invoice')
+        self.assertEqual(doc.document_url, invoice.pdf_document_url)
+
+    def test_generate_for_shipment_is_idempotent(self):
+        first = InvoiceService.generate_for_shipment(self.shipment, paid_at=timezone.now())
+        second = InvoiceService.generate_for_shipment(self.shipment, paid_at=timezone.now())
+
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(Invoice.objects.filter(shipment=self.shipment).count(), 1)
+        self.assertEqual(ShipmentDocument.objects.filter(shipment=self.shipment, document_type='invoice').count(), 1)
+
+    def test_upload_failure_leaves_no_partial_record(self):
+        with patch('apps.payments.services.InvoiceService.upload_pdf', side_effect=Exception('Supabase timeout')):
+            with self.assertRaises(Exception):
+                InvoiceService.generate_for_shipment(self.shipment, paid_at=timezone.now())
+
+        self.assertEqual(Invoice.objects.filter(shipment=self.shipment).count(), 0)
+        self.assertEqual(ShipmentDocument.objects.filter(shipment=self.shipment, document_type='invoice').count(), 0)

@@ -5,6 +5,7 @@ import hashlib
 import logging
 from decimal import Decimal
 from django.db import transaction
+from .tax import calculate_gst
 
 logger = logging.getLogger('security')
 
@@ -263,3 +264,200 @@ def generate_invoice_number(invoice_date):
             num = 1
 
     return f"{prefix}{num:04d}"
+
+
+def build_charge_snapshot(shipment):
+    """{'shipping_amount', 'storage_fee_amount', 'consolidation_fee_amount'}
+    reusing the exact same totals already shown on the shipment detail page."""
+    from apps.shipments.views import _payment_summary
+
+    summary = _payment_summary(shipment)
+    return {
+        'shipping_amount': summary['shipping_amount'],
+        'storage_fee_amount': summary['storage_fee_total'],
+        'consolidation_fee_amount': summary['consolidation_fee'],
+    }
+
+
+def build_customer_snapshot(shipment):
+    address_lines = [shipment.address_line1]
+    if shipment.address_line2:
+        address_lines.append(shipment.address_line2)
+    address_lines.append(f"{shipment.city}, {shipment.state} {shipment.postal_code}")
+    address_lines.append(shipment.country)
+    return {
+        'customer_name': shipment.recipient_name,
+        'customer_email': shipment.recipient_email,
+        'billing_address': '\n'.join(address_lines),
+    }
+
+
+class InvoiceService:
+    """Single entry point for GST invoice generation. All the real work
+    (snapshot, tax calc, PDF, upload, DB write) is coordinated from here —
+    the calling signal/admin-action stays a one-line call into this class."""
+
+    @staticmethod
+    def generate_pdf(context):
+        import io
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.lib.units import mm
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=20 * mm)
+        styles = getSampleStyleSheet()
+        story = []
+
+        story.append(Paragraph(context['company_legal_name'] or 'ShipLocker', styles['Title']))
+        story.append(Paragraph((context['company_registered_address'] or '').replace('\n', '<br/>'), styles['Normal']))
+        story.append(Paragraph(
+            f"GSTIN: {context['company_gstin'] or '-'} | PAN: {context['company_pan'] or '-'}",
+            styles['Normal'],
+        ))
+        story.append(Spacer(1, 10 * mm))
+
+        story.append(Paragraph(f"Invoice Number: {context['invoice_number']}", styles['Heading2']))
+        story.append(Paragraph(f"Invoice Date: {context['invoice_date'].strftime('%d %b %Y')}", styles['Normal']))
+        story.append(Spacer(1, 5 * mm))
+
+        story.append(Paragraph('Bill To:', styles['Heading3']))
+        story.append(Paragraph(context['customer_name'], styles['Normal']))
+        story.append(Paragraph(context['billing_address'].replace('\n', '<br/>'), styles['Normal']))
+        if context.get('customer_gstin'):
+            story.append(Paragraph(f"GSTIN: {context['customer_gstin']}", styles['Normal']))
+        story.append(Spacer(1, 8 * mm))
+
+        rows = [['Description', 'Amount (INR)']]
+        rows.append(['Shipping Charges', f"{context['shipping_amount']:.2f}"])
+        if context['storage_fee_amount'] > 0:
+            rows.append(['Storage Fee', f"{context['storage_fee_amount']:.2f}"])
+        if context['consolidation_fee_amount'] > 0:
+            rows.append(['Consolidation Fee', f"{context['consolidation_fee_amount']:.2f}"])
+        rows.append(['Taxable Amount', f"{context['taxable_amount']:.2f}"])
+
+        if context['is_zero_rated']:
+            rows.append(['GST', 'Export of Service — Zero Rated (0%)'])
+        else:
+            if context['cgst_amount'] > 0:
+                half_rate = context['gst_rate'] / 2
+                rows.append([f"CGST @ {half_rate}%", f"{context['cgst_amount']:.2f}"])
+                rows.append([f"SGST @ {half_rate}%", f"{context['sgst_amount']:.2f}"])
+            if context['igst_amount'] > 0:
+                rows.append([f"IGST @ {context['gst_rate']}%", f"{context['igst_amount']:.2f}"])
+
+        rows.append(['Total Amount', f"{context['total_amount']:.2f}"])
+
+        table = Table(rows, colWidths=[120 * mm, 50 * mm])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#003746')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('LINEABOVE', (0, -1), (-1, -1), 1, colors.black),
+        ]))
+        story.append(table)
+        story.append(Spacer(1, 8 * mm))
+
+        if context.get('payment_reference'):
+            story.append(Paragraph(
+                f"Paid via {context.get('payment_method') or 'online payment'} — Reference: {context['payment_reference']}",
+                styles['Normal'],
+            ))
+
+        doc.build(story)
+        return buffer.getvalue()
+
+    @staticmethod
+    def upload_pdf(pdf_bytes, shipment):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.locker.utils import upload_shipment_document, get_user_locker_id
+
+        locker_id = get_user_locker_id(shipment.user)
+        filename = f"invoice_{shipment.display_id}.pdf"
+        uploaded_file = SimpleUploadedFile(filename, pdf_bytes, content_type='application/pdf')
+        return upload_shipment_document(uploaded_file, locker_id, shipment.display_id, 'invoice')
+
+    @staticmethod
+    def generate_for_shipment(shipment, paid_at=None):
+        from django.utils import timezone
+        from .models import Invoice, Payment
+        from apps.shipments.models import ShipmentDocument
+        from apps.notifications.models import AppSettings
+
+        existing = Invoice.objects.filter(shipment=shipment).first()
+        if existing:
+            logger.info(f"Invoice already exists for shipment {shipment.pk} ({existing.invoice_number}), skipping")
+            return existing
+
+        invoice_date = paid_at or timezone.now()
+        settings = AppSettings.get_settings()
+
+        charges = build_charge_snapshot(shipment)
+        taxable_amount = (
+            charges['shipping_amount'] + charges['storage_fee_amount'] + charges['consolidation_fee_amount']
+        )
+        gst = calculate_gst(shipment, taxable_amount, settings)
+        customer = build_customer_snapshot(shipment)
+
+        payment = Payment.objects.filter(
+            shipment=shipment, status='captured'
+        ).order_by('-paid_at').first()
+
+        invoice_number = generate_invoice_number(invoice_date)
+
+        pdf_context = {
+            'company_legal_name': settings.company_legal_name,
+            'company_registered_address': settings.company_registered_address,
+            'company_gstin': settings.company_gstin,
+            'company_pan': settings.company_pan,
+            'invoice_number': invoice_number,
+            'invoice_date': invoice_date,
+            'customer_gstin': '',
+            **customer,
+            **charges,
+            'taxable_amount': taxable_amount,
+            **gst,
+            'payment_reference': payment.razorpay_payment_id if payment else '',
+            'payment_method': payment.get_payment_method_display() if payment else '',
+        }
+
+        pdf_bytes = InvoiceService.generate_pdf(pdf_context)
+        pdf_path = InvoiceService.upload_pdf(pdf_bytes, shipment)
+
+        with transaction.atomic():
+            invoice = Invoice.objects.create(
+                shipment=shipment,
+                invoice_number=invoice_number,
+                invoice_date=invoice_date,
+                customer_name=customer['customer_name'],
+                customer_email=customer['customer_email'],
+                billing_address=customer['billing_address'],
+                customer_gstin='',
+                payment_reference=payment.razorpay_payment_id if payment else '',
+                payment_method=payment.get_payment_method_display() if payment else '',
+                amount_paid=payment.amount if payment else gst['total_amount'],
+                shipping_amount=charges['shipping_amount'],
+                storage_fee_amount=charges['storage_fee_amount'],
+                consolidation_fee_amount=charges['consolidation_fee_amount'],
+                taxable_amount=taxable_amount,
+                is_zero_rated=gst['is_zero_rated'],
+                gst_rate=gst['gst_rate'],
+                cgst_amount=gst['cgst_amount'],
+                sgst_amount=gst['sgst_amount'],
+                igst_amount=gst['igst_amount'],
+                total_amount=gst['total_amount'],
+                pdf_document_url=pdf_path,
+            )
+            ShipmentDocument.objects.create(
+                shipment=shipment,
+                document_type='invoice',
+                document_url=pdf_path,
+            )
+
+        logger.info(f"Invoice {invoice_number} generated for shipment {shipment.pk}")
+        return invoice
