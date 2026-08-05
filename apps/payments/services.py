@@ -4,6 +4,7 @@ import hmac
 import hashlib
 import logging
 from decimal import Decimal
+from django.db import transaction
 
 logger = logging.getLogger('security')
 
@@ -227,3 +228,38 @@ def ensure_storage_fee_for_parcel(parcel):
         days_overdue=overdue_days,
         status='pending',
     )
+
+
+def _financial_year_label(invoice_date):
+    """FY runs Apr 1 - Mar 31. E.g. any date in Apr 2026-Mar 2027 -> '2026-27'."""
+    year = invoice_date.year
+    if invoice_date.month >= 4:
+        return f"{year}-{str(year + 1)[-2:]}"
+    return f"{year - 1}-{str(year)[-2:]}"
+
+
+def generate_invoice_number(invoice_date):
+    """Sequential invoice number within a financial year: INV/2026-27/0001.
+    Race-safe via select_for_update, same pattern as generate_shipment_id
+    in apps/shipments/models.py."""
+    from .models import Invoice
+
+    prefix = f"INV/{_financial_year_label(invoice_date)}/"
+
+    with transaction.atomic():
+        last = (
+            Invoice.objects
+            .select_for_update()
+            .filter(invoice_number__startswith=prefix)
+            .order_by('-invoice_number')
+            .first()
+        )
+        if last:
+            try:
+                num = int(last.invoice_number.rsplit('/', 1)[1]) + 1
+            except (ValueError, IndexError):
+                num = Invoice.objects.filter(invoice_number__startswith=prefix).count() + 1
+        else:
+            num = 1
+
+    return f"{prefix}{num:04d}"
