@@ -182,3 +182,57 @@ class StorageFee(models.Model):
 
     def __str__(self):
         return f"{self.parcel.display_id} — ₹{self.fee_amount} ({self.get_status_display()})"
+
+
+class Invoice(models.Model):
+    """GST invoice generated once a shipment's payment is marked paid.
+
+    Every field that could change later on the Shipment/User/Payment is
+    snapshotted here at generation time, so this record stays a correct
+    historical document no matter what happens to the shipment afterward.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    shipment = models.OneToOneField(
+        Shipment, on_delete=models.PROTECT, related_name='invoice'
+    )
+    invoice_number = models.CharField(max_length=30, unique=True, db_index=True)
+    invoice_date = models.DateTimeField(
+        help_text="The payment's paid_at timestamp, not whenever the PDF happened to be generated"
+    )
+
+    # Snapshotted customer details
+    customer_name = models.CharField(max_length=255)
+    customer_email = models.EmailField(blank=True)
+    billing_address = models.TextField()
+    customer_gstin = models.CharField(max_length=20, blank=True)
+
+    # Snapshotted payment reference
+    payment_reference = models.CharField(max_length=100, blank=True)
+    payment_method = models.CharField(max_length=50, blank=True)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
+
+    # Snapshotted charges
+    shipping_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    storage_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    consolidation_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    taxable_amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    # GST breakdown
+    is_zero_rated = models.BooleanField(default=False)
+    gst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    cgst_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    sgst_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    igst_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    pdf_document_url = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Invoice'
+        verbose_name_plural = 'Invoices'
+        ordering = ['-invoice_date']
+
+    def __str__(self):
+        return self.invoice_number
