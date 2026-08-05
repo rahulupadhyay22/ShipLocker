@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/shipment_detail.css' %}">
+<link rel="stylesheet" href="{% static 'css/shipment_create.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -110,31 +111,71 @@
     <div class="card">
         <div class="card-header"><h3>Payment Summary</h3></div>
         <div class="card-body sd-info-list">
+            {% if service_options is not None %}
+            <div class="sd-service-block">
+                <span class="sd-info-label">Shipping Speed</span>
+                {% if service_locked %}
+                    {% if shipment.service_type %}
+                    <p class="sd-info-value">
+                        <span class="status-badge status-approved">{{ shipment.get_service_type_display }}</span>
+                    </p>
+                    {% else %}
+                    <p class="sd-empty-text">No shipping speed was selected before payment.</p>
+                    {% endif %}
+                {% elif not service_options %}
+                    <p class="sd-empty-text">No shipping rate is available yet for your destination/weight. Please raise a support ticket.</p>
+                {% else %}
+                <form method="post" action="{% url 'shipments:select_service' shipment.pk %}" id="serviceSpeedForm">
+                    {% csrf_token %}
+                    <div class="radio-group radio-group-compact" id="serviceSpeedOptions">
+                        {% for opt in service_options %}
+                        <label class="radio-card radio-card-compact">
+                            <input type="radio" name="service_type" value="{{ opt.code }}"
+                                {% if shipment.service_type == opt.code %}checked{% endif %} required>
+                            <span class="rc-content">
+                                <strong>{{ opt.label }}</strong>
+                                <span class="sd-service-price">{{ shipment.currency }} {{ opt.price }} &middot; {{ opt.delivery_days_min }}&ndash;{{ opt.delivery_days_max }} days</span>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <p id="serviceSpeedError" class="sd-empty-text sd-service-error" hidden></p>
+                </form>
+                {% endif %}
+            </div>
+            <div class="sd-divider"></div>
+            {% endif %}
+
             <div class="sd-info-item">
                 <span class="sd-info-label">Shipping Charges</span>
-                <span class="sd-info-value">{{ shipment.currency }} {{ shipping_amount|default:"0.00" }}</span>
+                {% if shipment.total_weight_kg is None %}
+                <span class="sd-info-value sd-info-value-pending" id="sd-shipping-amount">Shown once volumetric weight is added</span>
+                {% else %}
+                <span class="sd-info-value" id="sd-shipping-amount">{{ shipment.currency }} {{ shipping_amount|default:"0.00" }}</span>
+                {% endif %}
             </div>
-            {% if storage_fee_total > 0 %}
-            <div class="sd-info-item">
+            <div class="sd-info-item" id="sd-storage-fee-row" {% if not storage_fee_total > 0 %}hidden{% endif %}>
                 <span class="sd-info-label">Storage Fee</span>
                 <span class="sd-info-value">{{ shipment.currency }} {{ storage_fee_total }}</span>
             </div>
-            {% endif %}
+            <div class="sd-info-item" id="sd-consolidation-fee-row" {% if not consolidation_fee > 0 %}hidden{% endif %}>
+                <span class="sd-info-label">Consolidation Fee</span>
+                <span class="sd-info-value">{{ shipment.currency }} {{ consolidation_fee }}</span>
+            </div>
             <div class="sd-info-item sd-info-total">
                 <span class="sd-info-label">Total {% if shipment.payment_status == 'paid' %}Paid{% else %}Due{% endif %}</span>
-                <span class="sd-info-value">{{ shipment.currency }} {% if shipment.payment_status == 'paid' %}{{ shipment_total_amount }}{% else %}{{ shipment_amount_due }}{% endif %}</span>
+                <span class="sd-info-value" id="sd-total-due">{{ shipment.currency }} {% if shipment.payment_status == 'paid' %}{{ shipment_total_amount }}{% else %}{{ shipment_amount_due }}{% endif %}</span>
             </div>
             <span class="status-badge {% if shipment.payment_status == 'paid' %}status-approved{% else %}status-pending{% endif %}">
                 {{ shipment.get_payment_status_display }}
             </span>
 
-            {% if shipment.shipping_cost and shipment.payment_status != 'paid' %}
             <button id="pay-now-btn" class="btn btn-primary sd-pay-btn"
                 data-create-url="{% url 'payments:create_order' shipment.pk %}"
-                data-verify-url="{% url 'payments:verify' %}">
+                data-verify-url="{% url 'payments:verify' %}"
+                {% if not shipment.shipping_cost or shipment.payment_status == 'paid' %}hidden{% endif %}>
                 Pay Now
             </button>
-            {% endif %}
         </div>
     </div>
 
@@ -147,6 +188,9 @@
             {% if awb_document %}
             <a href="{{ awb_document.signed_url }}" target="_blank" class="sd-quick-action">↓ Download AWB <span>›</span></a>
             {% endif %}
+            {% for doc in other_documents %}
+            <a href="{{ doc.signed_url }}" target="_blank" class="sd-quick-action">↓ Download {{ doc.get_document_type_display }} <span>›</span></a>
+            {% endfor %}
             <a href="{% url 'shipments:customs_help' %}" class="sd-quick-action">🎧 Raise Support Ticket <span>›</span></a>
         </div>
     </div>
@@ -267,7 +311,57 @@
 
 {% block extra_js %}
 {{ block.super }}
-{% if shipment.shipping_cost and shipment.payment_status != 'paid' %}
+{% if service_options is not None and not service_locked %}
+<script>
+    (function () {
+        const csrfToken = '{{ csrf_token }}';
+        const optionsWrap = document.getElementById('serviceSpeedOptions');
+        const errorEl = document.getElementById('serviceSpeedError');
+        if (!optionsWrap) return;
+
+        const inputs = Array.from(optionsWrap.querySelectorAll('input[name="service_type"]'));
+        let lastChecked = inputs.find((i) => i.checked) || null;
+
+        inputs.forEach((input) => {
+            input.addEventListener('change', async function () {
+                errorEl.hidden = true;
+                inputs.forEach((i) => (i.disabled = true));
+
+                try {
+                    const response = await fetch('{% url "shipments:select_service" shipment.pk %}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: new URLSearchParams({ service_type: this.value }),
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || data.status !== 'success') {
+                        throw new Error(data.message || 'Could not update shipping speed.');
+                    }
+
+                    document.getElementById('sd-shipping-amount').textContent = `${data.currency} ${data.shipping_amount}`;
+                    document.getElementById('sd-total-due').textContent = `${data.currency} ${data.shipment_amount_due}`;
+                    const payBtn = document.getElementById('pay-now-btn');
+                    if (payBtn) payBtn.hidden = false;
+
+                    lastChecked = this;
+                } catch (err) {
+                    errorEl.textContent = err.message || 'Could not update shipping speed.';
+                    errorEl.hidden = false;
+                    if (lastChecked) lastChecked.checked = true;
+                    else this.checked = false;
+                } finally {
+                    inputs.forEach((i) => (i.disabled = false));
+                }
+            });
+        });
+    })();
+</script>
+{% endif %}
+{% if shipment.payment_status != 'paid' %}
 <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
 <script>
     const csrfToken = '{{ csrf_token }}';

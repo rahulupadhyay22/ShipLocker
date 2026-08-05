@@ -78,7 +78,10 @@
                         <div style="display: flex; flex-direction: column; gap: 1rem;">
                             {% for parcel in parcels %}
                             <label class="parcel-select-card" data-weight="{{ parcel.weight_kg|default:'0' }}"
-                                data-price="{{ parcel.item_price|default:'0' }}">
+                                data-price="{{ parcel.item_price|default:'0' }}"
+                                data-billable-weight="{{ parcel.billable_weight|default:'0' }}"
+                                data-storage-fee="{{ parcel.storage_fee_estimate|default:'0' }}"
+                                data-overdue-days="{{ parcel.storage_overdue_days|default:'0' }}">
                                 <input type="checkbox" name="parcels" value="{{ parcel.id }}" class="parcel-checkbox"
                                     {% if parcel.id|stringformat:"s" in preselected_ids %}checked{% endif %}
                                     onchange="updateSummary()">
@@ -247,7 +250,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Country</label>
-                        <select name="country" class="form-control" required>
+                        <select name="country" class="form-control" required onchange="updateSummary()">
                             <option value="">Select...</option>
                             {% for zone in zones %}
                             {% for country_code in zone.get_countries_list %}
@@ -411,6 +414,10 @@
 
 {% block extra_js %}
 <script>
+    const ZONES_DATA = JSON.parse('{{ zones_json|escapejs }}');
+    const CONSOLIDATION_FEE = parseFloat('{{ consolidation_fee_amount|default:"0" }}') || 0;
+    const DAILY_STORAGE_RATE = parseFloat('{{ daily_storage_rate|default:"0" }}') || 0;
+
     function toggleSelectAll(checkbox) {
         document.querySelectorAll('.parcel-checkbox').forEach(function (cb) {
             cb.checked = checkbox.checked;
@@ -418,11 +425,18 @@
         updateSummary();
     }
 
+    function fmtMoney(amount) {
+        return 'INR ' + amount.toFixed(2);
+    }
+
     function updateSummary() {
         const cards = document.querySelectorAll('.parcel-select-card');
         let count = 0;
         let totalWeight = 0;
         let totalValue = 0;
+        let totalBillableWeight = 0;
+        let totalStorageFee = 0;
+        let totalOverdueDays = 0;
 
         cards.forEach(function (card) {
             const cb = card.querySelector('.parcel-checkbox');
@@ -430,6 +444,9 @@
                 count++;
                 totalWeight += parseFloat(card.dataset.weight) || 0;
                 totalValue += parseFloat(card.dataset.price) || 0;
+                totalBillableWeight += parseFloat(card.dataset.billableWeight) || 0;
+                totalStorageFee += parseFloat(card.dataset.storageFee) || 0;
+                totalOverdueDays += parseInt(card.dataset.overdueDays, 10) || 0;
                 card.classList.add('selected');
             } else {
                 card.classList.remove('selected');
@@ -443,8 +460,63 @@
         document.querySelectorAll('.js-sum-weight').forEach(function (el) { el.textContent = totalWeight.toFixed(2) + ' kg'; });
         document.querySelectorAll('.js-sum-value').forEach(function (el) { el.textContent = totalValue.toFixed(2); });
 
+        const storageBreakdownText = totalOverdueDays > 0
+            ? '(' + totalOverdueDays + ' day' + (totalOverdueDays === 1 ? '' : 's') + ' overdue × ' + fmtMoney(DAILY_STORAGE_RATE) + '/day)'
+            : '';
+        document.querySelectorAll('.js-storage-fee-row').forEach(function (el) { el.hidden = totalStorageFee <= 0; });
+        document.querySelectorAll('.js-sum-storage-fee').forEach(function (el) { el.textContent = fmtMoney(totalStorageFee); });
+        document.querySelectorAll('.js-sum-storage-breakdown').forEach(function (el) { el.textContent = storageBreakdownText; });
+
+        document.querySelectorAll('.js-consolidation-fee-row').forEach(function (el) { el.hidden = count < 2; });
+        document.querySelectorAll('.js-sum-consolidation-fee').forEach(function (el) { el.textContent = fmtMoney(CONSOLIDATION_FEE); });
+
         const nextBtn = document.getElementById('step1NextBtn');
         if (nextBtn) nextBtn.disabled = count === 0;
+
+        const otherFees = totalStorageFee + (count >= 2 ? CONSOLIDATION_FEE : 0);
+        updateShippingEstimate(totalBillableWeight, otherFees);
+    }
+
+    function setEstimateText(text) {
+        document.querySelectorAll('.js-sum-shipping-estimate').forEach(function (el) { el.textContent = text; });
+        document.querySelectorAll('.js-sum-estimated-total').forEach(function (el) { el.textContent = text; });
+    }
+
+    function updateShippingEstimate(billableWeight, otherFees) {
+        const form = document.getElementById('shipmentForm');
+        const country = form.country.value;
+
+        if (!country) {
+            setEstimateText('Add delivery address to see estimate');
+            return;
+        }
+
+        const zone = ZONES_DATA.find(function (z) { return z.countries.includes(country); });
+        if (!zone) {
+            setEstimateText('No rates for this destination — contact support');
+            return;
+        }
+
+        const matching = zone.rates.filter(function (r) {
+            return billableWeight >= r.min_weight && billableWeight < r.max_weight;
+        });
+        if (!matching.length) {
+            setEstimateText('No rate for this weight — contact support');
+            return;
+        }
+
+        const prices = matching.map(function (r) {
+            return r.rate_type === 'fixed' ? r.price : billableWeight * r.price;
+        });
+        const min = Math.min.apply(null, prices);
+        const max = Math.max.apply(null, prices);
+        const shippingText = min === max ? fmtMoney(min) : (fmtMoney(min) + ' – ' + fmtMoney(max));
+        document.querySelectorAll('.js-sum-shipping-estimate').forEach(function (el) { el.textContent = shippingText; });
+
+        const totalMin = min + otherFees;
+        const totalMax = max + otherFees;
+        const totalText = totalMin === totalMax ? fmtMoney(totalMin) : (fmtMoney(totalMin) + ' – ' + fmtMoney(totalMax));
+        document.querySelectorAll('.js-sum-estimated-total').forEach(function (el) { el.textContent = totalText; });
     }
 
     function updateReviewRecap() {
@@ -479,6 +551,7 @@
             form.recipient_phone.value = '';
             form.recipient_email.value = '';
             if (saveCheckbox) saveCheckbox.checked = true;
+            updateSummary();
             return;
         }
 
@@ -494,6 +567,7 @@
         form.recipient_phone.value = card.dataset.phone || '';
         form.recipient_email.value = card.dataset.email || '';
         if (saveCheckbox) saveCheckbox.checked = false;
+        updateSummary();
     }
 
     function goToStep(step) {

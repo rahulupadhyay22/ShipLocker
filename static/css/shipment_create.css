@@ -124,6 +124,68 @@
     color: var(--text-main);
 }
 
+.summary-fees-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
+    border-top: 1px dashed var(--surface-200);
+}
+
+.summary-fees-row .summary-stat-value {
+    font-size: 0.85rem;
+    text-align: right;
+    max-width: 60%;
+}
+
+.summary-fees-row[hidden] {
+    display: none !important;
+}
+
+.summary-fees-block {
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
+    border-top: 1px dashed var(--surface-200);
+}
+
+.summary-fees-block .summary-fees-row {
+    padding-top: 0;
+    margin-top: 0;
+    border-top: none;
+}
+
+.summary-fees-block[hidden] {
+    display: none !important;
+}
+
+.summary-fees-breakdown {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-align: right;
+    margin-top: 0.2rem;
+}
+
+.summary-fees-total {
+    border-top: 1px solid var(--surface-200);
+}
+
+.summary-fees-total .summary-stat-label,
+.summary-fees-total .summary-stat-value {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.summary-fees-note {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 0.6rem;
+    line-height: 1.4;
+}
+
 /* ---------- How Shipping Works ---------- */
 .how-it-works-grid {
     display: grid;

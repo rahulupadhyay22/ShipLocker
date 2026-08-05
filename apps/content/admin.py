@@ -111,7 +111,7 @@ class ShippingRateInline(TabularInline):
     """Inline editor for shipping rates within a zone."""
     model = ShippingRate
     extra = 1
-    fields = ['min_weight', 'max_weight', 'rate_type', 'price', 'delivery_days_min', 'delivery_days_max', 'is_active']
+    fields = ['service_type', 'min_weight', 'max_weight', 'rate_type', 'price', 'delivery_days_min', 'delivery_days_max', 'is_active']
 
 
 @admin.register(ShippingZone)
@@ -135,10 +135,10 @@ class ShippingZoneAdmin(ModelAdmin):
 
 @admin.register(ShippingRate)
 class ShippingRateAdmin(ModelAdmin):
-    list_display = ['zone', 'weight_range', 'rate_type', 'formatted_price', 'delivery_range', 'is_active']
-    list_filter = ['zone', 'rate_type', 'is_active']
+    list_display = ['zone', 'service_type', 'weight_range', 'rate_type', 'formatted_price', 'delivery_range', 'is_active']
+    list_filter = ['zone', 'service_type', 'rate_type', 'is_active']
     list_editable = ['is_active']
-    ordering = ['zone', 'min_weight']
+    ordering = ['zone', 'service_type', 'min_weight']
     
     def weight_range(self, obj):
         return format_html('{}–{} kg', obj.min_weight, obj.max_weight)

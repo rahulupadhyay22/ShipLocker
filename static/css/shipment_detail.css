@@ -59,10 +59,11 @@
 .sd-tracker-step:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: 24px;
+    top: 26px;
     left: 50%;
     width: 100%;
-    height: 2px;
+    height: 3px;
+    border-radius: 999px;
     background: var(--surface-200);
     z-index: 0;
 }
@@ -74,28 +75,33 @@
 .sd-tracker-icon {
     position: relative;
     z-index: 1;
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--surface-100);
+    background: var(--surface-0);
     color: var(--text-muted);
-    border: 3px solid var(--surface-0);
-    box-shadow: 0 0 0 1px var(--surface-200);
-    margin-bottom: 0.6rem;
-    transition: 0.2s;
+    box-shadow: var(--shadow-xs), 0 0 0 1px var(--surface-200);
+    margin-bottom: 0.7rem;
+    transition: box-shadow 0.2s, background 0.2s, color 0.2s;
 }
 
-.sd-tracker-step.complete .sd-tracker-icon.icon-primary { background: var(--primary-light); color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
-.sd-tracker-step.complete .sd-tracker-icon.icon-success { background: var(--success-bg); color: var(--success-text); box-shadow: 0 0 0 1px var(--success-text); }
-.sd-tracker-step.complete .sd-tracker-icon.icon-warning { background: var(--warning-bg); color: var(--warning-text); box-shadow: 0 0 0 1px var(--warning-text); }
+.sd-tracker-step.complete .sd-tracker-icon.icon-primary { background: var(--primary-light); color: var(--primary); box-shadow: var(--shadow-sm), 0 0 0 1px var(--primary); }
+.sd-tracker-step.complete .sd-tracker-icon.icon-success { background: var(--success-bg); color: var(--success-text); box-shadow: var(--shadow-sm), 0 0 0 1px var(--success-text); }
+.sd-tracker-step.complete .sd-tracker-icon.icon-warning { background: var(--warning-bg); color: var(--warning-text); box-shadow: var(--shadow-sm), 0 0 0 1px var(--warning-text); }
+
+/* Current step: the most recently completed one, with the next step still
+   pending — given the brand glow so it reads as "you are here" on the rail. */
+.sd-tracker-step.complete:not(:last-child):not(:has(+ .sd-tracker-step.complete)) .sd-tracker-icon {
+    box-shadow: var(--shadow-glow), 0 0 0 1px var(--primary);
+}
 
 .sd-tracker-label {
     font-size: 0.88rem;
     font-weight: 700;
-    color: var(--text-secondary);
+    color: var(--text-muted);
 }
 
 .sd-tracker-step.complete .sd-tracker-label {
@@ -107,6 +113,7 @@
     color: var(--text-muted);
     margin-top: 0.2rem;
     line-height: 1.4;
+    font-variant-numeric: tabular-nums;
 }
 
 .sd-alert {
@@ -191,16 +198,65 @@
     font-size: 1.15rem;
 }
 
+.sd-info-value-pending {
+    font-weight: 500;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
 .sd-pay-btn {
     width: 100%;
     justify-content: center;
     margin-top: 0.5rem;
 }
 
+.sd-pay-btn[hidden],
+.sd-info-item[hidden] {
+    display: none !important;
+}
+
 .sd-quick-actions {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+}
+
+.sd-service-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.sd-service-block .radio-group-compact {
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.radio-card-compact .rc-content {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 8px;
+}
+
+.radio-card-compact strong {
+    font-size: 0.9rem;
+}
+
+.sd-service-price {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.sd-divider {
+    height: 1px;
+    background: var(--surface-200);
+    margin: 0.25rem 0;
 }
 
 .sd-quick-action {

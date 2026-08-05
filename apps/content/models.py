@@ -183,9 +183,16 @@ class ShippingRate(models.Model):
         ('fixed', 'Fixed Price'),
         ('per_kg', 'Per KG Rate'),
     ]
-    
+
+    SERVICE_TYPE_CHOICES = [
+        ('express', 'Express'),
+        ('standard', 'Standard'),
+        ('economy', 'Economy'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     zone = models.ForeignKey(ShippingZone, on_delete=models.CASCADE, related_name='rates')
+    service_type = models.CharField(max_length=20, choices=SERVICE_TYPE_CHOICES, default='standard', db_index=True)
     min_weight = models.DecimalField(max_digits=6, decimal_places=2, help_text="Minimum weight in KG (inclusive)")
     max_weight = models.DecimalField(max_digits=6, decimal_places=2, help_text="Maximum weight in KG (exclusive)")
     rate_type = models.CharField(max_length=10, choices=RATE_TYPE_CHOICES, default='fixed')
@@ -194,11 +201,11 @@ class ShippingRate(models.Model):
     delivery_days_min = models.PositiveIntegerField(default=5, help_text="Minimum delivery days")
     delivery_days_max = models.PositiveIntegerField(default=10, help_text="Maximum delivery days")
     is_active = models.BooleanField(default=True)
-    
+
     class Meta:
         verbose_name = 'Shipping Rate'
         verbose_name_plural = 'Shipping Rates'
-        ordering = ['zone', 'min_weight']
+        ordering = ['zone', 'service_type', 'min_weight']
     
     def __str__(self):
         if self.rate_type == 'fixed':

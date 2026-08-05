@@ -167,6 +167,24 @@ def _get_daily_storage_fee_amount() -> Decimal:
     return Decimal('50.00')
 
 
+def _get_consolidation_fee_amount() -> Decimal:
+    """Resolve the consolidation fee from active service charges.
+
+    Looks for an active ServiceCharge with "consolidat" in the name (matches
+    "Consolidation"). Not configured -> 0 (fee simply isn't shown/charged).
+    """
+    from apps.content.models import ServiceCharge
+
+    charge = ServiceCharge.objects.filter(
+        is_active=True,
+        name__icontains='consolidat',
+    ).order_by('updated_at').first()
+    if charge:
+        return Decimal(str(charge.amount))
+
+    return Decimal('0.00')
+
+
 def ensure_storage_fee_for_parcel(parcel):
     """Create or update pending StorageFee automatically after 30 free days."""
     from .models import StorageFee

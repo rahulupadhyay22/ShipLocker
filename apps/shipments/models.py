@@ -2,6 +2,7 @@ import uuid
 from django.db import models, transaction
 from apps.accounts.models import User
 from apps.locker.models import Parcel
+from apps.content.models import ShippingRate
 
 
 def generate_shipment_id(user):
@@ -92,7 +93,9 @@ class Shipment(models.Model):
         ('paid', 'Paid'),
         ('refunded', 'Refunded'),
     ]
-    
+
+    SERVICE_TYPE_CHOICES = ShippingRate.SERVICE_TYPE_CHOICES
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     display_id = models.CharField(max_length=50, unique=True, editable=False, db_index=True, null=True, blank=True)
     
@@ -129,9 +132,16 @@ class Shipment(models.Model):
     
     # Weight & dimensions
     total_weight_kg = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
-    
+
+    # Shipping speed selected by the customer once total_weight_kg is known
+    service_type = models.CharField(max_length=20, choices=SERVICE_TYPE_CHOICES, blank=True)
+
     # Pricing
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    consolidation_fee = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="Locked in at creation when 2+ parcels are combined into this shipment."
+    )
     currency = models.CharField(max_length=3, default='INR')
     
     # Estimated delivery
@@ -175,11 +185,10 @@ class Shipment(models.Model):
         """Move a declaration_pending shipment forward once staff approve the
         customs declaration. Goes to pending_payment unless already paid (then
         packing directly). No-op (returns False) if the shipment isn't in
-        declaration_pending, or if no shipping cost has been set yet — staff
-        must price the shipment before customers can be asked to pay."""
+        declaration_pending. Shipping cost is no longer set by staff here —
+        the customer sets it by choosing a shipping speed on the shipment
+        detail page once the weight is known."""
         if self.status != 'declaration_pending':
-            return False
-        if self.shipping_cost is None:
             return False
         self.status = 'packing' if self.payment_status == 'paid' else 'pending_payment'
         self.save(update_fields=['status'])

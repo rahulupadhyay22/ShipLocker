@@ -48,7 +48,20 @@ class ShipmentDocumentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Make document_url optional — it can be auto-filled from file upload
         self.fields['document_url'].required = False
-    
+
+    def has_changed(self):
+        # The blank "extra" inline row always submits a document_type (it's a
+        # required <select> with no empty option, so the browser sends the
+        # first choice by default) even when nothing was actually filled in.
+        # Without this override, has_changed() sees that implicit value as a
+        # change and the formset saves a new empty ShipmentDocument on every
+        # admin save. Only count it as changed if a file or URL was given.
+        has_file = bool(self.files.get(self.add_prefix('document_file')))
+        has_url = bool(self.data.get(self.add_prefix('document_url')))
+        if not has_file and not has_url:
+            return False
+        return super().has_changed()
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         
@@ -165,7 +178,7 @@ class ShipmentAdmin(ModelAdmin):
         }),
         ('Weight & Cost', {
             'fields': (
-                'total_weight_kg', 'shipping_cost', 'currency', 'estimated_delivery_date',
+                'total_weight_kg', 'shipping_cost', 'consolidation_fee', 'currency', 'estimated_delivery_date',
                 'apply_storage_fee', 'manual_storage_fee_amount', 'manual_storage_fee_days',
                 'apply_storage_fee_to_all_parcels'
             )
@@ -426,12 +439,6 @@ class DeclarationApprovalAdmin(ModelAdmin):
             'fields': ('declaration_document',),
             'description': 'Review the uploaded declaration form below before approving.'
         }),
-        ('💰 Pricing', {
-            'fields': ('shipping_cost', 'currency'),
-            'description': 'Set the shipping cost before approving — the shipment moves to '
-                            'Pending Payment (or straight to Packing if already paid) only once a '
-                            'price is set. Approving with no price set will skip that shipment.'
-        }),
         ('Shipment Info', {
             'fields': ('display_id', 'user', 'shipment_type', 'created_at')
         }),
@@ -452,7 +459,7 @@ class DeclarationApprovalAdmin(ModelAdmin):
                 skipped += 1
         message = f'{approved} shipment(s) approved.'
         if skipped:
-            message += f' {skipped} skipped — set Shipping Cost first (open the shipment and fill in Shipping Cost before approving).'
+            message += f' {skipped} skipped — not in Declaration Pending status.'
         self.message_user(request, message)
 
     def has_add_permission(self, request):

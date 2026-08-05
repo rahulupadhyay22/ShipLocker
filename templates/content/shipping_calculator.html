@@ -899,7 +899,7 @@
             return;
         }
 
-        const rate = zone.rates.find(r => finalWeight >= r.min_weight && finalWeight < r.max_weight);
+        const rate = zone.rates.find(r => r.service_type === 'standard' && finalWeight >= r.min_weight && finalWeight < r.max_weight);
         if (!rate) {
             alert('Sorry, no rate found for this weight (' + finalWeight + ' kg). Please contact support for heavy shipments.');
             return;

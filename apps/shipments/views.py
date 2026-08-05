@@ -9,6 +9,93 @@ from .models import Shipment, ShipmentItem, ShipmentDocument
 
 logger = logging.getLogger('security')
 
+# Statuses (plus paid) at/after which a shipment's service tier is locked in.
+SERVICE_LOCKED_STATUSES = (
+    'packing', 'dispatched', 'in_transit', 'customs',
+    'out_for_delivery', 'delivered', 'returned', 'cancelled',
+)
+
+
+def _is_service_locked(shipment):
+    return shipment.payment_status == 'paid' or shipment.status in SERVICE_LOCKED_STATUSES
+
+
+def _match_shipping_zone(shipment):
+    from apps.content.models import ShippingZone
+    country = (shipment.country or '').strip().upper()
+    if not country:
+        return None
+    for zone in ShippingZone.objects.filter(is_active=True).order_by('order').prefetch_related('rates'):
+        if country in zone.get_countries_list():
+            return zone
+    return None
+
+
+def _payment_summary(shipment):
+    """Shipping/storage/total figures shown in the Payment Summary card.
+    Shared by the detail page context and the AJAX service-selection response
+    so both compute the total-due math identically."""
+    from decimal import Decimal
+    from django.db.models import Sum
+    from apps.payments.models import StorageFee
+
+    parcel_ids = list(shipment.items.values_list('parcel_id', flat=True))
+    if not parcel_ids:
+        pending_total = paid_total = Decimal('0.00')
+    else:
+        pending_total = StorageFee.objects.filter(
+            parcel_id__in=parcel_ids, status='pending',
+        ).aggregate(total=Sum('fee_amount'))['total'] or Decimal('0.00')
+        paid_total = StorageFee.objects.filter(
+            parcel_id__in=parcel_ids, status='paid',
+        ).aggregate(total=Sum('fee_amount'))['total'] or Decimal('0.00')
+
+    shipping_amount = Decimal(str(shipment.shipping_cost or 0))
+    consolidation_fee = Decimal(str(shipment.consolidation_fee or 0))
+    storage_total = pending_total + paid_total
+    unpaid_charges = shipping_amount + consolidation_fee
+
+    return {
+        'storage_fee_pending': pending_total,
+        'storage_fee_paid': paid_total,
+        'storage_fee_total': storage_total,
+        'shipping_amount': shipping_amount,
+        'consolidation_fee': consolidation_fee,
+        'shipment_total_amount': unpaid_charges + storage_total,
+        'shipment_amount_due': pending_total + (unpaid_charges if shipment.payment_status != 'paid' else Decimal('0.00')),
+    }
+
+
+def _get_service_options(shipment):
+    """List of priced service-tier options for this shipment, or None if
+    weight isn't known yet. Empty list means weight is known but no
+    zone/rate matches (shown as a distinct 'contact support' state)."""
+    from decimal import Decimal
+
+    if shipment.total_weight_kg is None:
+        return None
+
+    zone = _match_shipping_zone(shipment)
+    if not zone:
+        return []
+
+    options = []
+    for code, label in Shipment.SERVICE_TYPE_CHOICES:
+        rate = zone.rates.filter(
+            is_active=True, service_type=code,
+            min_weight__lte=shipment.total_weight_kg,
+            max_weight__gt=shipment.total_weight_kg,
+        ).first()
+        if rate:
+            options.append({
+                'code': code,
+                'label': label,
+                'price': Decimal(str(rate.calculate_price(shipment.total_weight_kg))).quantize(Decimal('0.01')),
+                'delivery_days_min': rate.delivery_days_min,
+                'delivery_days_max': rate.delivery_days_max,
+            })
+    return options
+
 
 class ShipmentStatsMixin:
     """Mixin to provide shipment status counts with single aggregate query."""
@@ -106,48 +193,22 @@ class ShipmentDetailView(LoginRequiredMixin, DetailView):
         ).prefetch_related('items__parcel__images', 'documents', 'tracking_events')
 
     def get_context_data(self, **kwargs):
-        from decimal import Decimal
-        from django.db.models import Sum
-        from apps.payments.models import StorageFee
         from apps.notifications.models import AppSettings
 
         context = super().get_context_data(**kwargs)
         shipment = self.object
 
         context['warehouse_address'] = AppSettings.get_settings().warehouse_address
+        context['service_options'] = _get_service_options(shipment)
+        context['service_locked'] = _is_service_locked(shipment)
         # Use the prefetched .all() (cached) rather than .filter(), which would
         # issue a fresh query and defeat the prefetch_related('documents') above.
         prefetched_docs = list(shipment.documents.all())
         context['invoice_document'] = next((d for d in prefetched_docs if d.document_type == 'invoice'), None)
         context['awb_document'] = next((d for d in prefetched_docs if d.document_type == 'label'), None)
+        context['other_documents'] = [d for d in prefetched_docs if d.document_type not in ('invoice', 'label')]
 
-        parcel_ids = list(shipment.items.values_list('parcel_id', flat=True))
-
-        if not parcel_ids:
-            context['storage_fee_pending'] = Decimal('0.00')
-            context['storage_fee_paid'] = Decimal('0.00')
-            context['storage_fee_total'] = Decimal('0.00')
-            return context
-
-        pending_total = StorageFee.objects.filter(
-            parcel_id__in=parcel_ids,
-            status='pending',
-        ).aggregate(total=Sum('fee_amount'))['total'] or Decimal('0.00')
-
-        paid_total = StorageFee.objects.filter(
-            parcel_id__in=parcel_ids,
-            status='paid',
-        ).aggregate(total=Sum('fee_amount'))['total'] or Decimal('0.00')
-
-        shipping_amount = Decimal(str(shipment.shipping_cost or 0))
-        storage_total = pending_total + paid_total
-
-        context['storage_fee_pending'] = pending_total
-        context['storage_fee_paid'] = paid_total
-        context['storage_fee_total'] = storage_total
-        context['shipping_amount'] = shipping_amount
-        context['shipment_total_amount'] = shipping_amount + storage_total
-        context['shipment_amount_due'] = pending_total + (shipping_amount if shipment.payment_status != 'paid' else Decimal('0.00'))
+        context.update(_payment_summary(shipment))
         return context
 
 
@@ -224,10 +285,28 @@ class CreateShipmentView(LoginRequiredMixin, View):
         if preselected_ids:
             available_parcels = available_parcels.filter(id__in=preselected_ids)
 
+        # Attach a live storage-fee preview + billable weight to each parcel
+        # for the create-shipment summary sidebar. No StorageFee row exists
+        # yet at this point (those are only created later, from the admin) —
+        # this is just an estimate using the same daily rate that flow uses.
+        from decimal import Decimal
+        from apps.payments.services import _get_daily_storage_fee_amount, _get_consolidation_fee_amount
+        from apps.content.services import build_zones_json
+        daily_storage_rate = _get_daily_storage_fee_amount()
+        parcels = list(available_parcels)
+        for parcel in parcels:
+            overdue_days = max(parcel.storage_days - 30, 0)
+            parcel.storage_overdue_days = overdue_days
+            parcel.storage_fee_estimate = (daily_storage_rate * overdue_days) if overdue_days else Decimal('0.00')
+            parcel.billable_weight = parcel.billable_weight_kg or 0
+
         return render(request, self.template_name, {
-            'parcels': available_parcels,
+            'parcels': parcels,
             'has_kyc': has_kyc,
             'zones': zones,
+            'zones_json': build_zones_json(),
+            'consolidation_fee_amount': _get_consolidation_fee_amount(),
+            'daily_storage_rate': daily_storage_rate,
             'default_address': default_address,
             'saved_addresses': saved_addresses,
             'preselected_ids': preselected_ids,
@@ -295,6 +374,11 @@ class CreateShipmentView(LoginRequiredMixin, View):
             messages.error(request, 'Invalid parcel selection.')
             return redirect('shipments:create')
         
+        # Locked in now, at creation, so it doesn't drift if the admin later
+        # edits the 'Consolidation' ServiceCharge amount (e.g. after payment).
+        from apps.payments.services import _get_consolidation_fee_amount
+        consolidation_fee = _get_consolidation_fee_amount() if len(parcels) >= 2 else None
+
         with transaction.atomic():
             # Create shipment with declaration_pending status
             shipment = Shipment.objects.create(
@@ -310,6 +394,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
                 country=address_data.get('country', ''),
                 recipient_phone=recipient_phone,
                 recipient_email=recipient_email,
+                consolidation_fee=consolidation_fee,
             )
 
             # Optionally save as default address for quick reuse
@@ -366,3 +451,96 @@ class CreateShipmentView(LoginRequiredMixin, View):
         
         messages.success(request, 'Shipment created! Your declaration is pending approval.')
         return redirect('shipments:detail', pk=shipment.pk)
+
+
+from django.views.generic.detail import SingleObjectMixin
+from indiabox.mixins import UserOwnershipMixin
+
+
+def _is_ajax(request):
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
+class SelectShippingServiceView(LoginRequiredMixin, UserOwnershipMixin, SingleObjectMixin, View):
+    """Customer selects Express/Standard/Economy for a priced shipment.
+    Recalculates and locks in shipping_cost + service_type. Responds with
+    JSON for the AJAX picker on the detail page (no full-page reload);
+    falls back to a redirect+message for any non-AJAX caller."""
+    model = Shipment
+
+    def _fail(self, request, shipment, message):
+        if _is_ajax(request):
+            from django.http import JsonResponse
+            return JsonResponse({'status': 'error', 'message': message}, status=400)
+        messages.error(request, message)
+        return redirect('shipments:detail', pk=shipment.pk)
+
+    def _succeed(self, request, shipment, message):
+        if _is_ajax(request):
+            from django.http import JsonResponse
+            data = {k: str(v) for k, v in _payment_summary(shipment).items()}
+            data.update({
+                'status': 'success',
+                'message': message,
+                'service_type': shipment.service_type,
+                'service_type_display': shipment.get_service_type_display(),
+                'payment_status_display': shipment.get_payment_status_display(),
+                'currency': shipment.currency,
+            })
+            return JsonResponse(data)
+        messages.success(request, message)
+        return redirect('shipments:detail', pk=shipment.pk)
+
+    def post(self, request, *args, **kwargs):
+        shipment = self.get_object()
+
+        service_type = request.POST.get('service_type')
+        valid_types = dict(Shipment.SERVICE_TYPE_CHOICES)
+        if service_type not in valid_types:
+            return self._fail(request, shipment, 'Please choose a valid shipping service.')
+
+        if shipment.total_weight_kg is None:
+            return self._fail(request, shipment, 'Weight has not been finalized for this shipment yet.')
+
+        if _is_service_locked(shipment):
+            logger.warning(
+                f"Service tier change rejected (locked): {request.user.email} "
+                f"shipment {shipment.pk} status={shipment.status} payment_status={shipment.payment_status}"
+            )
+            return self._fail(request, shipment, "This shipment's service tier can no longer be changed.")
+
+        from decimal import Decimal, ROUND_HALF_UP
+
+        zone = _match_shipping_zone(shipment)
+        rate = None
+        if zone:
+            rate = zone.rates.filter(
+                is_active=True,
+                service_type=service_type,
+                min_weight__lte=shipment.total_weight_kg,
+                max_weight__gt=shipment.total_weight_kg,
+            ).first()
+
+        if not rate:
+            logger.warning(
+                f"No matching ShippingRate: user={request.user.email} shipment={shipment.pk} "
+                f"country={shipment.country} service_type={service_type} weight={shipment.total_weight_kg}"
+            )
+            return self._fail(
+                request, shipment,
+                'No rate is available for the selected service and your shipment\'s '
+                'weight/destination. Please contact support.'
+            )
+
+        price = Decimal(str(rate.calculate_price(shipment.total_weight_kg))).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
+        shipment.service_type = service_type
+        shipment.shipping_cost = price
+        shipment.save(update_fields=['service_type', 'shipping_cost', 'updated_at'])
+
+        logger.info(
+            f"Service tier selected: user={request.user.email} shipment={shipment.pk} "
+            f"service_type={service_type} shipping_cost={price}"
+        )
+        return self._succeed(request, shipment, f'{valid_types[service_type]} service selected. Total updated.')

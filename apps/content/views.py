@@ -50,32 +50,12 @@ class ShippingCalculatorView(TemplateView):
     template_name = 'content/shipping_calculator.html'
     
     def get_context_data(self, **kwargs):
-        from .models import ShippingZone, ShippingRate
-        import json
-        
+        from .models import ShippingZone
+        from .services import build_zones_json
+
         context = super().get_context_data(**kwargs)
-        
-        # Build zones data for JavaScript
-        zones_data = []
-        for zone in ShippingZone.objects.filter(is_active=True).prefetch_related('rates'):
-            zone_info = {
-                'id': str(zone.id),
-                'name': zone.name,
-                'countries': zone.get_countries_list(),
-                'rates': []
-            }
-            for rate in zone.rates.filter(is_active=True).order_by('min_weight'):
-                zone_info['rates'].append({
-                    'min_weight': float(rate.min_weight),
-                    'max_weight': float(rate.max_weight),
-                    'rate_type': rate.rate_type,
-                    'price': float(rate.price),
-                    'delivery_min': rate.delivery_days_min,
-                    'delivery_max': rate.delivery_days_max,
-                })
-            zones_data.append(zone_info)
-        
-        context['zones_json'] = json.dumps(zones_data)
+
+        context['zones_json'] = build_zones_json()
         context['zones'] = ShippingZone.objects.filter(is_active=True)
         if self.request.user.is_authenticated:
             context['base_template'] = 'base.html'
