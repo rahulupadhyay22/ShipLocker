@@ -199,7 +199,7 @@ class ShipmentAdmin(ModelAdmin):
     
     actions = [
         'approve_declaration', 'mark_packing', 'mark_dispatched', 'mark_delivered',
-        'add_storage_fees'
+        'add_storage_fees', 'generate_invoice'
     ]
 
     def save_model(self, request, obj, form, change):
@@ -335,6 +335,28 @@ class ShipmentAdmin(ModelAdmin):
     def mark_delivered(self, request, queryset):
         from django.utils import timezone
         queryset.update(status='delivered', delivered_at=timezone.now())
+
+    @admin.action(description='🧾 Generate Invoice')
+    def generate_invoice(self, request, queryset):
+        from apps.payments.services import InvoiceService
+
+        generated = 0
+        skipped = 0
+        for shipment in queryset:
+            if shipment.payment_status != 'paid':
+                skipped += 1
+                continue
+            try:
+                InvoiceService.generate_for_shipment(shipment, paid_at=shipment.paid_at)
+                generated += 1
+            except Exception:
+                logger.exception(f"Manual invoice generation failed for shipment {shipment.pk}")
+                skipped += 1
+
+        message = f'{generated} invoice(s) generated (or already existed).'
+        if skipped:
+            message += f' {skipped} skipped — either not paid yet, or generation failed (check logs).'
+        self.message_user(request, message)
 
     @admin.action(description='➕ Add Storage Fee (Pending)')
     def add_storage_fees(self, request, queryset):
