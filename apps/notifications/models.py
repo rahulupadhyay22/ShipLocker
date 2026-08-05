@@ -232,7 +232,41 @@ class AppSettings(models.Model):
         blank=True,
         help_text="Supabase Service Role Key (for server-side operations)"
     )
-    
+
+    # ===========================
+    # GST / INVOICE DETAILS
+    # ===========================
+    company_legal_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Registered legal business name shown on GST invoices"
+    )
+    company_gstin = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Your company's GSTIN (e.g., 36AAAAA0000A1Z5)"
+    )
+    company_pan = models.CharField(
+        max_length=10,
+        blank=True,
+        help_text="Your company's PAN"
+    )
+    company_registered_address = models.TextField(
+        blank=True,
+        help_text="Registered business address shown on GST invoices"
+    )
+    company_state = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Your company's registered state (e.g., Telangana) — compared against the shipment's delivery state to decide CGST+SGST vs IGST"
+    )
+    gst_rate_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=18.00,
+        help_text="GST rate applied to domestic shipment invoices (e.g., 18.00 for 18%)"
+    )
+
     # ===========================
     # METADATA
     # ===========================

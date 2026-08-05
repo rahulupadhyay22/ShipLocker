@@ -109,6 +109,17 @@ class AppSettingsAdmin(ModelAdmin):
             'description': 'Supabase configuration for file storage',
             'classes': ('collapse',),
         }),
+        ('🧾 GST / Invoice Details', {
+            'fields': (
+                'company_legal_name',
+                'company_gstin',
+                'company_pan',
+                'company_registered_address',
+                'company_state',
+                'gst_rate_percent',
+            ),
+            'description': 'Shown on every generated GST invoice. company_state is compared against each domestic shipment\'s delivery state to decide CGST+SGST vs IGST.',
+        }),
         ('ℹ️ Status', {
             'fields': ('integration_dashboard', 'updated_at',),
         }),
