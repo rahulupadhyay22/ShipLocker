@@ -111,3 +111,38 @@ def sync_tracking_on_number_change(sender, instance, created, **kwargs):
         
     except Exception as e:
         logger.error(f"Error auto-syncing tracking for {instance.id}: {e}")
+
+
+# Track original payment_status before save (same shape as _original_tracking_numbers above)
+_original_payment_status = {}
+
+
+@receiver(pre_save, sender=Shipment)
+def store_original_payment_status(sender, instance, **kwargs):
+    """Store the original payment_status before save to detect a real transition into 'paid'."""
+    if instance.pk:
+        try:
+            _original_payment_status[instance.pk] = Shipment.objects.get(pk=instance.pk).payment_status
+        except Shipment.DoesNotExist:
+            _original_payment_status[instance.pk] = ''
+    else:
+        _original_payment_status[instance.pk] = ''
+
+
+@receiver(post_save, sender=Shipment)
+def generate_invoice_on_paid(sender, instance, created, **kwargs):
+    """Generate the GST invoice once a shipment's payment_status transitions
+    into 'paid'. Deliberately thin — all the real work is InvoiceService's
+    job. A failure here must never raise out of the payment-verification
+    request; it's logged loudly and a manual admin action exists as backstop."""
+    was = _original_payment_status.pop(instance.pk, '')
+
+    if created or was == 'paid' or instance.payment_status != 'paid':
+        return
+
+    from apps.payments.services import InvoiceService
+
+    try:
+        InvoiceService.generate_for_shipment(instance, paid_at=instance.paid_at or timezone.now())
+    except Exception:
+        logger.exception(f"Invoice generation failed for shipment {instance.pk}")

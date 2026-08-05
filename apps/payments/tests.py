@@ -139,7 +139,6 @@ class InvoiceServiceTests(TestCase):
 
         self.shipment = _make_shipment(self.user)
         self.shipment.shipping_cost = Decimal('1000.00')
-        self.shipment.payment_status = 'paid'
         self.shipment.save()
 
         Payment.objects.create(
@@ -147,6 +146,12 @@ class InvoiceServiceTests(TestCase):
             payment_method='razorpay', status='captured',
             razorpay_payment_id='pay_test123', paid_at=timezone.now(),
         )
+
+        # Mark paid via update() (not save()) so these tests control
+        # InvoiceService invocation directly, independent of the
+        # payment_status signal wired up in Task 7.
+        Shipment.objects.filter(pk=self.shipment.pk).update(payment_status='paid')
+        self.shipment.refresh_from_db()
 
     def test_generate_for_shipment_creates_invoice_and_document(self):
         invoice = InvoiceService.generate_for_shipment(self.shipment, paid_at=timezone.now())
@@ -179,3 +184,44 @@ class InvoiceServiceTests(TestCase):
 
         self.assertEqual(Invoice.objects.filter(shipment=self.shipment).count(), 0)
         self.assertEqual(ShipmentDocument.objects.filter(shipment=self.shipment, document_type='invoice').count(), 0)
+
+
+class ShipmentPaidSignalTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email='signal-test@example.com', is_active=True)
+        settings = AppSettings.get_settings()
+        settings.company_state = 'Telangana'
+        settings.gst_rate_percent = Decimal('18.00')
+        settings.save()
+
+        self.shipment = _make_shipment(self.user)
+        self.shipment.shipping_cost = Decimal('500.00')
+        self.shipment.save()
+
+    def test_marking_shipment_paid_generates_invoice(self):
+        self.assertEqual(Invoice.objects.filter(shipment=self.shipment).count(), 0)
+
+        self.shipment.payment_status = 'paid'
+        self.shipment.paid_at = timezone.now()
+        self.shipment.save()
+
+        self.assertEqual(Invoice.objects.filter(shipment=self.shipment).count(), 1)
+
+    def test_saving_an_already_paid_shipment_again_does_not_duplicate(self):
+        self.shipment.payment_status = 'paid'
+        self.shipment.paid_at = timezone.now()
+        self.shipment.save()
+        self.assertEqual(Invoice.objects.filter(shipment=self.shipment).count(), 1)
+
+        # Unrelated field change while already paid — must not regenerate
+        self.shipment.admin_notes = 'unrelated edit'
+        self.shipment.save()
+        self.assertEqual(Invoice.objects.filter(shipment=self.shipment).count(), 1)
+
+    def test_invoice_generation_failure_does_not_raise_out_of_save(self):
+        with patch('apps.payments.services.InvoiceService.upload_pdf', side_effect=Exception('Supabase down')):
+            self.shipment.payment_status = 'paid'
+            self.shipment.paid_at = timezone.now()
+            self.shipment.save()  # must not raise
+
+        self.assertEqual(Invoice.objects.filter(shipment=self.shipment).count(), 0)
