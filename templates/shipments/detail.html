@@ -127,10 +127,14 @@
                 {% else %}
                 <form method="post" action="{% url 'shipments:select_service' shipment.pk %}" id="serviceSpeedForm">
                     {% csrf_token %}
-                    <div class="radio-group radio-group-compact" id="serviceSpeedOptions">
+                    <div class="radio-group radio-group-compact" id="serviceSpeedOptions"
+                        data-currency="{{ shipment.currency }}"
+                        data-storage-fee-pending="{{ storage_fee_pending|stringformat:'s' }}"
+                        data-consolidation-fee="{{ consolidation_fee|stringformat:'s' }}"
+                        data-payment-status="{{ shipment.payment_status }}">
                         {% for opt in service_options %}
                         <label class="radio-card radio-card-compact">
-                            <input type="radio" name="service_type" value="{{ opt.code }}"
+                            <input type="radio" name="service_type" value="{{ opt.code }}" data-price="{{ opt.price|stringformat:'s' }}"
                                 {% if shipment.service_type == opt.code %}checked{% endif %} required>
                             <span class="rc-content">
                                 <strong>{{ opt.label }}</strong>
@@ -317,15 +321,45 @@
         const csrfToken = '{{ csrf_token }}';
         const optionsWrap = document.getElementById('serviceSpeedOptions');
         const errorEl = document.getElementById('serviceSpeedError');
+        const shippingEl = document.getElementById('sd-shipping-amount');
+        const totalEl = document.getElementById('sd-total-due');
+        const payBtn = document.getElementById('pay-now-btn');
         if (!optionsWrap) return;
+
+        const currency = optionsWrap.dataset.currency;
+        const storageFeePending = parseFloat(optionsWrap.dataset.storageFeePending || '0');
+        const consolidationFee = parseFloat(optionsWrap.dataset.consolidationFee || '0');
+        const isPaid = optionsWrap.dataset.paymentStatus === 'paid';
 
         const inputs = Array.from(optionsWrap.querySelectorAll('input[name="service_type"]'));
         let lastChecked = inputs.find((i) => i.checked) || null;
+        let requestGeneration = 0; // guards against a stale response landing after a newer click
+
+        function amountDue(shippingAmount) {
+            // Mirrors _payment_summary()'s shipment_amount_due formula server-side.
+            return isPaid ? storageFeePending : storageFeePending + shippingAmount + consolidationFee;
+        }
 
         inputs.forEach((input) => {
             input.addEventListener('change', async function () {
                 errorEl.hidden = true;
-                inputs.forEach((i) => (i.disabled = true));
+
+                // Snapshot exact prior state so a failure can restore it precisely.
+                const prior = {
+                    checked: lastChecked,
+                    shippingText: shippingEl.textContent,
+                    totalText: totalEl.textContent,
+                    payBtnHidden: payBtn ? payBtn.hidden : null,
+                };
+
+                // Optimistic update: the price per tier is already known (rendered
+                // server-side), so apply it instantly instead of waiting on the round trip.
+                const price = parseFloat(this.dataset.price || '0');
+                shippingEl.textContent = `${currency} ${price.toFixed(2)}`;
+                totalEl.textContent = `${currency} ${amountDue(price).toFixed(2)}`;
+                if (payBtn && price > 0) payBtn.hidden = false;
+
+                const myGeneration = ++requestGeneration;
 
                 try {
                     const response = await fetch('{% url "shipments:select_service" shipment.pk %}', {
@@ -341,20 +375,29 @@
                     if (!response.ok || data.status !== 'success') {
                         throw new Error(data.message || 'Could not update shipping speed.');
                     }
+                    // A newer click already superseded this request -- let that one's
+                    // own success/failure handling own the UI instead of clobbering it.
+                    if (myGeneration !== requestGeneration) return;
 
-                    document.getElementById('sd-shipping-amount').textContent = `${data.currency} ${data.shipping_amount}`;
-                    document.getElementById('sd-total-due').textContent = `${data.currency} ${data.shipment_amount_due}`;
-                    const payBtn = document.getElementById('pay-now-btn');
+                    // Reconcile with the authoritative server figures (covers any
+                    // rounding difference between the client estimate and the real rate).
+                    shippingEl.textContent = `${data.currency} ${data.shipping_amount}`;
+                    totalEl.textContent = `${data.currency} ${data.shipment_amount_due}`;
                     if (payBtn) payBtn.hidden = false;
 
                     lastChecked = this;
                 } catch (err) {
+                    if (myGeneration !== requestGeneration) return;
+
+                    // Roll back to the exact prior state -- selection, prices, and pay button.
+                    shippingEl.textContent = prior.shippingText;
+                    totalEl.textContent = prior.totalText;
+                    if (payBtn && prior.payBtnHidden !== null) payBtn.hidden = prior.payBtnHidden;
+                    if (prior.checked) prior.checked.checked = true;
+                    else this.checked = false;
+
                     errorEl.textContent = err.message || 'Could not update shipping speed.';
                     errorEl.hidden = false;
-                    if (lastChecked) lastChecked.checked = true;
-                    else this.checked = false;
-                } finally {
-                    inputs.forEach((i) => (i.disabled = false));
                 }
             });
         });
