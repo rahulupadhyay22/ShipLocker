@@ -10,12 +10,19 @@ STATIC_PAGE_CACHE_SECONDS = 60 * 15
 
 
 class HomeView(TemplateView):
-    """Landing page."""
+    """Landing page. Identical for every anonymous visitor, so the rendered
+    page is cached -- but the auth check runs BEFORE the cache lookup, never
+    inside it, so an authenticated user's redirect can never get written into
+    (or served from) the shared anonymous-visitor cache entry."""
     template_name = 'content/home.html'
-    
+
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             return redirect('accounts:dashboard')
+        return self._cached_get(request, *args, **kwargs)
+
+    @method_decorator(cache_page(STATIC_PAGE_CACHE_SECONDS))
+    def _cached_get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
 
@@ -50,13 +57,13 @@ class ShippingCalculatorView(TemplateView):
     template_name = 'content/shipping_calculator.html'
     
     def get_context_data(self, **kwargs):
-        from .models import ShippingZone
-        from .services import build_zones_json
+        from .services import get_zones_data, build_zones_json
 
         context = super().get_context_data(**kwargs)
 
-        context['zones_json'] = build_zones_json()
-        context['zones'] = ShippingZone.objects.filter(is_active=True)
+        zones_data = get_zones_data()
+        context['zones_json'] = build_zones_json()  # same cached data, just JSON-encoded
+        context['zones'] = zones_data
         if self.request.user.is_authenticated:
             context['base_template'] = 'base.html'
         return context

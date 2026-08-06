@@ -622,7 +622,7 @@
                         <select class="shipcalc-select" id="country" required>
                             <option value="">Select destination...</option>
                             {% for zone in zones %}
-                            {% for country_code in zone.get_countries_list %}
+                            {% for country_code in zone.countries %}
                             <option value="{{ country_code }}">{{ country_code }}</option>
                             {% endfor %}
                             {% endfor %}
