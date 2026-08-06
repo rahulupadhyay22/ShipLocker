@@ -1,151 +1,435 @@
+```md
 ---
-description: Create a spec file and feature branch for the next ShipLocker step
-argument-hint: "Step number and feature name e.g. 2 kyc-upload"
+description: Research, brainstorm, architect and generate a production-ready ShipLocker feature specification
+argument-hint: "Step number and feature name e.g. 09 gst-invoice"
 allowed-tools: Read, Write, Glob, Bash(git:*)
 ---
 
-You are a senior developer spinning up a new feature for the
-ShipLocker parcel-forwarding app. Always follow the rules in CLAUDE.md.
+You are a Principal Software Architect working on the Project.
 
-User input: $ARGUMENTS
+Your responsibility is NOT to immediately write a specification.
 
-## Step 1 — Check working directory is clean
-Run `git status` and check for uncommitted, unstaged, or
-untracked files. If any exist, stop immediately and tell
-the user to commit or stash changes before proceeding.
-DO NOT CONTINUE until the working directory is clean.
+Your first responsibility is to understand the existing architecture, brainstorm multiple implementation approaches, identify risks, select the best design, and ONLY THEN generate the specification.
 
-## Step 2 — Parse the arguments
-From $ARGUMENTS extract:
+Always follow every rule in CLAUDE.md.
 
-1. `step_number` — zero-padded to 2 digits: 2 → 02, 11 → 11
+User input:
+$ARGUMENTS
 
-2. `feature_title` — human readable title in Title Case
-   - Example: "KYC Upload" or "Return Requests"
+===========================================================
+PHASE 1 — Repository Safety
+===========================================================
 
-3. `feature_slug` — git and file safe slug
-   - Lowercase, kebab-case
-   - Only a-z, 0-9 and -
-   - Maximum 40 characters
-   - Example: kyc-upload, return-requests
+## Step 1 — Verify working directory is clean
 
-4. `branch_name` — format: `feature/<feature_slug>`
-   - Example: `feature/kyc-upload`
-
-If you cannot infer these from $ARGUMENTS, ask the user
-to clarify before proceeding.
-
-## Step 3 — Check branch name is not taken
-Run `git branch` to list existing branches.
-If `branch_name` is already taken, append a number:
-`feature/kyc-upload-01`, `feature/kyc-upload-02` etc.
-
-## Step 4 — Switch to main and pull latest
 Run:
-```
+
+git status
+
+If there are:
+
+- modified files
+- staged files
+- untracked files
+
+STOP.
+
+Tell the user to commit or stash changes first.
+
+Do NOT continue.
+
+===========================================================
+PHASE 2 — Parse Feature
+===========================================================
+
+Extract:
+
+1. step_number
+
+Zero pad.
+
+Examples:
+
+2 -> 02
+
+11 -> 11
+
+2. feature_title
+
+Human readable.
+
+Example:
+
+GST Invoice Generation
+
+3. feature_slug
+
+Lowercase
+
+kebab-case
+
+Maximum 40 chars
+
+Example:
+
+gst-invoice-generation
+
+4. branch_name
+
+feature/<feature_slug>
+
+If unclear,
+
+ask the user before continuing.
+
+===========================================================
+PHASE 3 — Git
+===========================================================
+
+Check existing branches.
+
+If branch exists
+
+append
+
+-01
+
+-02
+
+etc.
+
+Then run:
+
 git checkout main
+
 git pull origin main
-```
 
-## Step 5 — Create and switch to the feature branch
-Run:
-```
-git checkout -b <branch_name>
-```
+git checkout -b <branch>
 
-## Step 6 — Research the codebase
-Read before writing the spec:
-- `CLAUDE.md` — architecture, apps, conventions
-- The relevant app's `models.py`, `views.py`, `urls.py` under `apps/<app>/`
-  (e.g. `apps/locker/`, `apps/shipments/`, `apps/accounts/`, `apps/kyc/`,
-  `apps/payments/`, `apps/notifications/`, `apps/content/`)
-- `indiabox/settings.py`, `indiabox/mixins.py`, `indiabox/middleware.py`
-  for security/ownership conventions that must be reused
-- All files in `.claude/specs/` — avoid duplicating existing specs
+===========================================================
+PHASE 4 — Research Codebase
+===========================================================
 
-Check `CLAUDE.md` and existing specs to confirm the requested step is not
-already marked complete. If it is, warn the user and stop.
+Read FIRST.
 
-## Step 7 — Write the spec
-Generate a spec document with this exact structure:
+Never write the specification before understanding the codebase.
 
----
-# Spec: <feature_title>
+Read:
+
+- CLAUDE.md
+- Relevant apps
+- Relevant models
+- Relevant views
+- Relevant urls
+- Relevant templates
+- Relevant admin
+- Relevant services
+- Relevant utils
+- Relevant middleware
+- Relevant mixins
+- Relevant signals
+- Relevant settings
+
+Read ALL previous specs.
+
+Determine:
+
+- existing architecture
+- reusable services
+- reusable models
+- ownership conventions
+- security conventions
+- payment flow
+- storage flow
+- logging conventions
+
+Verify the requested feature is NOT already implemented.
+
+If already complete,
+
+STOP.
+
+===========================================================
+PHASE 5 — Superpower Skills
+===========================================================
+
+If Superpower skills are available,
+
+automatically use the most appropriate skill for the current phase.
+
+Examples include:
+
+- Research
+- Brainstorm
+- Architecture Review
+- Security Review
+- Risk Analysis
+
+Do NOT force any specific skill.
+
+Select based on what the current phase needs.
+
+===========================================================
+PHASE 6 — Brainstorm
+===========================================================
+
+DO NOT WRITE THE SPEC YET.
+
+Think like a Principal Software Architect.
+
+Internally brainstorm.
+
+Identify at least THREE possible implementation approaches.
+
+For every approach evaluate:
+
+- simplicity
+- maintainability
+- consistency
+- future scalability
+- ShipLocker architecture alignment
+- migration complexity
+- developer experience
+- testing effort
+
+Prefer extending existing systems over creating new ones.
+
+Never create a new app if an existing app naturally owns the feature.
+
+Prefer reuse over duplication.
+
+Choose the strongest architecture only after completing the comparison.
+
+===========================================================
+PHASE 7 — Architecture Review
+===========================================================
+
+Review the existing architecture.
+
+Ask yourself:
+
+Can existing models be reused?
+
+Can existing services be extended?
+
+Can existing signals be reused?
+
+Can existing templates be modified?
+
+Can existing permissions be reused?
+
+Can existing ownership mixins be reused?
+
+Can existing admin pages be reused?
+
+Can existing utilities be reused?
+
+Can AppSettings own configuration instead of hardcoding?
+
+Avoid:
+
+- duplicated logic
+- unnecessary abstraction
+- unnecessary models
+- unnecessary apps
+- unnecessary routes
+
+Keep the architecture consistent with the existing codebase.
+
+===========================================================
+PHASE 8 — Risk Review
+===========================================================
+
+Think through production failure cases.
+
+Review:
+
+- concurrency
+- duplicate requests
+- race conditions
+- partial failures
+- permissions
+- ownership
+- security
+- transactions
+- idempotency
+- rollback strategy
+- Supabase upload failures
+- payment retries
+- logging
+- auditability
+- future migrations
+- future extensibility
+
+If any issue exists,
+
+improve the architecture BEFORE writing the specification.
+
+===========================================================
+PHASE 9 — Design Decision
+===========================================================
+
+Choose ONE implementation.
+
+The chosen design must be:
+
+- production-ready
+- simplest possible
+- consistent with ShipLocker
+- scalable
+- maintainable
+- secure
+
+Do NOT mention rejected approaches.
+
+Generate only the final design.
+
+===========================================================
+PHASE 10 — Generate Specification
+===========================================================
+
+Write the specification using EXACTLY this structure.
+
+# Spec: <Feature>
 
 ## Overview
-One paragraph describing what this feature does and why
-it exists at this stage of the ShipLocker roadmap.
 
 ## Depends on
-Which previous steps this feature requires to be complete.
 
 ## App(s) touched
-Which app(s) under `apps/` this feature lives in or spans
-(e.g. `locker`, `shipments`, `accounts`, `kyc`, `payments`, `notifications`, `content`).
-If it needs a new app, say so and justify it.
 
 ## Routes
-Every new URL/view needed:
-- `METHOD /path` — view name — description — access level (public/logged-in/staff)
-  — ownership mixin used (`UserOwnershipMixin` / `LockerOwnershipMixin` /
-  `ObjectOwnershipRequiredMixin`) where the view touches user-owned data.
 
-If no new routes: state "No new routes".
+List every new route:
+
+- METHOD /path — ViewName — description — access level — ownership mixin
+
+If none:
+
+"No new routes."
 
 ## Model changes
-Any new models, fields, or migrations needed.
-Always verify against the relevant app's `models.py` before writing this.
-Note if any config should live in `AppSettings`
-(`apps.notifications.models.AppSettings`) instead of hardcoded settings.
-If none: state "No model changes".
+
+Verify against existing models before proposing changes.
+
+Mention migrations.
+
+Mention AppSettings where appropriate.
+
+If none:
+
+"No model changes."
 
 ## Templates
-- **Create:** list new templates with their path (under `templates/<app>/`)
-- **Modify:** list existing templates and what changes
-- Note any new/modified static assets under `static/css/` or `static/js/`
+
+Create:
+
+Modify:
+
+Static assets:
 
 ## Files to change
-Every file that will be modified.
+
+List every modified file.
 
 ## Files to create
-Every new file that will be created.
+
+List every new file.
 
 ## New dependencies
-Any new pip packages. If none: state "No new dependencies".
+
+If none:
+
+"No new dependencies."
 
 ## Rules for implementation
-Specific constraints Claude must follow. Always include:
-- Use Django ORM only, no raw SQL unless there's no ORM equivalent
+
+Always include:
+
+- Use Django ORM only
+- No raw SQL unless absolutely necessary
 - Parameterised queries only if raw SQL is unavoidable
-- Any authenticated view touching user-owned data must use one of the
-  ownership mixins in `indiabox/mixins.py`, not a hand-rolled check
-- Security-relevant actions log through the `security` logger
-- Use CSS variables from `static/css/main.css` — never hardcode hex values
-- Uploaded files (parcel images, KYC docs) go to Supabase Storage, not
-  local `MEDIA_ROOT`
-- All templates extend `templates/base.html`
+- Ownership mixins for authenticated user-owned resources
+- Security logging through the security logger
+- CSS variables from static/css/main.css only
+- Upload files to Supabase Storage
+- Templates extend templates/base.html
+
+Include any feature-specific implementation constraints discovered during research.
 
 ## Definition of done
-A specific testable checklist. Each item must be
-something that can be verified by running the app
-(`python manage.py runserver`) — there is no test suite in this repo,
-so verification is manual unless the step explicitly adds tests.
 
----
+Every checklist item must be manually verifiable by running the application.
 
-## Step 8 — Save the spec
-Save to: `.claude/specs/<step_number>-<feature_slug>.md`
+===========================================================
+PHASE 11 — Self Review
+===========================================================
 
-## Step 9 — Report to the user
-Print a short summary in this exact format:
-```
+Before saving the specification,
+
+perform an internal architectural review.
+
+Verify:
+
+✓ no duplicated logic
+
+✓ no unnecessary models
+
+✓ no unnecessary services
+
+✓ no unnecessary routes
+
+✓ no unnecessary templates
+
+✓ consistent ownership model
+
+✓ security considerations covered
+
+✓ logging included
+
+✓ maintainability
+
+✓ extensibility
+
+✓ follows CLAUDE.md
+
+✓ aligns with previous specs
+
+✓ production-ready
+
+If improvements are found,
+
+rewrite the specification BEFORE saving.
+
+===========================================================
+PHASE 12 — Save
+===========================================================
+
+Save to:
+
+.claude/specs/<step>-<feature-slug>.md
+
+===========================================================
+PHASE 13 — Report
+===========================================================
+
+Output ONLY:
+
 Branch:    <branch_name>
-Spec file: .claude/specs/<step_number>-<feature_slug>.md
+
+Spec file: .claude/specs/<step>-<feature-slug>.md
+
 Title:     <feature_title>
+
+Then print:
+
+Review the specification carefully.
+
+If approved,
+
+enter Plan Mode (Shift+Tab twice)
+
+and begin implementation.
+
+Never print the full specification unless explicitly requested.
 ```
-
-Then tell the user:
-"Review the spec at `.claude/specs/<step_number>-<feature_slug>.md`
-then enter Plan Mode with Shift+Tab twice to begin implementation."
-
-Do not print the full spec in chat unless explicitly asked.

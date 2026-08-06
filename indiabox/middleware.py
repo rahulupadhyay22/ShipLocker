@@ -107,11 +107,11 @@ class SecurityHeadersMiddleware:
         # Content Security Policy
         csp = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+            "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://cdn.razorpay.com https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
             "img-src 'self' data: https: blob:; "
-            "connect-src 'self' https://*.supabase.co https://api.razorpay.com; "
+            "connect-src 'self' https://*.supabase.co https://api.razorpay.com https://lumberjack.razorpay.com; "
             "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com; "
             "frame-ancestors 'self';"
         )

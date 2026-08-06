@@ -9,6 +9,7 @@
 Redesign the user dashboard (`accounts:dashboard`, `templates/accounts/dashboard.html` + `static/css/dashboard.css`) so it's fully mobile-responsive and visually consistent with the recently redesigned "My Trunk" page (CamelTrunk visual language). The dashboard is the first screen a logged-in user sees — stat cards, the Trunk hero, insights, recent activity, and quick actions must all reflow cleanly from desktop down to small phones without horizontal scroll or clipped content. This is a UI-only pass: no new data, routes, or models.
 
 ## Depends on
+
 None. This is the first tracked spec in this repo (`.claude/specs/` was empty).
 
 ## App(s) touched

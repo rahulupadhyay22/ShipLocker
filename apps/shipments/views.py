@@ -204,7 +204,8 @@ class ShipmentDetailView(LoginRequiredMixin, DetailView):
         # Use the prefetched .all() (cached) rather than .filter(), which would
         # issue a fresh query and defeat the prefetch_related('documents') above.
         prefetched_docs = list(shipment.documents.all())
-        context['invoice_document'] = next((d for d in prefetched_docs if d.document_type == 'invoice'), None)
+        invoice_docs = [d for d in prefetched_docs if d.document_type == 'invoice']
+        context['invoice_document'] = max(invoice_docs, key=lambda d: d.uploaded_at, default=None)
         context['awb_document'] = next((d for d in prefetched_docs if d.document_type == 'label'), None)
         context['other_documents'] = [d for d in prefetched_docs if d.document_type not in ('invoice', 'label')]
 
