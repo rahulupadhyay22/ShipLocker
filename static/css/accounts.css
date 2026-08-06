@@ -267,41 +267,277 @@
 
 /* Locker address card */
 
-.locker-address-trunk-row {
+.locker-address-card {
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+    border: 1px solid var(--surface-100);
+    box-shadow: var(--shadow-md), 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.locker-address-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 55%, var(--accent) 100%);
+}
+
+.locker-address-card:hover {
+    box-shadow: var(--shadow-md), var(--shadow-glow), 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+    transform: translateY(-2px);
+}
+
+.locker-address-card .card-header {
+    background: linear-gradient(180deg, var(--primary-light) 0%, var(--surface-0) 100%);
+    padding: 1.5rem 2rem 1.25rem;
+}
+
+.locker-address-card .card-header h3 {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding-bottom: 1rem;
-    margin-bottom: 1.25rem;
-    border-bottom: 1px solid var(--surface-100);
+    gap: 0.6rem;
+}
+
+.locker-address-card .card-header h3::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-light);
+}
+
+.locker-address-body {
+    padding: 1.75rem 2rem;
+}
+
+.locker-address-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1.1fr;
+    gap: 2rem;
+    align-items: center;
+}
+
+.locker-address-trunk-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.locker-address-pin-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.locker-address-pin-badge svg {
+    width: 20px;
+    height: 20px;
 }
 
 .locker-address-trunk-label {
+    display: block;
     color: var(--text-secondary);
-    font-size: 0.85rem;
-    margin-right: auto;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.2rem;
+}
+
+.locker-address-trunk-value {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.locker-address-trunk-value .profile-summary-value {
+    font-size: 1.15rem;
 }
 
 .locker-address-block {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
+    gap: 0.85rem;
+    padding: 1.1rem 0;
     margin-bottom: 1.25rem;
+    border-top: 1px dashed var(--surface-100);
 }
 
 .locker-address-block svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
-    margin-top: 0.15rem;
-    color: var(--primary);
+    margin-top: 0.2rem;
+    color: var(--text-muted);
 }
 
 .locker-address-block p {
     margin: 0;
+    margin-right: auto;
     font-size: 0.95rem;
-    line-height: 1.7;
+    line-height: 1.65;
     color: var(--text-main);
+}
+
+.locker-address-block-copy {
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+}
+
+.locker-address-card .profile-copy-btn {
+    border-radius: 50%;
+    padding: 0.3rem;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.locker-address-card .profile-copy-btn:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+    transform: scale(1.08);
+}
+
+.locker-address-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0;
+    font-size: 0.88rem;
+    color: var(--text-main);
+    border-top: 1px dashed var(--surface-100);
+}
+
+.locker-address-contact-row svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.locker-address-contact-row span {
+    margin-right: auto;
+}
+
+.locker-address-illustration {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    padding: 0 1rem;
+    border-left: 1px solid var(--surface-100);
+    border-right: 1px solid var(--surface-100);
+}
+
+.locker-address-illustration img {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    object-fit: contain;
+}
+
+.locker-address-benefits {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+}
+
+.locker-address-benefits li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
+.locker-address-benefits svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+    color: var(--primary);
+}
+
+.locker-address-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1.1rem 2rem;
+    background: var(--surface-50);
+    border-top: 1px solid var(--surface-100);
+}
+
+.locker-address-note-text {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.locker-address-note-text svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+    color: var(--primary);
+}
+
+.locker-address-note-text strong {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    margin-bottom: 0.15rem;
+}
+
+.locker-address-note-text p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.locker-address-note-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.locker-address-note-link:hover {
+    color: var(--primary-hover);
+}
+
+@media (max-width: 900px) {
+    .locker-address-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .locker-address-illustration {
+        border-left: none;
+        border-right: none;
+        border-top: 1px dashed var(--surface-100);
+        border-bottom: 1px dashed var(--surface-100);
+        padding: 1.25rem 0;
+        max-height: 180px;
+    }
 }
 
 /* Saved addresses */
