@@ -1,0 +1,63 @@
+{% if form.non_field_errors %}
+<div class="modern-alert alert-danger" style="margin-bottom: 1rem;">{{ form.non_field_errors }}</div>
+{% endif %}
+<form method="post" action="{{ form_action }}" class="address-inline-form" data-pk="{% if object %}{{ object.pk }}{% endif %}">
+    {% csrf_token %}
+    <div class="form-group">
+        <label class="form-label">Label</label>
+        {{ form.label }}
+        {% if form.label.errors %}<p style="color: var(--danger-text); font-size: 0.85rem;">{{ form.label.errors }}</p>{% endif %}
+    </div>
+    <div class="form-group">
+        <label class="form-label">Recipient Name</label>
+        {{ form.recipient_name }}
+        {% if form.recipient_name.errors %}<p style="color: var(--danger-text); font-size: 0.85rem;">{{ form.recipient_name.errors }}</p>{% endif %}
+    </div>
+    <div class="form-group">
+        <label class="form-label">Recipient Phone</label>
+        {{ form.recipient_phone }}
+        {% if form.recipient_phone.errors %}<p style="color: var(--danger-text); font-size: 0.85rem;">{{ form.recipient_phone.errors }}</p>{% endif %}
+    </div>
+    <div class="form-group">
+        <label class="form-label">Recipient Email (optional)</label>
+        {{ form.recipient_email }}
+        {% if form.recipient_email.errors %}<p style="color: var(--danger-text); font-size: 0.85rem;">{{ form.recipient_email.errors }}</p>{% endif %}
+    </div>
+    <div class="form-group">
+        <label class="form-label">Address Line 1</label>
+        {{ form.address_line1 }}
+        {% if form.address_line1.errors %}<p style="color: var(--danger-text); font-size: 0.85rem;">{{ form.address_line1.errors }}</p>{% endif %}
+    </div>
+    <div class="form-group">
+        <label class="form-label">Address Line 2 (optional)</label>
+        {{ form.address_line2 }}
+    </div>
+    <div class="form-group">
+        <label class="form-label">City</label>
+        {{ form.city }}
+        {% if form.city.errors %}<p style="color: var(--danger-text); font-size: 0.85rem;">{{ form.city.errors }}</p>{% endif %}
+    </div>
+    <div class="form-group">
+        <label class="form-label">State</label>
+        {{ form.state }}
+        {% if form.state.errors %}<p style="color: var(--danger-text); font-size: 0.85rem;">{{ form.state.errors }}</p>{% endif %}
+    </div>
+    <div class="form-group">
+        <label class="form-label">Postal Code</label>
+        {{ form.postal_code }}
+        {% if form.postal_code.errors %}<p style="color: var(--danger-text); font-size: 0.85rem;">{{ form.postal_code.errors }}</p>{% endif %}
+    </div>
+    <div class="form-group">
+        <label class="form-label">Country</label>
+        {{ form.country }}
+        {% if form.country.errors %}<p style="color: var(--danger-text); font-size: 0.85rem;">{{ form.country.errors }}</p>{% endif %}
+    </div>
+    <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+        {{ form.is_default }}
+        <label class="form-label" style="margin: 0;">Set as default address</label>
+    </div>
+    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary">Save Address</button>
+        <a href="{% url 'accounts:profile' %}?tab=addresses" class="btn btn-secondary address-form-cancel">Cancel</a>
+    </div>
+</form>

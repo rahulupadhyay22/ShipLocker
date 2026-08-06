@@ -4,9 +4,10 @@ from django.views.generic import TemplateView, CreateView, UpdateView, DeleteVie
 from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db.models import Count, Q, Sum
 from django.urls import reverse
+from django.template.loader import render_to_string
 import logging
 
 from indiabox.mixins import ObjectOwnershipRequiredMixin, SecureActionMixin
@@ -260,9 +261,14 @@ class ProfileView(LoginRequiredMixin, View):
     template_name = 'accounts/profile.html'
     
     def get(self, request):
+        from apps.notifications.models import AppSettings
+
+        app_settings = AppSettings.get_settings()
         return render(request, self.template_name, {
             'user': request.user,
             'locker': request.user.locker,
+            'support_email': app_settings.support_email,
+            'support_phone': app_settings.support_phone,
             'kyc_verified': request.user.kyc_documents.filter(status='approved').exists(),
             'total_shipments': request.user.shipments.count(),
             'total_parcels': request.user.locker.parcels.count(),
@@ -309,21 +315,69 @@ class ProfileView(LoginRequiredMixin, View):
         return redirect('accounts:profile')
 
 
-class SavedAddressCreateView(LoginRequiredMixin, SecureActionMixin, CreateView):
+class _XhrAddressFormMixin:
+    """Shared XHR behavior for the address create/update forms: the profile
+    page's addresses tab loads the form fragment inline (instead of
+    navigating to a separate page) and submits it optimistically. Non-XHR
+    requests (JS disabled, direct URL visit) fall through to the normal
+    Django form page + redirect."""
+
+    def _is_xhr(self):
+        return self.request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    def _render_form_fragment(self, form):
+        return render_to_string('accounts/_address_form_fields.html', {
+            'form': form,
+            'form_action': self.form_action_url(),
+            'object': getattr(self, 'object', None),
+        }, request=self.request)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        if self._is_xhr():
+            card_html = render_to_string(
+                'accounts/_address_card.html', {'address': self.object}, request=self.request,
+            )
+            return JsonResponse({'success': True, 'pk': str(self.object.pk), 'card_html': card_html})
+        return response
+
+    def form_invalid(self, form):
+        if self._is_xhr():
+            return JsonResponse({'success': False, 'form_html': self._render_form_fragment(form)}, status=400)
+        return super().form_invalid(form)
+
+
+class SavedAddressCreateView(_XhrAddressFormMixin, LoginRequiredMixin, SecureActionMixin, CreateView):
     model = SavedAddress
     form_class = SavedAddressForm
     template_name = 'accounts/address_form.html'
 
+    def form_action_url(self):
+        return reverse('accounts:address_add')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form_action'] = self.form_action_url()
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.object = None
+        if self._is_xhr():
+            return HttpResponse(self._render_form_fragment(self.get_form()))
+        return super().get(request, *args, **kwargs)
+
     def form_valid(self, form):
         form.instance.user = self.request.user
-        messages.success(self.request, 'Address saved.')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        if not self._is_xhr():
+            messages.success(self.request, 'Address saved.')
+        return response
 
     def get_success_url(self):
         return reverse('accounts:profile') + '?tab=addresses'
 
 
-class SavedAddressUpdateView(LoginRequiredMixin, ObjectOwnershipRequiredMixin, SecureActionMixin, UpdateView):
+class SavedAddressUpdateView(_XhrAddressFormMixin, LoginRequiredMixin, ObjectOwnershipRequiredMixin, SecureActionMixin, UpdateView):
     model = SavedAddress
     form_class = SavedAddressForm
     template_name = 'accounts/address_form.html'
@@ -331,9 +385,25 @@ class SavedAddressUpdateView(LoginRequiredMixin, ObjectOwnershipRequiredMixin, S
     def get_queryset(self):
         return SavedAddress.objects.filter(user=self.request.user)
 
+    def form_action_url(self):
+        return reverse('accounts:address_edit', kwargs={'pk': self.object.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form_action'] = self.form_action_url()
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if self._is_xhr():
+            return HttpResponse(self._render_form_fragment(self.get_form()))
+        return super().get(request, *args, **kwargs)
+
     def form_valid(self, form):
-        messages.success(self.request, 'Address updated.')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        if not self._is_xhr():
+            messages.success(self.request, 'Address updated.')
+        return response
 
     def get_success_url(self):
         return reverse('accounts:profile') + '?tab=addresses'
@@ -359,5 +429,9 @@ class SavedAddressSetDefaultView(LoginRequiredMixin, SecureActionMixin, View):
         address = get_object_or_404(SavedAddress, pk=pk, user=request.user)
         address.is_default = True
         address.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'pk': str(address.pk)})
+
         messages.success(request, 'Default address updated.')
         return redirect(reverse('accounts:profile') + '?tab=addresses')

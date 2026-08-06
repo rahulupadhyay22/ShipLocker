@@ -102,29 +102,128 @@
     <div class="card-header">
         <h3>Locker Address</h3>
     </div>
-    <div class="card-body">
-        <div class="locker-address-trunk-row">
-            <span class="locker-address-trunk-label">Trunk ID</span>
-            <span class="profile-summary-value">{{ locker.locker_id }}</span>
-            <button type="button" class="profile-copy-btn"
-                onclick="copyToClipboard('{{ locker.locker_id|escapejs }}', this)" aria-label="Copy Trunk ID">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M8 7V5a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-2M8 7h7a2 2 0 012 2v7" />
-                </svg>
-            </button>
+    <div class="card-body locker-address-body">
+        <div class="locker-address-grid">
+            <div class="locker-address-info">
+                <div class="locker-address-trunk-row">
+                    <span class="locker-address-pin-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </span>
+                    <div>
+                        <span class="locker-address-trunk-label">Trunk ID</span>
+                        <div class="locker-address-trunk-value">
+                            <span class="profile-summary-value">{{ locker.locker_id }}</span>
+                            <button type="button" class="profile-copy-btn"
+                                onclick="copyToClipboard('{{ locker.locker_id|escapejs }}', this)" aria-label="Copy Trunk ID">
+                                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V5a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-2M8 7h7a2 2 0 012 2v7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="locker-address-block">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <p>{{ locker.address|linebreaksbr }}</p>
+                    <button type="button" class="profile-copy-btn locker-address-block-copy"
+                        onclick="copyToClipboard('{{ locker.address|escapejs }}', this)" aria-label="Copy Address">
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V5a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-2M8 7h7a2 2 0 012 2v7" />
+                        </svg>
+                    </button>
+                </div>
+
+                {% if support_phone %}
+                <div class="locker-address-contact-row">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 011 .76l1.12 4.49a1 1 0 01-.54 1.13l-1.9.95a11.05 11.05 0 005.52 5.52l.95-1.9a1 1 0 011.13-.54l4.49 1.12a1 1 0 01.76 1v3.28a2 2 0 01-2 2h-1C9.72 21 3 14.28 3 6V5z" />
+                    </svg>
+                    <span>{{ support_phone }}</span>
+                    <button type="button" class="profile-copy-btn"
+                        onclick="copyToClipboard('{{ support_phone|escapejs }}', this)" aria-label="Copy Support Mobile Number">
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V5a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-2M8 7h7a2 2 0 012 2v7" />
+                        </svg>
+                    </button>
+                </div>
+                {% endif %}
+                {% if support_email %}
+                <div class="locker-address-contact-row">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span>{{ support_email }}</span>
+                    <button type="button" class="profile-copy-btn"
+                        onclick="copyToClipboard('{{ support_email|escapejs }}', this)" aria-label="Copy Support Email">
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V5a2 2 0 012-2h9a2 2 0 012 2v9a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-2M8 7h7a2 2 0 012 2v7" />
+                        </svg>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="locker-address-illustration" aria-hidden="true">
+                <img src="{% static 'img/locker address img.png' %}" alt="" width="400" height="363">
+            </div>
+
+            <ul class="locker-address-benefits">
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <span>Use this address as your shipping address at checkout.</span>
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    <span>All packages will be received at our fulfillment center.</span>
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h1.5l1.5-2h8l1.5 2H19a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>We will inspect and upload photos for you.</span>
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.6 9h16.8M3.6 15h16.8M12 3a14.5 14.5 0 010 18M12 3a14.5 14.5 0 000 18" />
+                    </svg>
+                    <span>Consolidate and ship worldwide.</span>
+                </li>
+            </ul>
         </div>
-        <div class="locker-address-block">
+    </div>
+    <div class="locker-address-note">
+        <div class="locker-address-note-text">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
-            <p>{{ locker.address|linebreaksbr }}</p>
+            <div>
+                <strong>Important Note</strong>
+                <p>Do not share this address with anyone. Use it only for your personal purchases.</p>
+            </div>
         </div>
-        <button type="button" class="btn btn-secondary"
-            onclick="copyToClipboard('Trunk ID: {{ locker.locker_id|escapejs }}\n{{ locker.address|escapejs }}', this)">
-            Copy Address
-        </button>
+        <a href="{% url 'content:faq' %}" class="locker-address-note-link">
+            View Usage Guidelines
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </a>
     </div>
 </div>
 
@@ -270,44 +369,21 @@
 <!-- Addresses -->
 <div class="profile-tab-panel" data-panel="addresses">
     <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
-        <a href="{% url 'accounts:address_add' %}" class="btn btn-primary">+ Add Address</a>
+        <a href="{% url 'accounts:address_add' %}" id="address-add-btn" class="btn btn-primary">+ Add Address</a>
     </div>
-    {% if saved_addresses %}
-    <div class="address-list">
+
+    <div id="address-form-panel" class="card" style="max-width: 640px; margin-bottom: 1.5rem; display: none;">
+        <div class="card-body" id="address-form-slot"></div>
+    </div>
+
+    <div class="profile-placeholder-panel" id="address-empty-state" {% if saved_addresses %}hidden{% endif %}>
+        No saved addresses yet. Add one to reuse it when creating a shipment.
+    </div>
+    <div class="address-list" id="address-list">
         {% for address in saved_addresses %}
-        <div class="address-card">
-            <div class="address-card-header">
-                <span class="address-card-name">
-                    {{ address.recipient_name }}
-                    {% if address.label %}<span class="address-card-label">{{ address.label }}</span>{% endif %}
-                </span>
-                {% if address.is_default %}
-                <span class="status-badge status-approved">Default</span>
-                {% endif %}
-            </div>
-            <p class="address-card-body">
-                {{ address.address_line1 }}{% if address.address_line2 %}, {{ address.address_line2 }}{% endif %}<br>
-                {{ address.city }}, {{ address.state }} {{ address.postal_code }}<br>
-                {{ address.country }}<br>
-                {{ address.recipient_phone }}
-            </p>
-            <div class="address-card-actions">
-                <a href="{% url 'accounts:address_edit' address.pk %}" class="btn btn-secondary">Edit</a>
-                {% if not address.is_default %}
-                <form method="post" action="{% url 'accounts:address_set_default' address.pk %}" style="margin: 0;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-secondary">Set Default</button>
-                </form>
-                {% endif %}
-                <a href="{% url 'accounts:address_delete' address.pk %}" class="btn btn-secondary"
-                    style="border-color: var(--danger-text); color: var(--danger-text);">Delete</a>
-            </div>
-        </div>
+        {% include 'accounts/_address_card.html' %}
         {% endfor %}
     </div>
-    {% else %}
-    <div class="profile-placeholder-panel">No saved addresses yet. Add one to reuse it when creating a shipment.</div>
-    {% endif %}
 </div>
 
 <!-- Payment history -->
@@ -477,5 +553,204 @@
             if (activeTab) activateTab(activeTab.getAttribute('data-tab'));
         }, 150);
     });
+
+    // --- Address list: optimistic set-default / create / edit --------------
+    // All handlers below are delegated on stable ancestors (not bound per-card)
+    // because cards get replaced/inserted dynamically by the create/edit flow.
+    (function () {
+        var addressList = document.getElementById('address-list');
+        var emptyState = document.getElementById('address-empty-state');
+        var panel = document.getElementById('address-form-panel');
+        var formSlot = document.getElementById('address-form-slot');
+        var addBtn = document.getElementById('address-add-btn');
+        if (!addressList || !panel || !formSlot || !addBtn) return;
+
+        function escapeHtml(str) {
+            var div = document.createElement('div');
+            div.textContent = str == null ? '' : str;
+            return div.innerHTML;
+        }
+
+        function closePanel() {
+            panel.style.display = 'none';
+            formSlot.innerHTML = '';
+        }
+
+        function openPanelWithHtml(html) {
+            formSlot.innerHTML = html;
+            panel.style.display = '';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        async function loadFormInto(url) {
+            const response = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+            if (!response.ok) throw new Error('Could not load the address form.');
+            openPanelWithHtml(await response.text());
+        }
+
+        // Open the "Add Address" panel instead of navigating away.
+        addBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            loadFormInto(addBtn.href).catch(function () {
+                window.location.href = addBtn.href; // fall back to the real page if the fetch fails
+            });
+        });
+
+        // Open the "Edit" panel for a given card instead of navigating away.
+        addressList.addEventListener('click', function (e) {
+            var editLink = e.target.closest('.address-edit-link');
+            if (!editLink) return;
+            e.preventDefault();
+            loadFormInto(editLink.href).catch(function () {
+                window.location.href = editLink.href;
+            });
+        });
+
+        // Cancel button inside the injected form.
+        formSlot.addEventListener('click', function (e) {
+            if (e.target.closest('.address-form-cancel')) {
+                e.preventDefault();
+                closePanel();
+            }
+        });
+
+        // --- Optimistic "Set Default" toggle ---
+        addressList.addEventListener('submit', function (e) {
+            var form = e.target.closest('.address-set-default-form');
+            if (!form) return;
+            e.preventDefault();
+
+            var cards = addressList.querySelectorAll('.address-card');
+            var targetCard = form.closest('.address-card');
+            var errorEl = targetCard.querySelector('.address-action-error');
+            errorEl.style.display = 'none';
+
+            // Snapshot current state of every card so a failure can restore it exactly.
+            var priorState = [];
+            cards.forEach(function (card) {
+                priorState.push({
+                    card: card,
+                    badgeVisible: card.querySelector('.default-badge').style.display !== 'none',
+                    formVisible: card.querySelector('.address-set-default-form')
+                        ? card.querySelector('.address-set-default-form').style.display !== 'none'
+                        : false,
+                });
+            });
+
+            // Optimistic update: this card becomes the only default.
+            cards.forEach(function (card) {
+                var badge = card.querySelector('.default-badge');
+                var setDefaultForm = card.querySelector('.address-set-default-form');
+                var isTarget = card === targetCard;
+                badge.style.display = isTarget ? '' : 'none';
+                if (setDefaultForm) setDefaultForm.style.display = isTarget ? 'none' : '';
+            });
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: new FormData(form),
+                credentials: 'same-origin',
+            }).then(function (response) {
+                if (!response.ok) throw new Error('Request failed');
+                return response.json();
+            }).then(function (data) {
+                if (!data.success) throw new Error('Request failed');
+                // Server confirmed -- optimistic state already matches, nothing more to do.
+            }).catch(function () {
+                // Roll back to the exact prior state and tell the user why.
+                priorState.forEach(function (state) {
+                    state.card.querySelector('.default-badge').style.display = state.badgeVisible ? '' : 'none';
+                    var setDefaultForm = state.card.querySelector('.address-set-default-form');
+                    if (setDefaultForm) setDefaultForm.style.display = state.formVisible ? '' : 'none';
+                });
+                errorEl.textContent = 'Could not update default address. Please try again.';
+                errorEl.style.display = '';
+            });
+        });
+
+        // --- Optimistic create / update ---
+        formSlot.addEventListener('submit', function (e) {
+            var form = e.target.closest('.address-inline-form');
+            if (!form) return;
+            e.preventDefault();
+
+            var pk = form.dataset.pk || '';
+            var isEdit = !!pk;
+            var fd = new FormData(form);
+            var vals = {};
+            fd.forEach(function (v, k) { vals[k] = v; });
+
+            var existingCard = isEdit ? addressList.querySelector('.address-card[data-address-id="' + pk + '"]') : null;
+            var priorCardHtml = existingCard ? existingCard.outerHTML : null;
+            var wasEmpty = !isEdit && emptyState && !emptyState.hidden;
+
+            // Build a lightweight optimistic card from the just-submitted values.
+            // It has no working action buttons yet (no confirmed pk for a create,
+            // and either way the server response replaces it with the real markup).
+            var optimisticHtml =
+                '<div class="address-card address-card-pending" style="opacity: 0.6;">' +
+                '<div class="address-card-header"><span class="address-card-name">' +
+                escapeHtml(vals.recipient_name) +
+                (vals.label ? ' <span class="address-card-label">' + escapeHtml(vals.label) + '</span>' : '') +
+                '</span></div>' +
+                '<p class="address-card-body">' +
+                escapeHtml(vals.address_line1) + (vals.address_line2 ? ', ' + escapeHtml(vals.address_line2) : '') + '<br>' +
+                escapeHtml(vals.city) + ', ' + escapeHtml(vals.state) + ' ' + escapeHtml(vals.postal_code) + '<br>' +
+                escapeHtml(vals.country) + '<br>' +
+                escapeHtml(vals.recipient_phone) +
+                '</p><p class="sd-empty-text" style="margin: 0.5rem 0 0;">Saving&hellip;</p></div>';
+
+            var temp = document.createElement('div');
+            temp.innerHTML = optimisticHtml.trim();
+            var optimisticCard = temp.firstChild;
+
+            if (isEdit && existingCard) {
+                existingCard.replaceWith(optimisticCard);
+            } else {
+                if (emptyState) emptyState.hidden = true;
+                addressList.insertAdjacentElement('afterbegin', optimisticCard);
+            }
+            closePanel();
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd,
+                credentials: 'same-origin',
+            }).then(async function (response) {
+                var data = await response.json();
+                if (!response.ok || !data.success) {
+                    var err = new Error('validation');
+                    err.formHtml = data.form_html;
+                    throw err;
+                }
+                // Reconcile with the authoritative, fully-linked card markup.
+                var swapTemp = document.createElement('div');
+                swapTemp.innerHTML = data.card_html.trim();
+                optimisticCard.replaceWith(swapTemp.firstChild);
+            }).catch(function (err) {
+                // Roll back: restore the previous card (edit) or remove the
+                // optimistic one entirely (create), then reopen the form with
+                // the server's validation errors so nothing is lost.
+                if (isEdit && priorCardHtml) {
+                    var restoreTemp = document.createElement('div');
+                    restoreTemp.innerHTML = priorCardHtml.trim();
+                    optimisticCard.replaceWith(restoreTemp.firstChild);
+                } else {
+                    optimisticCard.remove();
+                    if (wasEmpty && emptyState) emptyState.hidden = false;
+                }
+                if (err && err.formHtml) {
+                    openPanelWithHtml(err.formHtml);
+                } else {
+                    alert('Could not save the address. Please try again.');
+                }
+            });
+        });
+    })();
 </script>
 {% endblock %}

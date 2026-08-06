@@ -1,0 +1,26 @@
+<div class="address-card" data-address-id="{{ address.pk }}">
+    <div class="address-card-header">
+        <span class="address-card-name">
+            {{ address.recipient_name }}
+            {% if address.label %}<span class="address-card-label">{{ address.label }}</span>{% endif %}
+        </span>
+        <span class="status-badge status-approved default-badge" {% if not address.is_default %}style="display:none;"{% endif %}>Default</span>
+    </div>
+    <p class="address-card-body">
+        {{ address.address_line1 }}{% if address.address_line2 %}, {{ address.address_line2 }}{% endif %}<br>
+        {{ address.city }}, {{ address.state }} {{ address.postal_code }}<br>
+        {{ address.country }}<br>
+        {{ address.recipient_phone }}
+    </p>
+    <div class="address-card-actions">
+        <a href="{% url 'accounts:address_edit' address.pk %}" class="btn btn-secondary address-edit-link">Edit</a>
+        <form method="post" action="{% url 'accounts:address_set_default' address.pk %}"
+            class="address-set-default-form" style="margin: 0; {% if address.is_default %}display:none;{% endif %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">Set Default</button>
+        </form>
+        <a href="{% url 'accounts:address_delete' address.pk %}" class="btn btn-secondary"
+            style="border-color: var(--danger-text); color: var(--danger-text);">Delete</a>
+    </div>
+    <p class="address-action-error" style="display:none; color: var(--danger-text); font-size: 0.85rem; margin: 0.5rem 0 0;"></p>
+</div>
