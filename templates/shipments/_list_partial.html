@@ -308,13 +308,15 @@
         </div>
 
         <div class="shipments-row-actions">
-            {% if shipment.shipping_cost and shipment.payment_status != 'paid' %}
+            {% if shipment.shipping_cost and shipment.service_type and shipment.payment_status != 'paid' %}
             <button class="btn btn-primary btn-sm js-pay-now"
                 data-create-url="{% url 'payments:create_order' shipment.pk %}"
                 data-verify-url="{% url 'payments:verify' %}">
                 Pay Now
             </button>
-            {% elif shipment.tracking_number %}
+            {% elif shipment.shipping_cost and shipment.payment_status != 'paid' %}
+            <span class="status-badge status-pending" style="cursor: default;">Payment Pending</span>
+            {% elif shipment.tracking_number and shipment.payment_status == 'paid' %}
             <a href="https://www.google.com/search?q=track+{{ shipment.carrier|urlencode }}+{{ shipment.tracking_number|urlencode }}"
                target="_blank"
                class="btn btn-secondary btn-sm"

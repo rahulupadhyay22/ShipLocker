@@ -205,6 +205,10 @@ class ShipmentAdmin(ModelAdmin):
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
 
+        if obj.status == 'declaration_pending' and obj.tracking_number and obj.total_weight_kg:
+            if obj.approve_declaration():
+                self.message_user(request, 'Declaration auto-approved: tracking number and weight are set.')
+
         apply_storage_fee = form.cleaned_data.get('apply_storage_fee')
         manual_fee_amount = form.cleaned_data.get('manual_storage_fee_amount')
         manual_overdue_days = form.cleaned_data.get('manual_storage_fee_days')

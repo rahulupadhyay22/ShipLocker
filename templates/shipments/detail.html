@@ -20,7 +20,7 @@
         {% if invoice_document %}
         <a href="{{ invoice_document.signed_url }}" target="_blank" class="btn btn-secondary">↓ Download Invoice</a>
         {% endif %}
-        {% if shipment.tracking_number %}
+        {% if shipment.tracking_number and shipment.payment_status == 'paid' %}
         <a href="{% if shipment.tracking_url %}{{ shipment.tracking_url }}{% else %}https://www.google.com/search?q=track+{{ shipment.carrier|urlencode }}+{{ shipment.tracking_number|urlencode }}{% endif %}"
            target="_blank" class="btn btn-primary">Track Shipment ↗</a>
         {% endif %}
