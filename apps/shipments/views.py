@@ -445,10 +445,10 @@ class CreateShipmentView(LoginRequiredMixin, View):
                 messages.warning(request, 'Declaration upload failed. Shipment created without document.')
             
             # Add parcels to shipment
-            for parcel in parcels:
-                ShipmentItem.objects.create(shipment=shipment, parcel=parcel)
-                parcel.status = 'shipped'
-                parcel.save()
+            ShipmentItem.objects.bulk_create(
+                [ShipmentItem(shipment=shipment, parcel=parcel) for parcel in parcels]
+            )
+            Parcel.objects.filter(pk__in=[parcel.pk for parcel in parcels]).update(status='shipped')
         
         messages.success(request, 'Shipment created! Your declaration is pending approval.')
         return redirect('shipments:detail', pk=shipment.pk)

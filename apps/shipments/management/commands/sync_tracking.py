@@ -11,6 +11,7 @@ Schedule with cron (every 30 minutes):
 """
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 from django.utils import timezone
 from apps.shipments.models import Shipment, TrackingEvent
 from apps.shipments.services.carrier_factory import CarrierFactory
@@ -138,25 +139,28 @@ class Command(BaseCommand):
         elif new_status == 'dispatched' and not shipment.dispatched_at:
             shipment.dispatched_at = result.timestamp or timezone.now()
         
-        shipment.save()
-        
-        # Save tracking events
-        for event in result.events:
-            # Check if we already have this event
-            existing = TrackingEvent.objects.filter(
+        # Existing (status, timestamp) pairs for this shipment, one query instead of one per event
+        existing_keys = set(
+            TrackingEvent.objects.filter(shipment=shipment)
+            .values_list('status', 'event_timestamp')
+        )
+
+        new_events = [
+            TrackingEvent(
                 shipment=shipment,
                 status=event.get('status', ''),
+                description=event.get('description', ''),
+                location=event.get('location', ''),
                 event_timestamp=event.get('timestamp'),
-            ).exists()
-            
-            if not existing:
-                TrackingEvent.objects.create(
-                    shipment=shipment,
-                    status=event.get('status', ''),
-                    description=event.get('description', ''),
-                    location=event.get('location', ''),
-                    event_timestamp=event.get('timestamp'),
-                    raw_data=event,
-                )
-        
+                raw_data=event,
+            )
+            for event in result.events
+            if (event.get('status', ''), event.get('timestamp')) not in existing_keys
+        ]
+
+        with transaction.atomic():
+            shipment.save()
+            if new_events:
+                TrackingEvent.objects.bulk_create(new_events, batch_size=500)
+
         return True
