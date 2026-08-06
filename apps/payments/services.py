@@ -6,8 +6,14 @@ import logging
 from decimal import Decimal
 from django.db import transaction
 from .tax import calculate_gst
+from indiabox.circuit_breaker import CircuitBreaker, CircuitOpenError
 
 logger = logging.getLogger('security')
+
+# Checkout critical path: every gunicorn thread blocked on a slow Razorpay
+# call is a thread unavailable to unrelated pages, so fail fast once it's
+# clearly degraded rather than let requests queue up behind it.
+_breaker = CircuitBreaker('razorpay', fail_threshold=5, reset_timeout=60, max_concurrency=4)
 
 
 class RazorpayService:
@@ -105,16 +111,20 @@ class RazorpayService:
             payload['notes'] = notes
 
         try:
-            response = requests.post(
-                url,
-                json=payload,
-                auth=(self.key_id, self.key_secret),
-                timeout=30,
-            )
-            response.raise_for_status()
-            order = response.json()
+            with _breaker.call():
+                response = requests.post(
+                    url,
+                    json=payload,
+                    auth=(self.key_id, self.key_secret),
+                    timeout=8,
+                )
+                response.raise_for_status()
+                order = response.json()
             logger.info(f"Razorpay order created: {order.get('id')}")
             return order
+        except CircuitOpenError as e:
+            logger.error(f"Razorpay order creation skipped: {e}")
+            return None
         except requests.exceptions.RequestException as e:
             logger.error(f"Razorpay order creation failed: {e}")
             return None

@@ -12,7 +12,13 @@ from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime
 
+from indiabox.circuit_breaker import CircuitBreaker, CircuitOpenError
+
 logger = logging.getLogger(__name__)
+
+# Tracking lookups fire from a Shipment post_save signal (staff entering a
+# tracking number blocks the saving request), plus the sync_tracking cron.
+_breaker = CircuitBreaker('dhl', fail_threshold=5, reset_timeout=60, max_concurrency=4)
 
 
 @dataclass
@@ -122,13 +128,14 @@ class DHLService:
             )
         
         try:
-            response = requests.get(
-                self.BASE_URL,
-                params={'trackingNumber': tracking_number},
-                headers=self._get_headers(),
-                timeout=30
-            )
-            
+            with _breaker.call():
+                response = requests.get(
+                    self.BASE_URL,
+                    params={'trackingNumber': tracking_number},
+                    headers=self._get_headers(),
+                    timeout=10
+                )
+
             if response.status_code == 404:
                 return TrackingResult(
                     success=False,
@@ -204,6 +211,18 @@ class DHLService:
                 events=events,
             )
             
+        except CircuitOpenError as e:
+            logger.warning(f"DHL tracking for {tracking_number} skipped: {e}")
+            return TrackingResult(
+                success=False,
+                status='',
+                status_description='',
+                location='',
+                timestamp=None,
+                raw_status='',
+                events=[],
+                error=f'DHL temporarily unavailable: {str(e)}'
+            )
         except requests.exceptions.RequestException as e:
             logger.error(f"DHL API error for {tracking_number}: {e}")
             return TrackingResult(

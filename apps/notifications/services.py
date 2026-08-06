@@ -1,7 +1,14 @@
 import requests
 import logging
 
+from indiabox.circuit_breaker import CircuitBreaker, CircuitOpenError
+
 logger = logging.getLogger(__name__)
+
+# Fires synchronously from post_save signals on nearly every Parcel/Shipment
+# write across the app, so a slow/down WhatsApp API must fail fast rather
+# than tie up the saving request's thread.
+_breaker = CircuitBreaker('whatsapp', fail_threshold=5, reset_timeout=60, max_concurrency=4)
 
 
 class WhatsAppService:
@@ -9,7 +16,7 @@ class WhatsAppService:
     Service to interact with WhatsApp Cloud API.
     Reads configuration from database (AppSettings model).
     """
-    
+
     def __init__(self):
         self.api_version = 'v17.0'
         self._settings = None
@@ -98,10 +105,14 @@ class WhatsAppService:
             payload["template"]["components"] = components
             
         try:
-            response = requests.post(url, headers=headers, json=payload)
-            response.raise_for_status()
+            with _breaker.call():
+                response = requests.post(url, headers=headers, json=payload, timeout=5)
+                response.raise_for_status()
             logger.info(f"WhatsApp message sent to {to_number}: {response.json()}")
             return response.json()
+        except CircuitOpenError as e:
+            logger.warning(f"WhatsApp send to {to_number} skipped: {e}")
+            return None
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to send WhatsApp message to {to_number}: {str(e)}")
             if hasattr(e, 'response') and e.response:

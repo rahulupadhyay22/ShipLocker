@@ -1,5 +1,6 @@
 """Self-check for RateLimitMiddleware tiering + backoff, and strict input validators.
 Run: python manage.py test indiabox.tests"""
+import time
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -7,6 +8,7 @@ from django.test import TestCase, RequestFactory, override_settings
 
 from indiabox.middleware import RateLimitMiddleware
 from indiabox.validators import validate_text_input, validate_address, validate_file_upload
+from indiabox.circuit_breaker import CircuitBreaker, CircuitOpenError
 
 
 @override_settings(RATE_LIMIT_SETTINGS={
@@ -118,3 +120,114 @@ class FileUploadContentValidationTests(TestCase):
         f = SimpleUploadedFile('doc.pdf', content, content_type='application/pdf')
         validate_file_upload(f)
         self.assertEqual(f.read(), content)
+
+
+class CircuitBreakerTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_trips_after_threshold_and_fast_fails_without_running_body(self):
+        breaker = CircuitBreaker('test-svc', fail_threshold=3, reset_timeout=60, max_concurrency=2)
+        calls = []
+
+        def failing_call():
+            with breaker.call():
+                calls.append(1)  # only reached if the circuit let the call through
+                raise ConnectionError('dependency down')
+
+        for _ in range(3):
+            with self.assertRaises(ConnectionError):
+                failing_call()
+        self.assertEqual(len(calls), 3)
+
+        # Circuit now open: body must not execute (fast-fail, no network attempt)
+        with self.assertRaises(CircuitOpenError):
+            failing_call()
+        self.assertEqual(len(calls), 3, 'wrapped call ran even though circuit was open')
+
+    def test_success_resets_failure_count(self):
+        breaker = CircuitBreaker('test-svc-2', fail_threshold=3, reset_timeout=60, max_concurrency=2)
+
+        for _ in range(2):
+            with self.assertRaises(ConnectionError):
+                with breaker.call():
+                    raise ConnectionError('slow')
+
+        with breaker.call():
+            pass  # success clears the failure streak
+
+        for _ in range(2):
+            with self.assertRaises(ConnectionError):
+                with breaker.call():
+                    raise ConnectionError('slow')
+
+        # Only 2 consecutive failures since the reset -- still below threshold=3
+        with breaker.call():
+            pass
+
+    def test_recovers_after_cooldown(self):
+        breaker = CircuitBreaker('test-svc-3', fail_threshold=1, reset_timeout=60, max_concurrency=2)
+
+        with self.assertRaises(ConnectionError):
+            with breaker.call():
+                raise ConnectionError('down')
+
+        with self.assertRaises(CircuitOpenError):
+            with breaker.call():
+                self.fail('body must not run while circuit is open')
+
+        # Simulate cooldown elapsing by clearing the cached open-until marker
+        cache.delete(breaker._open_key)
+
+        with breaker.call():
+            pass  # half-open trial succeeds, circuit closes
+
+        with self.assertRaises(ConnectionError):
+            with breaker.call():
+                raise ConnectionError('down again')  # proves circuit was closed, not still-open
+
+    def test_concurrency_cap_rejects_beyond_limit_without_tripping_failures(self):
+        breaker = CircuitBreaker('test-svc-4', fail_threshold=5, reset_timeout=60, max_concurrency=1)
+
+        with breaker.call():
+            # A second concurrent caller must be rejected immediately --
+            # this is what stops one slow dependency from queuing every thread.
+            with self.assertRaises(CircuitOpenError):
+                with breaker.call():
+                    pass
+
+        # Slot freed after the first call exited; unrelated calls are unaffected.
+        with breaker.call():
+            pass
+
+    def test_unrelated_dependency_breaker_is_independent(self):
+        broken = CircuitBreaker('broken-dep', fail_threshold=1, reset_timeout=60, max_concurrency=2)
+        healthy = CircuitBreaker('healthy-dep', fail_threshold=1, reset_timeout=60, max_concurrency=2)
+
+        with self.assertRaises(ConnectionError):
+            with broken.call():
+                raise ConnectionError('down')
+
+        with self.assertRaises(CircuitOpenError):
+            with broken.call():
+                pass
+
+        # A tripped breaker for one dependency must not affect another's breaker
+        with healthy.call():
+            pass
+
+    def test_logs_when_it_opens_and_again_when_it_recovers(self):
+        breaker = CircuitBreaker('test-svc-5', fail_threshold=1, reset_timeout=60, max_concurrency=2)
+
+        with self.assertLogs('security', level='WARNING') as trip_logs:
+            with self.assertRaises(ConnectionError):
+                with breaker.call():
+                    raise ConnectionError('down')
+        self.assertTrue(any('OPEN' in m for m in trip_logs.output), 'opening the circuit must be logged')
+
+        cache.set(breaker._open_key, time.time() - 1, timeout=600)  # cooldown elapsed, marker still present
+
+        with self.assertLogs('security', level='WARNING') as recover_logs:
+            with breaker.call():
+                pass
+        self.assertTrue(any('RECOVERED' in m for m in recover_logs.output), 'recovery must also be logged, not just the trip')

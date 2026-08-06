@@ -12,8 +12,11 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 
 from .dhl_service import TrackingResult
+from indiabox.circuit_breaker import CircuitBreaker, CircuitOpenError
 
 logger = logging.getLogger(__name__)
+
+_breaker = CircuitBreaker('bluedart', fail_threshold=5, reset_timeout=60, max_concurrency=4)
 
 
 class BlueDartService:
@@ -119,15 +122,15 @@ class BlueDartService:
                 "format": "json"
             }
             
-            response = requests.post(
-                self.BASE_URL,
-                json=payload,
-                headers=self._get_headers(),
-                timeout=30
-            )
-            
-            response.raise_for_status()
-            data = response.json()
+            with _breaker.call():
+                response = requests.post(
+                    self.BASE_URL,
+                    json=payload,
+                    headers=self._get_headers(),
+                    timeout=10
+                )
+                response.raise_for_status()
+                data = response.json()
             
             # Parse response - BlueDart structure varies
             # This is a generic handler, actual structure may differ
@@ -204,6 +207,18 @@ class BlueDartService:
                 events=events,
             )
             
+        except CircuitOpenError as e:
+            logger.warning(f"BlueDart tracking for {tracking_number} skipped: {e}")
+            return TrackingResult(
+                success=False,
+                status='',
+                status_description='',
+                location='',
+                timestamp=None,
+                raw_status='',
+                events=[],
+                error=f'BlueDart temporarily unavailable: {str(e)}'
+            )
         except requests.exceptions.RequestException as e:
             logger.error(f"BlueDart API error for {tracking_number}: {e}")
             return TrackingResult(

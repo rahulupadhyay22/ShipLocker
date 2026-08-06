@@ -3,6 +3,15 @@
 import os
 from supabase import create_client, Client
 from django.conf import settings
+from indiabox.circuit_breaker import CircuitBreaker, CircuitOpenError
+
+# Storage backs parcel-image/KYC/invoice uploads and the signed URLs
+# dashboards fetch per image, all on request threads.
+_storage_breaker = CircuitBreaker('supabase_storage', fail_threshold=5, reset_timeout=60, max_concurrency=6)
+
+# Auth backs every login/OTP-verify request -- the busiest, most latency-
+# sensitive Supabase call in the app.
+_auth_breaker = CircuitBreaker('supabase_auth', fail_threshold=5, reset_timeout=60, max_concurrency=6)
 
 
 def get_supabase_client() -> Client:
@@ -49,49 +58,55 @@ class SupabaseAuth:
     
     def sign_up_with_email(self, email: str, password: str = None):
         """Sign up user with email (passwordless or with password)."""
-        if password:
-            response = self.client.auth.sign_up({
-                "email": email,
-                "password": password
-            })
-        else:
-            # Send magic link
-            response = self.client.auth.sign_in_with_otp({
-                "email": email
-            })
+        with _auth_breaker.call():
+            if password:
+                response = self.client.auth.sign_up({
+                    "email": email,
+                    "password": password
+                })
+            else:
+                # Send magic link
+                response = self.client.auth.sign_in_with_otp({
+                    "email": email
+                })
         return response
-    
+
     def sign_in_with_otp(self, email: str):
         """Send OTP to email for passwordless login."""
-        return self.client.auth.sign_in_with_otp({
-            "email": email
-        })
-    
+        with _auth_breaker.call():
+            return self.client.auth.sign_in_with_otp({
+                "email": email
+            })
+
     def verify_otp(self, email: str, token: str):
         """Verify OTP token."""
-        return self.client.auth.verify_otp({
-            "email": email,
-            "token": token,
-            "type": "email"
-        })
-    
+        with _auth_breaker.call():
+            return self.client.auth.verify_otp({
+                "email": email,
+                "token": token,
+                "type": "email"
+            })
+
     def sign_in_with_google(self, redirect_url: str):
         """Get Google OAuth URL for sign in."""
-        response = self.client.auth.sign_in_with_oauth({
-            "provider": "google",
-            "options": {
-                "redirect_to": redirect_url
-            }
-        })
+        with _auth_breaker.call():
+            response = self.client.auth.sign_in_with_oauth({
+                "provider": "google",
+                "options": {
+                    "redirect_to": redirect_url
+                }
+            })
         return response.url
-    
+
     def get_user(self, access_token: str):
         """Get user from access token."""
-        return self.client.auth.get_user(access_token)
-    
+        with _auth_breaker.call():
+            return self.client.auth.get_user(access_token)
+
     def sign_out(self, access_token: str):
         """Sign out user."""
-        return self.client.auth.sign_out()
+        with _auth_breaker.call():
+            return self.client.auth.sign_out()
 
 
 class SupabaseStorage:
@@ -111,24 +126,27 @@ class SupabaseStorage:
         options = {}
         if content_type:
             options['content-type'] = content_type
-        
-        return self.client.storage.from_(bucket_name).upload(
-            file_path,
-            file_data,
-            options
-        )
-    
+
+        with _storage_breaker.call():
+            return self.client.storage.from_(bucket_name).upload(
+                file_path,
+                file_data,
+                options
+            )
+
     def get_public_url(self, bucket_name: str, file_path: str):
         """Get public URL for a file."""
         return self.client.storage.from_(bucket_name).get_public_url(file_path)
-    
+
     def get_signed_url(self, bucket_name: str, file_path: str, expires_in: int = 3600):
         """Get signed URL for private file access."""
-        return self.client.storage.from_(bucket_name).create_signed_url(
-            file_path,
-            expires_in
-        )
-    
+        with _storage_breaker.call():
+            return self.client.storage.from_(bucket_name).create_signed_url(
+                file_path,
+                expires_in
+            )
+
     def delete_file(self, bucket_name: str, file_path: str):
         """Delete a file from storage."""
-        return self.client.storage.from_(bucket_name).remove([file_path])
+        with _storage_breaker.call():
+            return self.client.storage.from_(bucket_name).remove([file_path])
