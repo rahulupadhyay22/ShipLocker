@@ -1,0 +1,255 @@
+/* Request Details page (templates/personal_shop/request_detail.html).
+   Uses only variables already defined in main.css + shared .ta-meta-list /
+   .ta-breadcrumb / .card-icon-badge from personal_shop.css and main.css. */
+
+.ta-hero-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.ta-hero-left { display: flex; align-items: center; gap: 1rem; }
+
+.ta-hero-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-md);
+    background: var(--surface-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    font-size: 1.75rem;
+}
+
+.ta-hero-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.ta-hero-id-row { display: flex; align-items: center; gap: 0.6rem; }
+.ta-hero-id { font-size: 1.15rem; font-weight: 700; color: var(--text-main); }
+.ta-hero-type { color: var(--text-secondary); font-size: 0.85rem; margin: 0.2rem 0 0; }
+.ta-hero-date { color: var(--text-muted); font-size: 0.8rem; margin: 0.1rem 0 0; }
+
+.ta-hero-stats { display: flex; gap: 2.5rem; }
+.ta-hero-stat-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.ta-hero-stat-value { font-weight: 700; color: var(--text-main); font-size: 1rem; margin-top: 0.2rem; }
+.ta-hero-back { flex-shrink: 0; }
+
+.ta-detail-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    align-items: stretch;
+    margin-top: 1rem;
+}
+
+.ta-detail-grid-3 > .card { display: flex; flex-direction: column; }
+
+.ta-detail-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    align-items: start;
+    margin-top: 1rem;
+}
+
+.ta-product-gallery {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 1rem 1.1rem 0;
+}
+
+.ta-product-body { display: flex; gap: 1rem; padding: 1rem 1.1rem 0; }
+
+.ta-product-thumb {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-50);
+    flex-shrink: 0;
+    overflow: hidden;
+    display: block;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.ta-product-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Fullscreen image lightbox for the Product Details gallery */
+.ta-gallery-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.92);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.ta-gallery-modal.open { display: flex; }
+
+.ta-gallery-modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    max-width: 85vw;
+    max-height: 85vh;
+}
+
+.ta-gallery-modal-body img {
+    max-width: 85vw;
+    max-height: 75vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
+.ta-gallery-counter {
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+}
+
+.ta-gallery-close,
+.ta-gallery-nav {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #f1f5f9;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.ta-gallery-close:hover,
+.ta-gallery-nav:hover { background: rgba(255, 255, 255, 0.22); }
+
+.ta-gallery-close {
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 44px;
+    height: 44px;
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.ta-gallery-nav {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 52px;
+    height: 52px;
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.ta-gallery-nav-prev { left: 1.5rem; }
+.ta-gallery-nav-next { right: 1.5rem; }
+
+@media (max-width: 560px) {
+    .ta-gallery-close { top: 0.75rem; right: 0.75rem; width: 38px; height: 38px; }
+    .ta-gallery-nav { width: 42px; height: 42px; }
+    .ta-gallery-nav-prev { left: 0.5rem; }
+    .ta-gallery-nav-next { right: 0.5rem; }
+}
+.ta-product-meta { flex: 1; min-width: 0; padding: 0; }
+
+.ta-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ta-clamp.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+}
+
+.ta-show-more {
+    display: block;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0.2rem 0 0;
+    color: var(--primary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ta-quote-banner {
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 0.85rem 1.1rem;
+    font-size: 0.8rem;
+    margin: 1rem 1.1rem;
+    border-radius: var(--radius-sm);
+}
+
+.ta-quote-banner strong { display: block; font-size: 0.9rem; margin-bottom: 0.1rem; }
+
+.ta-quote-lines { padding: 0 1.1rem 0.5rem; }
+
+.ta-quote-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.ta-quote-line.total {
+    border-top: 1px solid var(--surface-100);
+    margin-top: 0.4rem;
+    padding-top: 0.6rem;
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.ta-action-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1.1rem;
+    border-top: 1px solid var(--surface-100);
+    text-decoration: none;
+    color: var(--text-main);
+    width: 100%;
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.ta-action-row:first-child { border-top: none; }
+.ta-action-row-btn { border-top: 1px solid var(--surface-100); }
+.ta-action-row-text { flex: 1; line-height: 1.3; }
+.ta-action-row small { display: block; color: var(--text-muted); font-weight: 400; margin-top: 0.1rem; }
+.ta-action-arrow { color: var(--text-muted); transition: transform 0.2s, color 0.2s; }
+.ta-action-row:hover .ta-action-arrow { color: var(--primary); transform: translateX(2px); }
+
+@media (max-width: 900px) {
+    .ta-detail-grid-3 { grid-template-columns: 1fr; }
+    .ta-detail-grid-2 { grid-template-columns: 1fr; }
+    .ta-hero-card { flex-direction: column; align-items: flex-start; }
+    .ta-hero-stats { gap: 1.5rem; }
+}

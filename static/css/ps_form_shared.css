@@ -1,0 +1,277 @@
+/* TrunkAssist request-form pages — shared base, imported by each service's own stylesheet.
+   Matches the plain-icon, solid-dot visual language used on My Trunk (my_trunk.css):
+   no colored icon chips, small stroke icons, single-color number dots. */
+
+.ta-breadcrumb {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.ta-breadcrumb a { color: var(--text-muted); text-decoration: none; }
+.ta-breadcrumb a:hover { color: var(--primary); }
+
+.ta-form-layout {
+    display: grid;
+    grid-template-columns: 1.8fr 1.2fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.ta-request-card { padding: 2rem 2.25rem; }
+
+.ta-form-section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 2rem 0 1.1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--surface-200);
+}
+
+.ta-request-card > form > .ta-form-section-title:first-child { margin-top: 0; }
+
+.ta-required { color: var(--accent-hover); }
+
+.ta-select-narrow { max-width: 260px; }
+
+.ta-field-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: -0.6rem 0 1rem;
+}
+
+/* Sharper contrast than the site-wide .form-input (surface-200 on white reads as no border at all) */
+.ta-request-card .form-input,
+.ta-request-card .form-control,
+.ta-request-card select,
+.ta-request-card textarea,
+.ta-request-card input:not([type="file"]) {
+    background: #fff;
+    border: 1.5px solid #c7cdd2;
+}
+
+.ta-request-card .form-input:hover,
+.ta-request-card .form-control:hover {
+    border-color: var(--text-muted);
+}
+
+.ta-request-card .form-input:focus,
+.ta-request-card .form-control:focus,
+.ta-request-card select:focus,
+.ta-request-card textarea:focus {
+    border-color: var(--primary);
+}
+
+.ta-request-card .form-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-main);
+}
+
+.ta-dropzone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 1.5px dashed var(--surface-200);
+    border-radius: var(--radius-md);
+    padding: 2.25rem 1rem;
+    text-align: center;
+    background: var(--surface-50);
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.ta-dropzone:hover { border-color: var(--primary); }
+
+.ta-dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+
+.ta-dropzone-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--text-muted);
+}
+
+.ta-dropzone-link { color: var(--primary); font-weight: 600; }
+.ta-dropzone-meta { color: var(--text-muted); font-size: 0.75rem; }
+
+.ta-dropzone-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.ta-dropzone-preview-img {
+    max-width: 100%;
+    max-height: 180px;
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+    box-shadow: var(--shadow-sm);
+}
+
+.ta-dropzone-filename {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-top: 0.5rem;
+}
+
+.ta-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.ta-form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px dashed var(--surface-200);
+}
+
+.ta-side-stack { display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* .card ships with zero padding by design (main.css) — every sidebar card needs its own */
+.ta-side-stack > .card { padding: 1.5rem 1.5rem 1.75rem; }
+
+.ta-side-stack .card-title { font-size: 1.15rem; margin-bottom: 0.25rem; }
+
+/* Numbered like a real sequence, but as large serif numerals (Fraunces, same face as
+   every heading on the site) instead of the generic circle+dashed-line timeline pattern. */
+.ta-howworks-list { list-style: none; margin: 0.5rem 0 0; padding: 0; }
+
+.ta-howworks-list li {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1rem 0;
+    border-top: 1px solid var(--surface-100);
+}
+
+.ta-howworks-list li:first-child { border-top: none; padding-top: 0.75rem; }
+.ta-howworks-list li:last-child { padding-bottom: 0; }
+
+.ta-howworks-num {
+    flex-shrink: 0;
+    width: 1.9rem;
+    font-family: 'Fraunces', serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--accent-hover);
+}
+
+.ta-howworks-list strong { display: block; font-size: 0.92rem; color: var(--text-main); }
+.ta-howworks-list p { margin: 0.25rem 0 0; font-size: 0.83rem; line-height: 1.45; color: var(--text-secondary); }
+
+.ta-tips-list {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.ta-tips-list li {
+    position: relative;
+    padding-left: 1.1rem;
+    font-size: 0.83rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+}
+
+.ta-tips-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5em;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.ta-help-lede {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0.35rem 0 1rem;
+}
+
+.ta-sites-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-top: 1rem; }
+.ta-site-badge {
+    background: var(--surface-50);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.4rem;
+    text-align: center;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.ta-site-badge.ta-site-more { color: var(--text-muted); font-weight: 600; }
+
+.ta-help-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--surface-100);
+    text-decoration: none;
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+.ta-help-row:first-of-type { border-top: none; }
+
+/* Reuses the site's existing gold icon-badge (main.css .card-icon-badge.badge-gold) */
+.ta-help-row .card-icon-badge svg { width: 16px; height: 16px; }
+
+.ta-help-row-text { flex: 1; line-height: 1.3; }
+.ta-help-row small { display: block; color: var(--text-muted); font-weight: 400; margin-top: 0.1rem; }
+.ta-help-row .ta-help-arrow { color: var(--text-muted); transition: transform 0.2s, color 0.2s; }
+.ta-help-row:hover .ta-help-arrow { color: var(--accent-hover); transform: translateX(2px); }
+
+.ta-trust-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.ta-trust-badge svg { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
+.ta-trust-badge strong { color: var(--text-main); font-weight: 700; }
+
+@media (max-width: 900px) {
+    .ta-form-layout { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+    .ta-request-card { padding: 1.25rem; }
+    .ta-form-actions { flex-direction: column-reverse; gap: 0.75rem; align-items: stretch; }
+    .ta-field-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 420px) {
+    .ta-sites-grid { grid-template-columns: repeat(2, 1fr); }
+}

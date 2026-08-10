@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Boutique Purchase - TrunkAssist{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ps_form_shared.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ta-form-page">
+<div class="ta-breadcrumb"><a href="{% url 'personal_shop:dashboard' %}">TrunkAssist</a> / Boutique Purchase</div>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Boutique Purchase</h1>
+        <p class="page-subtitle">Share boutique details and we'll buy or arrange alterations for you.</p>
+    </div>
+    <a href="{% url 'personal_shop:request_list' %}" class="btn btn-secondary">My Requests</a>
+</div>
+
+<div class="ta-form-layout">
+    <div class="card ta-request-card">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <h3 class="ta-form-section-title">1. Boutique Details <span class="ta-required">*</span></h3>
+            <div class="form-group">
+                <label class="form-label" for="{{ form.boutique_name.id_for_label }}">{{ form.boutique_name.label }}</label>
+                {{ form.boutique_name }}
+                {% if form.boutique_name.errors %}<p class="ta-field-error">{{ form.boutique_name.errors|join:", " }}</p>{% endif %}
+            </div>
+
+            <h3 class="ta-form-section-title">2. Product / Order Details</h3>
+            <div class="ta-field-row">
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.item_description.id_for_label }}">What do you want to buy?</label>
+                    {{ form.item_description }}
+                    {% if form.item_description.errors %}<p class="ta-field-error">{{ form.item_description.errors|join:", " }}</p>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.preferred_size.id_for_label }}">Size / Measurements</label>
+                    {{ form.preferred_size }}
+                </div>
+            </div>
+
+            <h3 class="ta-form-section-title">3. Upload Reference Images (Optional)</h3>
+            <div class="form-group">
+                <label class="ta-dropzone" id="ta-dropzone" for="{{ form.reference_image.id_for_label }}">
+                    {{ form.reference_image }}
+                    <img class="ta-dropzone-preview-img" id="ta-dropzone-preview-img" alt="Selected image preview" hidden>
+                    <span class="ta-dropzone-placeholder" id="ta-dropzone-placeholder">
+                        <svg class="ta-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 18a4 4 0 0 1-1-7.87A5.5 5.5 0 0 1 16.5 8h.5a4 4 0 0 1 0 8h-1M12 11v8m0-8-3 3m3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>Drag &amp; drop images here or <span class="ta-dropzone-link">Choose Files</span></span>
+                        <span class="ta-dropzone-meta">JPG, PNG or WebP &middot; Max 5MB each</span>
+                    </span>
+                    <span class="ta-dropzone-filename" id="ta-dropzone-filename" hidden></span>
+                </label>
+                {% if form.reference_image.errors %}<p class="ta-field-error">{{ form.reference_image.errors|join:", " }}</p>{% endif %}
+            </div>
+
+            <div class="ta-form-actions">
+                <a href="{% url 'personal_shop:dashboard' %}" class="btn btn-secondary">Back</a>
+                <button type="submit" class="btn btn-primary">Submit Request &rarr;</button>
+            </div>
+        </form>
+    </div>
+
+    {% include 'personal_shop/_form_sidebar.html' %}
+</div>
+
+<div class="ta-trust-badge">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span><strong>100% Secure &amp; Trusted</strong> — All payments are secure. We only buy after your approval.</span>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ta_dropzone.js' %}"></script>
+{% endblock %}

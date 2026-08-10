@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quotation - {{ shop_request.display_id }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/personal_shop.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ta-breadcrumb">
+    <a href="{% url 'personal_shop:dashboard' %}">TrunkAssist</a> &rsaquo;
+    <a href="{% url 'personal_shop:request_detail' pk=shop_request.pk %}">{{ shop_request.display_id }}</a> &rsaquo;
+    Quotation
+</div>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Quotation</h1>
+        <p class="page-subtitle">{{ shop_request.display_id }} &mdash; {{ shop_request.get_request_type_display }}</p>
+    </div>
+    <a href="{% url 'personal_shop:request_detail' pk=shop_request.pk %}" class="btn btn-secondary">Back to Request</a>
+</div>
+
+<div class="alert alert-info">
+    We have found the product you requested. Please review the quote and approve to proceed.
+</div>
+
+<div class="card">
+    <div class="card-header"><h3 class="card-title">Quotation Breakdown</h3></div>
+    <div class="ta-quote-table-wrap">
+    <table class="ta-quote-table">
+        <thead>
+            <tr><th>Item</th><th>Qty</th><th>Amount</th></tr>
+        </thead>
+        <tbody>
+            {% for item in line_items %}
+            <tr>
+                <td>
+                    {{ item.name }}
+                    {% if item.variant_details %}<div class="ta-variant">{{ item.variant_details }}</div>{% endif %}
+                </td>
+                <td>{{ item.qty }}</td>
+                <td>₹{{ item.line_total }}</td>
+            </tr>
+            {% endfor %}
+            <tr><td>Domestic Shipping</td><td></td><td>₹{{ quotation.domestic_shipping_amount }}</td></tr>
+            <tr><td>TrunkAssist Service Fee</td><td></td><td>₹{{ quotation.service_fee_amount }}</td></tr>
+            <tr class="ta-quote-subtotal"><td>Sub Total</td><td></td><td>₹{{ quotation.subtotal }}</td></tr>
+            <tr><td>Payment Gateway Charges</td><td></td><td>₹{{ quotation.payment_gateway_charge }}</td></tr>
+            <tr class="ta-quote-total"><td>Total Amount</td><td></td><td>₹{{ quotation.total_amount }}</td></tr>
+        </tbody>
+    </table>
+    </div>
+
+    <p class="ta-quote-note">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        International shipping will be estimated separately once the item reaches our warehouse. This quotation is valid for {{ expires_in }}.
+    </p>
+
+    {% if quotation.status == 'pending' %}
+    <div class="ta-form-actions ta-quote-actions">
+        <form method="post" action="{% url 'personal_shop:quotation_decline' pk=shop_request.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary">Decline</button>
+        </form>
+        <button id="pay-now-btn" class="btn btn-primary"
+            data-create-url="{% url 'personal_shop:quotation_pay' pk=shop_request.pk %}"
+            data-verify-url="{% url 'payments:verify' %}">
+            Approve &amp; Pay
+        </button>
+    </div>
+    {% elif quotation.status == 'approved' %}
+    <div class="ta-quote-status-note ta-quote-status-approved">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Approved &amp; paid &mdash; no further action needed.
+    </div>
+    {% elif quotation.status == 'declined' %}
+    <div class="ta-quote-status-note ta-quote-status-declined">Declined.</div>
+    {% elif quotation.status == 'expired' %}
+    <div class="ta-quote-status-note ta-quote-status-declined">This quotation has expired.</div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if quotation.status == 'pending' %}
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+<script>
+    const csrfToken = '{{ csrf_token }}';
+
+    async function parseJsonOrThrow(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+        const errorText = await response.text();
+        throw new Error(errorText || 'Unexpected server response.');
+    }
+
+    async function verifyPayment(verifyUrl, payload) {
+        const response = await fetch(verifyUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify(payload),
+        });
+        return parseJsonOrThrow(response);
+    }
+
+    const payNowBtn = document.getElementById('pay-now-btn');
+    if (payNowBtn) {
+        payNowBtn.addEventListener('click', async function () {
+            const createUrl = this.dataset.createUrl;
+            const verifyUrl = this.dataset.verifyUrl;
+            const originalText = this.textContent;
+
+            this.disabled = true;
+            this.textContent = 'Preparing payment...';
+
+            try {
+                const createResponse = await fetch(createUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                });
+                const orderData = await parseJsonOrThrow(createResponse);
+
+                if (!createResponse.ok) {
+                    throw new Error(orderData.error || 'Could not start payment.');
+                }
+
+                if (!window.Razorpay) {
+                    throw new Error('Razorpay checkout failed to load.');
+                }
+
+                const options = {
+                    key: orderData.key_id,
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: 'CamelTrunk',
+                    description: 'TrunkAssist quotation for {{ shop_request.display_id }}',
+                    order_id: orderData.order_id,
+                    handler: async function (response) {
+                        try {
+                            const verifyResult = await verifyPayment(verifyUrl, {
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            });
+
+                            if (verifyResult.status === 'success') {
+                                window.location.href = "{% url 'personal_shop:payment_confirmation' pk=shop_request.pk %}";
+                                return;
+                            }
+                            alert(verifyResult.error || 'Payment verification failed.');
+                        } catch (error) {
+                            alert(error.message || 'Payment verification failed.');
+                        } finally {
+                            payNowBtn.disabled = false;
+                            payNowBtn.textContent = originalText;
+                        }
+                    },
+                    theme: { color: '#F5A623' },
+                    modal: {
+                        ondismiss: function () {
+                            payNowBtn.disabled = false;
+                            payNowBtn.textContent = originalText;
+                        }
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+            } catch (error) {
+                alert(error.message || 'Unable to start payment.');
+                payNowBtn.disabled = false;
+                payNowBtn.textContent = originalText;
+            }
+        });
+    }
+</script>
+{% endif %}
+{% endblock %}

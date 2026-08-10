@@ -65,6 +65,11 @@ class Payment(models.Model):
         null=True, blank=True, related_name='payments',
         help_text="Shipment this payment is for (if applicable)"
     )
+    personal_shop_request = models.ForeignKey(
+        'personal_shop.PersonalShopRequest', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='payments',
+        help_text="TrunkAssist request this payment is for (if applicable)"
+    )
 
     # Amount
     amount = models.DecimalField(max_digits=10, decimal_places=2)
