@@ -170,3 +170,57 @@ def notify_shipment_events(sender, instance, created, **kwargs):
         ]
         send_notification(user, "shipment_updated", components)
         logger.info(f"📝 SHIPMENT UPDATED: {shipment_id} -> {status_display} for {user.email}")
+
+
+# ============================================================================
+# TRUNKASSIST (PERSONAL SHOP REQUEST) SIGNALS
+# ============================================================================
+
+PERSONAL_SHOP_STATUS_TEMPLATES = {
+    'executive_assigned': 'personal_shop_executive_assigned',
+    'quotation_ready': 'personal_shop_quotation_ready',
+    'needs_info': 'personal_shop_needs_info',
+    'purchased': 'personal_shop_purchased',
+    'added_to_trunk': 'personal_shop_added_to_trunk',
+}
+
+
+@receiver(pre_save, sender='personal_shop.PersonalShopRequest')
+def cache_personal_shop_request_status(sender, instance, **kwargs):
+    """Cache the old status before save to detect changes."""
+    if instance.pk:
+        try:
+            old_instance = sender.objects.get(pk=instance.pk)
+            cache.set(f'pshop_old_status:{instance.pk}', old_instance.status, timeout=60)
+        except sender.DoesNotExist:
+            pass
+
+
+@receiver(post_save, sender='personal_shop.PersonalShopRequest')
+def notify_personal_shop_request_events(sender, instance, created, **kwargs):
+    """Notify on TrunkAssist request status changes with a configured template."""
+    old_status = cache.get(f'pshop_old_status:{instance.pk}')
+    cache.delete(f'pshop_old_status:{instance.pk}')
+
+    if created or old_status == instance.status:
+        return
+
+    template_name = PERSONAL_SHOP_STATUS_TEMPLATES.get(instance.status)
+    if not template_name:
+        return
+
+    user = instance.locker.user
+    request_id = instance.display_id or str(instance.id)[:8]
+    status_display = instance.get_status_display()
+
+    components = [
+        {
+            "type": "body",
+            "parameters": [
+                {"type": "text", "text": request_id},
+                {"type": "text", "text": status_display},
+            ]
+        }
+    ]
+    send_notification(user, template_name, components)
+    logger.info(f"🛍️ TRUNKASSIST UPDATED: {request_id} -> {status_display} for {user.email}")

@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}TrunkAssist - CamelTrunk{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/personal_shop.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">TrunkAssist</h1>
+        <p class="page-subtitle">Can't find something in India? We'll source it, buy it and deliver it to your CamelTrunk warehouse.</p>
+    </div>
+    <a href="{% url 'personal_shop:request_list' %}" class="btn btn-secondary">My Requests</a>
+</div>
+
+<div class="ta-hero">
+    <div class="ta-hero-text">
+        <h2>Shop Anything From India.<br><span>We'll Buy It For You.</span></h2>
+        <p>Our sourcing experts help you purchase products from any Indian store, boutique or local market.</p>
+        <div class="ta-hero-actions">
+            <a href="#ta-help" class="btn btn-primary">Start Request &rarr;</a>
+            <a href="#ta-how-it-works" class="btn btn-secondary">How It Works</a>
+        </div>
+    </div>
+    <div class="ta-hero-art">
+        <img src="{% static 'img/ps_home.png' %}" alt="CamelTrunk sources from Amazon, Flipkart, Myntra, Ajio and Meesho, then delivers to your warehouse">
+    </div>
+</div>
+
+<h2 class="ta-section-title" id="ta-help">How can we help?</h2>
+<div class="ta-type-grid">
+    {% for card in type_cards %}
+    <div class="card ta-type-card">
+        <div class="ta-type-card-icon ta-icon-{{ card.icon }}"></div>
+        <h3>{{ card.label }}</h3>
+        <p>{{ card.description }}</p>
+        <a href="{% url 'personal_shop:request_create' request_type=card.type %}" class="btn btn-primary">Start Request &rarr;</a>
+    </div>
+    {% endfor %}
+</div>
+
+<h2 class="ta-section-title">Why choose TrunkAssist?</h2>
+<div class="ta-why-grid">
+    <div class="ta-why-item">
+        <div class="card-icon-badge">🛡️</div>
+        <div><strong>Verified Stores</strong><p>We buy only from trusted and verified sellers.</p></div>
+    </div>
+    <div class="ta-why-item">
+        <div class="card-icon-badge badge-gold">🧑‍💼</div>
+        <div><strong>Personal Shopper</strong><p>Our team sources the best product for you.</p></div>
+    </div>
+    <div class="ta-why-item">
+        <div class="card-icon-badge">🔒</div>
+        <div><strong>Secure Payments</strong><p>100% safe payments with full transparency.</p></div>
+    </div>
+    <div class="ta-why-item">
+        <div class="card-icon-badge badge-gold">📦</div>
+        <div><strong>Warehouse Storage</strong><p>Products are stored safely in your CamelTrunk.</p></div>
+    </div>
+</div>
+
+<h2 class="ta-section-title" id="ta-how-it-works">How TrunkAssist Works</h2>
+<div class="ta-steps-strip">
+    <div class="ta-step"><div class="ta-step-circle">📝<span class="ta-step-num">1</span></div><strong>Submit Request</strong><p>Share link, image or details with us.</p></div>
+    <div class="ta-step"><div class="ta-step-circle">🔍<span class="ta-step-num">2</span></div><strong>We Review</strong><p>We search and confirm availability.</p></div>
+    <div class="ta-step"><div class="ta-step-circle">🧾<span class="ta-step-num">3</span></div><strong>Receive Quote</strong><p>You get best price and details.</p></div>
+    <div class="ta-step"><div class="ta-step-circle">💳<span class="ta-step-num">4</span></div><strong>Approve &amp; Pay</strong><p>Review and make secure payment.</p></div>
+    <div class="ta-step"><div class="ta-step-circle">🛍️<span class="ta-step-num">5</span></div><strong>We Buy</strong><p>We purchase from verified seller.</p></div>
+    <div class="ta-step"><div class="ta-step-circle">🏠<span class="ta-step-num">6</span></div><strong>Delivered</strong><p>Product reaches your CamelTrunk.</p></div>
+</div>
+
+<h2 class="ta-section-title">Your Requests</h2>
+<div class="card">
+    {% if recent_requests %}
+    <div class="ta-req-table-wrap">
+        <table class="ta-req-table">
+            <thead>
+                <tr><th>Request ID</th><th>Method</th><th>Created On</th><th>Status</th><th>Amount (INR)</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for req in recent_requests %}
+                <tr>
+                    <td>{{ req.display_id }}</td>
+                    <td>{{ req.get_request_type_display }}</td>
+                    <td>{{ req.created_at|date:"d M Y" }}</td>
+                    <td>{% include 'personal_shop/_status_pill.html' with status=req.status status_display=req.get_status_display %}</td>
+                    <td>{% if req.active_quotation %}&#8377;{{ req.active_quotation.total_amount }}{% else %}&ndash;{% endif %}</td>
+                    <td><a href="{% url 'personal_shop:request_detail' pk=req.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <a href="{% url 'personal_shop:request_list' %}" class="ta-block-btn" style="text-align:center; padding: 1rem;">View All Requests &rarr;</a>
+    {% else %}
+    <p class="ta-empty">No requests yet. Start one above.</p>
+    {% endif %}
+</div>
+
+<div class="faq-container">
+    <div class="faq-section">
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <div class="faq-grid">
+            <div class="faq-item">
+                <button class="faq-question">How long does it take to find the product?</button>
+                <div class="faq-answer">
+                    <p>Most requests get a quotation within 24 hours. Local Shop Purchase requests take 3-5 business days since an executive visits the shop in person.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">What if the product is out of stock?</button>
+                <div class="faq-answer">
+                    <p>Your assigned executive will flag the request as "Needs Info" and suggest the closest available alternative before proceeding.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">Can I cancel my request?</button>
+                <div class="faq-answer">
+                    <p>Yes, any time before we purchase the item on your behalf. Once purchased, cancellation is no longer possible.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">Are there any additional charges?</button>
+                <div class="faq-answer">
+                    <p>Your quotation shows domestic shipping, a TrunkAssist service fee, and payment gateway charges upfront &mdash; no hidden costs. International shipping is estimated separately once the item reaches our warehouse.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">How will the product be shipped to me?</button>
+                <div class="faq-answer">
+                    <p>Once delivered to our warehouse, the item joins your Trunk just like any other parcel, ready to be included in your next international shipment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="ta-cta-banner">
+    <div class="ta-cta-text">
+        <span class="ta-cta-icon">📦</span>
+        <div>
+            <strong>Need help sourcing something unique?</strong>
+            <p>Our experts are ready to help you get it from anywhere in India.</p>
+        </div>
+    </div>
+    <a href="#ta-help" class="btn btn-primary">Start a TrunkAssist Request &rarr;</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.faq-question').forEach(button => {
+        button.addEventListener('click', () => {
+            const answer = button.nextElementSibling;
+            button.classList.toggle('active');
+            if (button.classList.contains('active')) {
+                answer.style.maxHeight = answer.scrollHeight + 'px';
+            } else {
+                answer.style.maxHeight = 0;
+            }
+        });
+    });
+</script>
+{% endblock %}

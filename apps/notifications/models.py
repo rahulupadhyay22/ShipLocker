@@ -58,7 +58,12 @@ class AppSettings(models.Model):
     template_parcel_action_required = models.CharField(max_length=100, default="parcel_action_required")
     template_shipment_created = models.CharField(max_length=100, default="shipment_created")
     template_shipment_updated = models.CharField(max_length=100, default="shipment_updated")
-    
+    template_personal_shop_executive_assigned = models.CharField(max_length=100, default="personal_shop_executive_assigned")
+    template_personal_shop_quotation_ready = models.CharField(max_length=100, default="personal_shop_quotation_ready")
+    template_personal_shop_needs_info = models.CharField(max_length=100, default="personal_shop_needs_info")
+    template_personal_shop_purchased = models.CharField(max_length=100, default="personal_shop_purchased")
+    template_personal_shop_added_to_trunk = models.CharField(max_length=100, default="personal_shop_added_to_trunk")
+
     # ===========================
     # DHL EXPRESS API
     # ===========================

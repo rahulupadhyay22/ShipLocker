@@ -22,6 +22,7 @@ def robots_txt(request):
         "Disallow: /shipments/",
         "Disallow: /kyc/",
         "Disallow: /payments/",
+        "Disallow: /personal-shop/",
         "Disallow: /manage-rb-panel/",
         "",
     ]
@@ -37,6 +38,7 @@ urlpatterns = [
     path('shipments/', include('apps.shipments.urls')),
     path('kyc/', include('apps.kyc.urls')),
     path('payments/', include('apps.payments.urls')),
+    path('personal-shop/', include('apps.personal_shop.urls')),
     path('', include('apps.content.urls')),
 ]
 

@@ -27,6 +27,8 @@ class RateLimitMiddleware:
         '/kyc/upload/': 'authenticated',
         '/shipments/create/': 'authenticated',
         '/locker/parcel/': 'authenticated',
+        '/personal-shop/new/': 'authenticated',
+        '/personal-shop/requests/': 'authenticated',
     }
 
     def __init__(self, get_response):

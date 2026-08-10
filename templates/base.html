@@ -116,7 +116,7 @@
 
             <nav class="sidebar-nav">
                 <a href="{% url 'accounts:dashboard' %}"
-                    class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    class="nav-item {% if request.resolver_match.view_name == 'accounts:dashboard' %}active{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -133,8 +133,8 @@
                     My Trunk
                 </a>
 
-                <a href="#"
-                    class="nav-item {% if request.resolver_match.url_name == 'action_required' %}active{% endif %}">
+                <a href="{% url 'personal_shop:dashboard' %}"
+                    class="nav-item {% if 'personal-shop' in request.path %}active{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M5 8l7 4 7-4M5 8v8a1 1 0 001 1h12a1 1 0 001-1V8M5 8l7-4 7 4" />
@@ -271,7 +271,7 @@
         <!-- Bottom Tab Bar (mobile only) -->
         <nav class="bottom-tab-bar">
             <a href="{% url 'accounts:dashboard' %}"
-                class="tab-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                class="tab-item {% if request.resolver_match.view_name == 'accounts:dashboard' %}active{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -285,14 +285,13 @@
                 </svg>
                 My Trunk
             </a>
-            <a href="{% url 'locker:action_required' %}"
-                class="tab-item {% if request.resolver_match.url_name == 'action_required' %}active{% endif %}">
+            <a href="{% url 'personal_shop:dashboard' %}"
+                class="tab-item {% if 'personal-shop' in request.path %}active{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M5 8l7 4 7-4M5 8v8a1 1 0 001 1h12a1 1 0 001-1V8M5 8l7-4 7 4" />
                 </svg>
-                Incoming
-                {% if incoming_parcels_count %}<span class="tab-badge">{{ incoming_parcels_count }}</span>{% endif %}
+                Shopper
             </a>
             <a href="{% url 'shipments:list' %}" class="tab-item {% if 'shipments' in request.path %}active{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

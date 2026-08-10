@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'apps.content',
     'apps.notifications',
     'apps.payments',
+    'apps.personal_shop',
 ]
 
 MIDDLEWARE = [
@@ -476,6 +477,22 @@ UNFOLD = {
                         "title": "Storage Fees",
                         "icon": "garage",
                         "link": reverse_lazy("admin:payments_storagefee_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "TrunkAssist",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Requests",
+                        "icon": "storefront",
+                        "link": reverse_lazy("admin:personal_shop_personalshoprequest_changelist"),
+                    },
+                    {
+                        "title": "Quotations",
+                        "icon": "request_quote",
+                        "link": reverse_lazy("admin:personal_shop_personalshopquotation_changelist"),
                     },
                 ],
             },
