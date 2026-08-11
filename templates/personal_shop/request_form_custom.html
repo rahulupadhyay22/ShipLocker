@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Custom Request - TrunkAssist{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ps_form_shared.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ta-form-page">
+<div class="ta-breadcrumb"><a href="{% url 'personal_shop:dashboard' %}">TrunkAssist</a> / Custom Request</div>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Custom Request</h1>
+        <p class="page-subtitle">Anything else? Describe what you need and we'll take it from there.</p>
+    </div>
+    <a href="{% url 'personal_shop:request_list' %}" class="btn btn-secondary">My Requests</a>
+</div>
+
+<div class="ta-form-layout">
+    <div class="card ta-request-card">
+        <form method="post">
+            {% csrf_token %}
+            <h3 class="ta-form-section-title">1. Tell us what you need <span class="ta-required">*</span></h3>
+            <div class="form-group">
+                <label class="form-label" for="{{ form.description.id_for_label }}">Describe your requirement in detail...</label>
+                {{ form.description }}
+                {% if form.description.errors %}<p class="ta-field-error">{{ form.description.errors|join:", " }}</p>{% endif %}
+            </div>
+
+            <div class="ta-form-actions">
+                <a href="{% url 'personal_shop:dashboard' %}" class="btn btn-secondary">Back</a>
+                <button type="submit" class="btn btn-primary">Submit Request &rarr;</button>
+            </div>
+        </form>
+    </div>
+
+    {% include 'personal_shop/_form_sidebar.html' %}
+</div>
+
+<div class="ta-trust-badge">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span><strong>100% Secure &amp; Trusted</strong> — All payments are secure. We only buy after your approval.</span>
+</div>
+</div>
+{% endblock %}

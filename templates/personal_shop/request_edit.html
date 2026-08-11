@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Request - TrunkAssist{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/personal_shop.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Edit Request</h1>
+        <p class="page-subtitle">{{ shop_request.display_id }} — {{ shop_request.get_request_type_display }}</p>
+    </div>
+</div>
+
+<div class="card ta-form-card">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="ta-field-error">{{ field.errors|join:", " }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{% url 'personal_shop:request_detail' pk=shop_request.pk %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -211,6 +211,8 @@ class VerifyPaymentView(LoginRequiredMixin, View):
                 payment.shipment.paid_at = timezone.now()
                 payment.shipment.advance_after_payment()
                 payment.shipment.save()
+            elif payment.personal_shop_request:
+                payment.personal_shop_request.mark_paid()
 
         logger.info(
             f"Payment VERIFIED: user={request.user.email} "
@@ -273,6 +275,8 @@ class RazorpayWebhookView(View):
                                 payment.shipment.paid_at = timezone.now()
                                 payment.shipment.advance_after_payment()
                                 payment.shipment.save()
+                            elif payment.personal_shop_request:
+                                payment.personal_shop_request.mark_paid()
                         logger.info(f"Webhook: Payment captured for order {order_id}")
                 except Payment.DoesNotExist:
                     logger.warning(f"Webhook: Payment not found for order {order_id}")

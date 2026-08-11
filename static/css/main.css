@@ -947,6 +947,10 @@ a {
     font-size: 0.62rem;
     font-weight: 700;
     position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .tab-item svg {

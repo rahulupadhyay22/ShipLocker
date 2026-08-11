@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Requests - TrunkAssist{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/personal_shop.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ta-breadcrumb"><a href="{% url 'personal_shop:dashboard' %}">TrunkAssist</a> / My Requests</div>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">My Requests</h1>
+        <p class="page-subtitle">Track all your sourcing requests in one place</p>
+    </div>
+    <a href="{% url 'personal_shop:dashboard' %}" class="btn btn-secondary">New Request</a>
+</div>
+
+<div class="ta-status-pills">
+    {% for pill in status_pills %}
+    <a href="?status={{ pill.value }}&request_type={{ selected_type }}" class="ta-status-pill {% if pill.value == selected_status %}active{% endif %}">
+        {{ pill.label }} <span class="count">({{ pill.count }})</span>
+    </a>
+    {% endfor %}
+</div>
+
+<form method="get" class="ta-filter-bar">
+    <select name="status" class="form-input" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <select name="request_type" class="form-input" onchange="this.form.submit()">
+        <option value="">All Types</option>
+        {% for value, label in type_choices %}
+        <option value="{{ value }}" {% if value == selected_type %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+{% if requests %}
+<div class="card">
+    <div class="ta-req-table-wrap">
+        <table class="ta-req-table">
+            <thead>
+                <tr><th>Request ID</th><th>Method</th><th>Product / Details</th><th>Created On</th><th>Status</th><th>Amount (INR)</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr>
+                    <td>{{ req.display_id }}</td>
+                    <td>{{ req.get_request_type_display }}</td>
+                    <td class="ta-req-summary">{{ req.product_summary|truncatechars:40 }}</td>
+                    <td>{{ req.created_at|date:"d M Y" }}</td>
+                    <td>{% include 'personal_shop/_status_pill.html' with status=req.status status_display=req.get_status_display %}</td>
+                    <td>{% if req.active_quotation %}&#8377;{{ req.active_quotation.total_amount }}{% else %}&ndash;{% endif %}</td>
+                    <td><a href="{% url 'personal_shop:request_detail' pk=req.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="trunk-pagination">
+    {% if page_obj.has_previous %}
+    <a href="?status={{ selected_status }}&request_type={{ selected_type }}&page={{ page_obj.previous_page_number }}" class="trunk-page-btn">&lsaquo;</a>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    <a href="?status={{ selected_status }}&request_type={{ selected_type }}&page={{ num }}" class="trunk-page-btn {% if num == page_obj.number %}active{% endif %}">{{ num }}</a>
+    {% endfor %}
+    {% if page_obj.has_next %}
+    <a href="?status={{ selected_status }}&request_type={{ selected_type }}&page={{ page_obj.next_page_number }}" class="trunk-page-btn">&rsaquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card" style="text-align: center; padding: 5rem 2rem;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">🛍️</div>
+    <h3>No requests match these filters</h3>
+    <a href="{% url 'personal_shop:dashboard' %}" class="btn btn-primary">Start a Request</a>
+</div>
+{% endif %}
+
+<div class="ta-cta-banner">
+    <div class="ta-cta-text">
+        <span class="ta-cta-icon">📦</span>
+        <div>
+            <strong>Can't find something?</strong>
+            <p>Our experts are ready to help you source it.</p>
+        </div>
+    </div>
+    <a href="{% url 'personal_shop:dashboard' %}" class="btn btn-primary">Create New Request &rarr;</a>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Product Link - TrunkAssist{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ps_form_shared.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ta-form-page">
+<div class="ta-breadcrumb"><a href="{% url 'personal_shop:dashboard' %}">TrunkAssist</a> / Product Link</div>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Product Link</h1>
+        <p class="page-subtitle">Paste any product link from an Indian website and we'll buy it for you.</p>
+    </div>
+    <a href="{% url 'personal_shop:request_list' %}" class="btn btn-secondary">My Requests</a>
+</div>
+
+<div class="ta-form-layout">
+    <div class="card ta-request-card">
+        <form method="post">
+            {% csrf_token %}
+            <h3 class="ta-form-section-title">1. Product Link <span class="ta-required">*</span></h3>
+            <div class="form-group">
+                <label class="form-label" for="{{ form.product_url.id_for_label }}">{{ form.product_url.label }}</label>
+                {{ form.product_url }}
+                {% if form.product_url.errors %}<p class="ta-field-error">{{ form.product_url.errors|join:", " }}</p>{% endif %}
+            </div>
+            <h3 class="ta-form-section-title">2. Additional Details (Optional)</h3>
+            <div class="ta-field-row">
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
+                    {{ form.quantity }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.size.id_for_label }}">{{ form.size.label }}</label>
+                    {{ form.size }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="{{ form.colour.id_for_label }}">{{ form.colour.label }}</label>
+                {{ form.colour }}
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+                {{ form.notes }}
+                {% if form.notes.errors %}<p class="ta-field-error">{{ form.notes.errors|join:", " }}</p>{% endif %}
+            </div>
+
+            <div class="ta-form-actions">
+                <a href="{% url 'personal_shop:dashboard' %}" class="btn btn-secondary">Back</a>
+                <button type="submit" class="btn btn-primary">Submit Request &rarr;</button>
+            </div>
+        </form>
+    </div>
+
+    {% include 'personal_shop/_form_sidebar.html' %}
+</div>
+
+<div class="ta-trust-badge">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span><strong>100% Secure &amp; Trusted</strong> — All payments are secure. We only buy after your approval.</span>
+</div>
+</div>
+{% endblock %}

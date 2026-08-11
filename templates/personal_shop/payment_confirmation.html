@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Successful - TrunkAssist{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/personal_shop.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ta-breadcrumb">
+    <a href="{% url 'personal_shop:dashboard' %}">TrunkAssist</a> &rsaquo;
+    <a href="{% url 'personal_shop:request_detail' pk=shop_request.pk %}">{{ shop_request.display_id }}</a> &rsaquo;
+    Payment Confirmation
+</div>
+<h1 class="page-title">Payment Confirmation</h1>
+
+<div class="card ta-confirmation-card">
+    <div class="ta-confirmation-check">✅</div>
+    <h2>Payment Successful!</h2>
+    <p>Thank you! Your payment for {{ shop_request.display_id }} has been received.</p>
+
+    {% if payment %}
+    <dl class="ta-meta-list ta-receipt">
+        <dt>Receipt Number</dt><dd>{{ payment.display_id }}</dd>
+        <dt>Date</dt><dd>{{ payment.paid_at|date:"d M Y, H:i" }}</dd>
+        <dt>Paid Amount</dt><dd>₹{{ payment.amount }}</dd>
+        <dt>Payment Method</dt><dd>{{ payment.get_payment_method_display }}</dd>
+    </dl>
+    {% endif %}
+
+    <div class="ta-actions ta-confirmation-actions">
+        <a href="{% url 'personal_shop:request_detail' pk=shop_request.pk %}" class="btn btn-primary">Back to Request</a>
+        <a href="{% url 'personal_shop:request_list' %}" class="btn btn-secondary">My Requests</a>
+    </div>
+</div>
+{% endblock %}

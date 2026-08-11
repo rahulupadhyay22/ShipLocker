@@ -1,0 +1,14 @@
+{% comment %}Expects: timeline (list of {label, timestamp, done}){% endcomment %}
+<ol class="ta-timeline">
+    {% for step in timeline %}
+    <li class="{% if step.done %}done{% else %}pending{% endif %}">
+        <span class="ta-timeline-dot"></span>
+        <span class="ta-timeline-label">{{ step.label }}</span>
+        {% if step.timestamp %}
+        <span class="ta-timeline-time">{{ step.timestamp|date:"d M Y, H:i" }}</span>
+        {% else %}
+        <span class="ta-timeline-time">Pending</span>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ol>

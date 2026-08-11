@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ shop_request.display_id }} - TrunkAssist{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/personal_shop.css' %}">
+<link rel="stylesheet" href="{% static 'css/ps_request_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ta-breadcrumb">
+    <a href="{% url 'personal_shop:dashboard' %}">TrunkAssist</a> &rsaquo;
+    <a href="{% url 'personal_shop:request_list' %}">My Requests</a> &rsaquo;
+    {{ shop_request.display_id }}
+</div>
+<h1 class="page-title">Request Details</h1>
+
+<div class="card ta-hero-card">
+    <div class="ta-hero-left">
+        <div class="ta-hero-thumb">
+            {% with first_image=images.first %}
+            {% if first_image %}
+            <img src="{{ first_image.image_url }}" alt="{{ first_image.caption }}">
+            {% else %}
+            🛍️
+            {% endif %}
+            {% endwith %}
+        </div>
+        <div>
+            <div class="ta-hero-id-row">
+                <span class="ta-hero-id">{{ shop_request.display_id }}</span>
+                {% include 'personal_shop/_status_pill.html' with status=shop_request.status status_display=shop_request.get_status_display %}
+            </div>
+            <p class="ta-hero-type">{{ shop_request.get_request_type_display }}</p>
+            <p class="ta-hero-date">{{ shop_request.created_at|date:"d M Y, H:i" }}</p>
+        </div>
+    </div>
+    <div class="ta-hero-stats">
+        <div>
+            <div class="ta-hero-stat-label">Amount (INR)</div>
+            <div class="ta-hero-stat-value">{% if shop_request.active_quotation %}&#8377;{{ shop_request.active_quotation.total_amount }}{% else %}&ndash;{% endif %}</div>
+        </div>
+        <div>
+            <div class="ta-hero-stat-label">Trunk</div>
+            <div class="ta-hero-stat-value">{{ shop_request.locker.locker_id }}</div>
+        </div>
+    </div>
+    <a href="{% url 'personal_shop:request_list' %}" class="btn btn-secondary ta-hero-back">&larr; Back to Requests</a>
+</div>
+
+<div class="ta-detail-grid-3">
+    <div class="card">
+        <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge">🕒</span> Request Progress</h3></div>
+        {% include 'personal_shop/_timeline.html' with timeline=timeline %}
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge badge-gold">📦</span> Product Details</h3></div>
+        {% if images %}
+        <div class="ta-product-gallery">
+            {% for image in images %}
+            <button type="button" class="ta-product-thumb ta-gallery-item" data-index="{{ forloop.counter0 }}">
+                <img src="{{ image.image_url }}" alt="{{ image.caption }}">
+            </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <div class="ta-product-body">
+            <dl class="ta-meta-list ta-product-meta">
+                {% for label, value in shop_request.detail_pairs %}
+                <dt>{{ label }}</dt>
+                {% if label == 'Maps Link' %}
+                <dd><a href="{{ value }}" target="_blank" rel="noopener">Open in Google Maps</a></dd>
+                {% elif value|length > 100 %}
+                <dd class="ta-clamp">{{ value }}</dd>
+                <button type="button" class="ta-show-more">Show more</button>
+                {% else %}
+                <dd>{{ value }}</dd>
+                {% endif %}
+                {% endfor %}
+            </dl>
+        </div>
+    </div>
+
+    {% if shop_request.active_quotation %}
+    <div class="card">
+        <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge">🧾</span> Quotation Details</h3></div>
+        <div class="ta-quote-banner">
+            <strong>Quoted by our team</strong>
+            {{ shop_request.active_quotation.created_at|date:"d M Y, H:i" }}
+        </div>
+        <div class="ta-quote-lines">
+            <div class="ta-quote-line"><span>Product Price</span><span>&#8377;{{ shop_request.active_quotation.subtotal }}</span></div>
+            <div class="ta-quote-line"><span>Our Service Fee</span><span>&#8377;{{ shop_request.active_quotation.service_fee_amount }}</span></div>
+            <div class="ta-quote-line"><span>Shipping to Warehouse</span><span>&#8377;{{ shop_request.active_quotation.domestic_shipping_amount }}</span></div>
+            {% if shop_request.active_quotation.payment_gateway_charge %}
+            <div class="ta-quote-line"><span>Payment Gateway Charges</span><span>&#8377;{{ shop_request.active_quotation.payment_gateway_charge }}</span></div>
+            {% endif %}
+            <div class="ta-quote-line total"><span>Total Quote</span><span>&#8377;{{ shop_request.active_quotation.total_amount }}</span></div>
+        </div>
+        <a href="{% url 'personal_shop:quotation_detail' pk=shop_request.pk %}" class="btn btn-secondary ta-block-btn">View Full Quotation</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="ta-detail-grid-2">
+    <div class="card">
+        <div class="card-header"><h3 class="card-title">Request Summary</h3></div>
+        <dl class="ta-meta-list">
+            <dt>Method</dt><dd>{{ shop_request.get_request_type_display }}</dd>
+            <dt>Destination</dt><dd>{{ shop_request.destination_country|default:"—" }}</dd>
+            <dt>Assigned Executive</dt><dd>{{ shop_request.assigned_executive.get_full_name|default:"Not yet assigned" }}</dd>
+            <dt>Last Updated</dt><dd>{{ shop_request.updated_at|date:"d M Y, H:i" }}</dd>
+            {% if shop_request.turnaround %}<dt>Expected Turnaround</dt><dd>{{ shop_request.turnaround }}</dd>{% endif %}
+        </dl>
+    </div>
+
+    {% if payment %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Payment Details</h3>
+            <span class="status-badge status-approved">Paid</span>
+        </div>
+        <dl class="ta-meta-list">
+            <dt>Paid On</dt><dd>{{ payment.paid_at|date:"d M Y, H:i" }}</dd>
+            <dt>Payment Method</dt><dd>{{ payment.get_payment_method_display }}</dd>
+            {% if payment.razorpay_payment_id %}<dt>Transaction ID</dt><dd>{{ payment.razorpay_payment_id }}</dd>{% endif %}
+            <dt>Amount Paid</dt><dd>&#8377;{{ payment.amount }}</dd>
+        </dl>
+    </div>
+    {% endif %}
+</div>
+
+{% if notes %}
+<div class="card">
+    <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge">💬</span> Notes</h3></div>
+    <ul class="ta-notes-list">
+        {% for note in notes %}
+        <li>
+            <strong>{{ note.author.get_full_name|default:"CamelTrunk Team" }}</strong> &mdash; {{ note.message }}
+            <span class="ta-note-time">{{ note.created_at|date:"d M Y, H:i" }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header"><h3 class="card-title">Actions</h3></div>
+    {% if shop_request.is_editable %}
+    <a href="{% url 'personal_shop:request_edit' pk=shop_request.pk %}" class="ta-action-row">
+        <span class="card-icon-badge">&#9998;</span>
+        <span class="ta-action-row-text">Edit Request<br><small>Update the details you submitted</small></span>
+        <span class="ta-action-arrow">&rarr;</span>
+    </a>
+    {% endif %}
+    {% if shop_request.is_cancellable %}
+    <form method="post" action="{% url 'personal_shop:request_cancel' pk=shop_request.pk %}" onsubmit="return confirm('Cancel this request?');">
+        {% csrf_token %}
+        <button type="submit" class="ta-action-row ta-action-row-btn">
+            <span class="card-icon-badge badge-danger">&#10005;</span>
+            <span class="ta-action-row-text">Cancel Request<br><small>Only possible before we purchase the item</small></span>
+            <span class="ta-action-arrow">&rarr;</span>
+        </button>
+    </form>
+    {% endif %}
+    <a href="mailto:support@cameltrunk.com" class="ta-action-row">
+        <span class="card-icon-badge badge-gold">&#9993;</span>
+        <span class="ta-action-row-text">Chat with Support<br><small>Get help from our team</small></span>
+        <span class="ta-action-arrow">&rarr;</span>
+    </a>
+</div>
+
+{% if images %}
+<div id="ta-gallery-modal" class="ta-gallery-modal">
+    <button type="button" class="ta-gallery-close" id="ta-gallery-close" aria-label="Close">&times;</button>
+    <button type="button" class="ta-gallery-nav ta-gallery-nav-prev" id="ta-gallery-prev" aria-label="Previous image">&lsaquo;</button>
+    <button type="button" class="ta-gallery-nav ta-gallery-nav-next" id="ta-gallery-next" aria-label="Next image">&rsaquo;</button>
+    <div class="ta-gallery-modal-body">
+        <img id="ta-gallery-modal-img" src="" alt="">
+        <div class="ta-gallery-counter" id="ta-gallery-counter"></div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.ta-show-more').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var dd = btn.previousElementSibling;
+            var expanded = dd.classList.toggle('expanded');
+            btn.textContent = expanded ? 'Show less' : 'Show more';
+        });
+    });
+
+    (function () {
+        var items = Array.prototype.slice.call(document.querySelectorAll('.ta-gallery-item'));
+        if (!items.length) return;
+
+        var sources = items.map(function (item) { return item.querySelector('img').src; });
+        var modal = document.getElementById('ta-gallery-modal');
+        var modalImg = document.getElementById('ta-gallery-modal-img');
+        var counter = document.getElementById('ta-gallery-counter');
+        var closeBtn = document.getElementById('ta-gallery-close');
+        var prevBtn = document.getElementById('ta-gallery-prev');
+        var nextBtn = document.getElementById('ta-gallery-next');
+        var current = 0;
+
+        function show(index) {
+            current = (index + sources.length) % sources.length;
+            modalImg.src = sources[current];
+            counter.textContent = (current + 1) + ' / ' + sources.length;
+            var multi = sources.length > 1;
+            prevBtn.style.display = multi ? 'flex' : 'none';
+            nextBtn.style.display = multi ? 'flex' : 'none';
+            counter.style.display = multi ? 'block' : 'none';
+        }
+
+        function open(index) {
+            show(index);
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function close() {
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        items.forEach(function (item, index) {
+            item.addEventListener('click', function () { open(index); });
+        });
+
+        closeBtn.addEventListener('click', close);
+        prevBtn.addEventListener('click', function () { show(current - 1); });
+        nextBtn.addEventListener('click', function () { show(current + 1); });
+        modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+
+        document.addEventListener('keydown', function (e) {
+            if (!modal.classList.contains('open')) return;
+            if (e.key === 'Escape') close();
+            else if (e.key === 'ArrowLeft') show(current - 1);
+            else if (e.key === 'ArrowRight') show(current + 1);
+        });
+    })();
+</script>
+{% endblock %}

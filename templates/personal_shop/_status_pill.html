@@ -1,0 +1,8 @@
+{% comment %}Expects: status, status_display{% endcomment %}
+{% if status == 'paid' or status == 'purchased' or status == 'delivered_to_warehouse' or status == 'added_to_trunk' %}
+<span class="status-badge status-approved">{{ status_display }}</span>
+{% elif status == 'quotation_declined' or status == 'quotation_expired' or status == 'cancelled' or status == 'needs_info' %}
+<span class="status-badge status-action">{{ status_display }}</span>
+{% else %}
+<span class="status-badge status-pending">{{ status_display }}</span>
+{% endif %}
