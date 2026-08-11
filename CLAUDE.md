@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-ShipLocker (project name `indiabox` internally) — Django app for international parcel forwarding: users get a virtual locker address, warehouse staff receive/inspect/photograph incoming parcels, users approve/return/discard them, then request shipment abroad with KYC, customs declaration, Razorpay payment, and multi-carrier (Bluedart/DHL) tracking.
+CamelTrunk (project name `indiabox` internally) — Django app for international parcel forwarding: users get a virtual locker address, warehouse staff receive/inspect/photograph incoming parcels, users approve/return/discard them, then request shipment abroad with KYC, customs declaration, Razorpay payment, and multi-carrier (Bluedart/DHL) tracking.
 
 ## Commands
 

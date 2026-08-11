@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}INDIBOX - India, Delivered{% endblock %}</title>
+    <title>{% block title %}CamelTrunk - India, Delivered{% endblock %}</title>
     <meta name="description"
         content="{% block meta_description %}Get your free virtual Indian address. Shop from Amazon India, Myntra, Flipkart & 1000+ stores. We consolidate & ship to 200+ countries.{% endblock %}">
 
@@ -127,8 +127,8 @@
 
         /* ===== FOOTER ===== */
         .footer {
-            background: #1F1F1F;
-            color: #B3ACC0;
+            background: var(--primary);
+            color: var(--text-on-dark);
             padding: 5rem 5% 2rem;
             border-top: 1px solid var(--surface-200);
         }
@@ -191,7 +191,7 @@
         }
 
         .footer-col a {
-            color: #B3ACC0;
+            color: var(--text-on-dark);
             transition: color 0.2s;
         }
 
@@ -205,7 +205,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            color: var(--text-on-dark);
+            opacity: 0.7;
         }
 
         /* PUBLIC CONTENT CONTAINER */
@@ -266,7 +268,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
-                INDIBOX            </a>
+                CamelTrunk            </a>
 
             <div class="nav-menu">
                 <a href="/#how-it-works" class="nav-link">How it Works</a>
@@ -296,7 +298,7 @@
         <div class="footer-container">
             <div class="footer-grid">
                 <div class="footer-brand">
-                    <h3>INDIBOX</h3>
+                    <h3>CamelTrunk</h3>
                     <p>Your trusted partner for shopping in India and shipping globally. We make international shopping
                         seamless and affordable.</p>
                     <div class="social-links">
@@ -337,7 +339,7 @@
                         <li><a href="{% url 'content:prohibited_items' %}">Prohibited Items</a></li>
                         <li><a href="{% url 'content:shipping_calculator' %}">Shipping Calculator</a></li>
                         <li><a href="{% url 'content:faq' %}">FAQ</a></li>
-                        <li><a href="mailto:support@indiabox.com">Contact Us</a></li>
+                        <li><a href="mailto:support@cameltrunk.com">Contact Us</a></li>
                     </ul>
                 </div>
 
@@ -352,7 +354,7 @@
             </div>
 
             <div class="footer-bottom">
-                <p>© 2024 INDIBOX Global Locker. All rights reserved.</p>
+                <p>© 2026 CamelTrunk. All rights reserved.</p>
                 <p>Made with ❤️ in India</p>
             </div>
         </div>

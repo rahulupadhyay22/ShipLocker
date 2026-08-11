@@ -1,6 +1,6 @@
 ---
 description: Runs parallel security and quality code
-  review for a specific ShipLocker feature. Pass the spec
+  review for a specific CamelTrunk feature. Pass the spec
   name as argument e.g. /code-review-feature 03-return-request
 allowed-tools: Bash(git diff), Bash(git diff --staged)
 ---

@@ -29,7 +29,7 @@
                 {% if primary_image %}
                 <img src="{{ primary_image.image_url }}" alt="{{ parcel.item_name|default:'Parcel photo' }}" width="600" height="600">
                 {% else %}
-                <div class="pd-hero-noimage">📦</div>
+                <div class="pd-hero-noimage"><svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
                 {% endif %}
             </div>
             <div class="pd-hero-body">
@@ -87,7 +87,7 @@
         <!-- Warehouse Photos -->
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title-row"><span class="card-icon-badge">📷</span> Warehouse Photos</h3>
+                <h3 class="card-title-row"><span class="card-icon-badge"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h1l1.5-2h9L18 7h1a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="4" stroke-width="2"/></svg></span> Warehouse Photos</h3>
             </div>
             <div class="card-body">
                 {% if parcel.images.all %}
@@ -109,7 +109,7 @@
                 </div>
                 {% else %}
                 <div class="pd-empty-photos">
-                    <div class="pd-empty-photos-icon">📷</div>
+                    <div class="pd-empty-photos-icon"><svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h1l1.5-2h9L18 7h1a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="4" stroke-width="1.5"/></svg></div>
                     <p>No inspection photos available yet.</p>
                 </div>
                 {% endif %}
@@ -119,7 +119,7 @@
         <!-- Inspection Notes -->
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title-row"><span class="card-icon-badge">📝</span> Inspection Notes</h3>
+                <h3 class="card-title-row"><span class="card-icon-badge"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span> Inspection Notes</h3>
             </div>
             <div class="card-body">
                 {% if parcel.inspection_notes %}
@@ -136,7 +136,7 @@
         {% if parcel.status == 'action_required' %}
         <div class="card pd-declare-card">
             <div class="card-header">
-                <h3>✏️ Item Declaration</h3>
+                <h3 style="display: flex; align-items: center; gap: 0.5rem;"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11 19l-4 1 1-4 9.586-9.586z"/></svg> Item Declaration</h3>
             </div>
             <div class="card-body">
                 <form method="post" action="{% url 'locker:approve_parcel' pk=parcel.pk %}"
@@ -191,7 +191,8 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary pd-form-submit">
-                        ✓ Approve & Move to Ready to Ship
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                        Approve & Move to Ready to Ship
                     </button>
                 </form>
 
@@ -214,7 +215,7 @@
             <div class="card-body">
                 <div class="pd-timeline">
                     <div class="pd-timeline-step done">
-                        <span class="pd-timeline-dot">✓</span>
+                        <span class="pd-timeline-dot"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></span>
                         <div class="pd-timeline-content">
                             <div class="pd-timeline-label">Arrived at Warehouse</div>
                             <div class="pd-timeline-date">{{ parcel.received_at|date:"d M Y, g:i A" }}</div>
@@ -222,7 +223,7 @@
                     </div>
                     {% if earliest_image %}
                     <div class="pd-timeline-step done">
-                        <span class="pd-timeline-dot">✓</span>
+                        <span class="pd-timeline-dot"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></span>
                         <div class="pd-timeline-content">
                             <div class="pd-timeline-label">Photos &amp; Video Verified</div>
                             <div class="pd-timeline-date">{{ earliest_image.uploaded_at|date:"d M Y, g:i A" }}</div>
@@ -230,7 +231,7 @@
                     </div>
                     {% endif %}
                     <div class="pd-timeline-step {% if parcel.approved_at %}done{% endif %}">
-                        <span class="pd-timeline-dot">{% if parcel.approved_at %}✓{% endif %}</span>
+                        <span class="pd-timeline-dot">{% if parcel.approved_at %}<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>{% endif %}</span>
                         <div class="pd-timeline-content">
                             <div class="pd-timeline-label">Ready to Ship</div>
                             <div class="pd-timeline-date">
@@ -239,7 +240,7 @@
                         </div>
                     </div>
                     <div class="pd-timeline-step {% if shipment_item %}done{% endif %}">
-                        <span class="pd-timeline-dot">{% if shipment_item %}✓{% endif %}</span>
+                        <span class="pd-timeline-dot">{% if shipment_item %}<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>{% endif %}</span>
                         <div class="pd-timeline-content">
                             <div class="pd-timeline-label">Shipped to You</div>
                             <div class="pd-timeline-date">
@@ -368,7 +369,7 @@
     <div class="card"
         style="width: 100%; max-width: 500px; margin: 1.5rem; border-color: var(--danger-bg); animation: slideUp 0.3s ease-out;">
         <div class="card-header" style="background: var(--danger-bg); border-bottom-color: #FCA5A5;">
-            <h3 style="color: var(--danger-text);">⚠️ Confirm Discard</h3>
+            <h3 style="color: var(--danger-text); display: flex; align-items: center; gap: 0.5rem;"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> Confirm Discard</h3>
             <button onclick="document.getElementById('discardModal').style.display='none'"
                 style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--danger-text);">&times;</button>
         </div>

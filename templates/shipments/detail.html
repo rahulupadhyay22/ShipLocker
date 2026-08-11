@@ -69,9 +69,9 @@
 
     {% with latest_event=shipment.tracking_events.first %}
     {% if latest_event %}
-    <div class="sd-alert">ℹ️ {{ latest_event.description|default:latest_event.status }}{% if latest_event.location %} — {{ latest_event.location }}{% endif %}</div>
+    <div class="sd-alert"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0; vertical-align: -3px; margin-right: 0.3rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{{ latest_event.description|default:latest_event.status }}{% if latest_event.location %} — {{ latest_event.location }}{% endif %}</div>
     {% elif shipment.status == 'declaration_pending' %}
-    <div class="sd-alert">📄 Your customs declaration is being reviewed. We'll notify you once approved and packing begins.</div>
+    <div class="sd-alert"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0; vertical-align: -3px; margin-right: 0.3rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Your customs declaration is being reviewed. We'll notify you once approved and packing begins.</div>
     {% endif %}
     {% endwith %}
 </div>
@@ -195,7 +195,7 @@
             {% for doc in other_documents %}
             <a href="{{ doc.signed_url }}" target="_blank" class="sd-quick-action">↓ Download {{ doc.get_document_type_display }} <span>›</span></a>
             {% endfor %}
-            <a href="{% url 'shipments:customs_help' %}" class="sd-quick-action">🎧 Raise Support Ticket <span>›</span></a>
+            <a href="{% url 'shipments:customs_help' %}" class="sd-quick-action"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="vertical-align: -2px; margin-right: 0.2rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.8L3 20l1.3-3.9A7.96 7.96 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>Raise Support Ticket <span>›</span></a>
         </div>
     </div>
 </div>
@@ -295,7 +295,7 @@
                         {% if item.parcel.images.first %}
                         <img src="{{ item.parcel.images.first.image_url }}" alt="" loading="lazy" width="60" height="60">
                         {% else %}
-                        📦
+                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                         {% endif %}
                     </span>
                     {{ item.parcel.item_name|default:item.parcel.tracking_number }}

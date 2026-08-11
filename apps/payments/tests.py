@@ -129,7 +129,7 @@ class InvoiceServiceTests(TestCase):
     def setUp(self):
         self.user = User.objects.create(email='invoice-service-test@example.com', is_active=True)
         settings = AppSettings.get_settings()
-        settings.company_legal_name = 'ShipLocker Logistics Pvt Ltd'
+        settings.company_legal_name = 'CamelTrunk Logistics Pvt Ltd'
         settings.company_gstin = '36AAAAA0000A1Z5'
         settings.company_pan = 'AAAAA0000A'
         settings.company_registered_address = 'Hyderabad, Telangana, India'

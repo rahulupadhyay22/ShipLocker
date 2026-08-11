@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-11T00:00:00Z",
+  "title": "Design System: CamelTrunk",
+  "extensions": {
+    "colorMeta": {
+      "caravan-teal": {
+        "role": "primary",
+        "displayName": "Caravan Teal",
+        "canonical": "#003746",
+        "tonalRamp": ["#00141a", "#00222b", "#003746", "#014a5e", "#026781", "#3a93a8", "#8ec3d1", "#dcf0f5"]
+      },
+      "treasure-gold": {
+        "role": "tertiary",
+        "displayName": "Treasure Gold",
+        "canonical": "#f6a313",
+        "tonalRamp": ["#4d2f00", "#7a4a00", "#a66500", "#df8d00", "#f6a313", "#f9b94a", "#fcd28f", "#fff3d4"]
+      },
+      "surface-0": {
+        "role": "neutral",
+        "displayName": "Ledger Cream",
+        "canonical": "#fbfbf8",
+        "tonalRamp": ["#1c1f1a", "#3a3d36", "#5c6058", "#8a8f83", "#b7bcae", "#dfe5da", "#f5f6f2", "#fbfbf8"]
+      },
+      "blackberry-ink": { "role": "secondary", "displayName": "Blackberry Ink", "canonical": "#123844" },
+      "text-main": { "role": "neutral", "displayName": "Ink Text", "canonical": "#132326" },
+      "success-text": { "role": "semantic", "displayName": "Approved Green", "canonical": "#059669" },
+      "warning-text": { "role": "semantic", "displayName": "Returned Amber", "canonical": "#B45309" },
+      "danger-text": { "role": "semantic", "displayName": "Action Red", "canonical": "#DC2626" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display / Headings", "purpose": "Fraunces serif for h1-h6, card titles, section headers." },
+      "body": { "displayName": "Body", "purpose": "Manrope sans for paragraphs and default copy." },
+      "label": { "displayName": "Label", "purpose": "Manrope bold/uppercase for buttons, badges, nav items." }
+    },
+    "shadows": [
+      { "name": "shadow-xs", "value": "0 1px 2px rgba(0, 0, 0, 0.05)", "purpose": "Barely-there separation for minor elements." },
+      { "name": "shadow-sm", "value": "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)", "purpose": "Resting card elevation." },
+      { "name": "shadow-md", "value": "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)", "purpose": "Hover-lifted cards and stat tiles." },
+      { "name": "shadow-glow", "value": "0 0 24px rgba(0, 95, 115, 0.18)", "purpose": "Teal ambient glow for emphasis moments." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Sidebar, nav-item, and panel transitions." },
+      { "name": "duration-fast", "value": "0.2s", "purpose": "Default hover/interaction transition duration." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single gold call-to-action per screen — approve, pay, ship.",
+      "html": "<button class=\"ds-btn-primary\">Approve Parcel</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.68rem 1.15rem; border-radius: 8px; font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 0.82rem; border: 1px solid transparent; cursor: pointer; background: #f6a313; color: #003746; box-shadow: 0 8px 18px rgba(246, 163, 19, 0.22); transition: 0.2s; } .ds-btn-primary:hover { background: #df8d00; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 95, 115, 0.35); } .ds-btn-primary:focus-visible { outline: 2px solid #003746; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Low-emphasis action beside a primary button.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.68rem 1.15rem; border-radius: 8px; font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 0.82rem; border: 1px solid #dfe5da; cursor: pointer; background: #ffffff; color: #52666b; transition: 0.2s; } .ds-btn-secondary:hover { background: #f5f6f2; border-color: #8a9a9e; } .ds-btn-secondary:focus-visible { outline: 2px solid #003746; outline-offset: 2px; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Default content container — flat at rest, lifts on hover.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\"><h3 class=\"ds-card-title\">Parcel #RB-00214</h3></div><div class=\"ds-card-body\">Received today from Amazon.in — awaiting inspection.</div></div>",
+      "css": ".ds-card { background: #fbfbf8; border-radius: 12px; border: 1px solid #eaeee7; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; font-family: 'Manrope', sans-serif; } .ds-card:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.025); } .ds-card-header { padding: 1rem 1.1rem; border-bottom: 1px solid #eaeee7; } .ds-card-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.1rem; color: #132326; margin: 0; line-height: 1.15; letter-spacing: -0.01em; } .ds-card-body { padding: 1rem 1.1rem; color: #132326; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "status-badge",
+      "description": "Semantic pill marking parcel/shipment lifecycle state.",
+      "html": "<span class=\"ds-status-badge ds-status-approved\">Approved</span>",
+      "css": ".ds-status-badge { padding: 0.35rem 0.85rem; border-radius: 100px; font-family: 'Manrope', sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; } .ds-status-approved { background: #ECFDF5; color: #059669; } .ds-status-pending { background: #e8f4f3; color: #003746; } .ds-status-action { background: #FEF2F2; color: #DC2626; } .ds-status-returned { background: #FFFBEB; color: #B45309; }"
+    },
+    {
+      "name": "Form Input",
+      "kind": "input",
+      "refersTo": "form-input",
+      "description": "Text input with teal focus ring.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Tracking number\" />",
+      "css": ".ds-input { width: 100%; padding: 0.875rem 1rem; border: 2px solid #eaeee7; border-radius: 12px; font-size: 1rem; font-family: 'Manrope', sans-serif; background: #f5f6f2; transition: 0.2s; color: #132326; } .ds-input:focus { border-color: #003746; background: #ffffff; outline: none; box-shadow: 0 0 0 4px #e8f4f3; }"
+    },
+    {
+      "name": "Nav Item (active)",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Sidebar navigation link, default and active/seal state.",
+      "html": "<div class=\"ds-nav-item ds-nav-item-active\">Dashboard</div><div class=\"ds-nav-item\">Shipments</div>",
+      "css": ".ds-nav-item { display: flex; align-items: center; padding: 0.62rem 0.72rem; color: rgba(245, 251, 249, 0.86); border-radius: 8px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 0.78rem; margin-bottom: 0.22rem; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); background: #0d2b3c; } .ds-nav-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff8e8; transform: translateX(2px); } .ds-nav-item-active { background: linear-gradient(180deg, #ffb82e, #f3a10f); color: #003746; box-shadow: 0 8px 18px rgba(246, 163, 19, 0.22); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Caravan Ledger",
+    "overview": "CamelTrunk's interface reads as an official expedition ledger: a deep teal-and-navy operator's book with gold seals marking the things that matter. The dominant surfaces are near-black teal (#003746 \"Caravan Teal\") and a deeper ink (#123844 \"Blackberry Ink\"), with a warm treasure-gold (#f6a313) reserved for accents, active states, and calls to action — the wax-seal moment against an otherwise disciplined, procedural canvas. Cream-white surfaces (#fbfbf8–#eaeee7) and generous rounding (8–24px) keep the ledger from feeling cold or bureaucratic; this is a serious operator handling your parcels and money, but not a sterile one.\n\nThe system is dashboard-first and dense by design: stat tiles, status badges, and card grids optimized for scanning operational state (parcel status, shipment tracking, KYC progress) rather than persuading a visitor. Warmth lives in the details — soft shadows, rounded corners, gold-on-cream badge treatments — while trust lives in the structure: consistent card chrome, a fixed teal sidebar, and status color-coding that never varies.",
+    "keyCharacteristics": [
+      "Deep teal/navy base with gold as a rare, meaningful accent — not a decorative wash.",
+      "Warm, rounded geometry (8–24px radii) softens an otherwise official, procedural tone.",
+      "Dense, scannable dashboard layout: stat tiles, status badges, card grids.",
+      "Serif display type (Fraunces) for headings against a clean sans body (Manrope) — ledger authority paired with everyday legibility."
+    ],
+    "rules": [
+      { "name": "The One Seal Rule", "body": "Treasure Gold marks the single most important action or state on a screen — the primary button, the active nav item, the approved badge. It never floods a layout; its rarity is what makes it read as significant.", "section": "colors" },
+      { "name": "The Response, Not Rest Rule", "body": "Shadows deepen only in response to hover/interaction state; resting surfaces stay close to flat.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do reserve Treasure Gold for the single most important element per screen (The One Seal Rule).",
+      "Do pair Fraunces headings with Manrope body text; don't introduce a third typeface.",
+      "Do keep shadows flat at rest and only deepen them on hover/interaction.",
+      "Do use full pill radius for status badges and pill-shaped brand elements; use 8–24px scaled radius everywhere else."
+    ],
+    "donts": [
+      "Don't use Treasure Gold as a background wash or fill large surface areas with it — it reads as noise, not a seal.",
+      "Don't introduce sharp (0px radius) corners; the system has no sharp-edged precedent.",
+      "Don't invent new semantic colors outside the established success/warning/danger triad — reuse them."
+    ]
+  }
+}

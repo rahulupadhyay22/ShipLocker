@@ -23,7 +23,7 @@
             {% if first_image %}
             <img src="{{ first_image.image_url }}" alt="{{ first_image.caption }}">
             {% else %}
-            🛍️
+            <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 7h12l1 13a2 2 0 01-2 2H7a2 2 0 01-2-2L6 7zM9 7V5a3 3 0 116 0v2"/></svg>
             {% endif %}
             {% endwith %}
         </div>
@@ -51,12 +51,12 @@
 
 <div class="ta-detail-grid-3">
     <div class="card">
-        <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge">🕒</span> Request Progress</h3></div>
+        <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></span> Request Progress</h3></div>
         {% include 'personal_shop/_timeline.html' with timeline=timeline %}
     </div>
 
     <div class="card">
-        <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge badge-gold">📦</span> Product Details</h3></div>
+        <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge badge-gold"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span> Product Details</h3></div>
         {% if images %}
         <div class="ta-product-gallery">
             {% for image in images %}
@@ -85,7 +85,7 @@
 
     {% if shop_request.active_quotation %}
     <div class="card">
-        <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge">🧾</span> Quotation Details</h3></div>
+        <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 8h6M9 12h6"/></svg></span> Quotation Details</h3></div>
         <div class="ta-quote-banner">
             <strong>Quoted by our team</strong>
             {{ shop_request.active_quotation.created_at|date:"d M Y, H:i" }}
@@ -134,7 +134,7 @@
 
 {% if notes %}
 <div class="card">
-    <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge">💬</span> Notes</h3></div>
+    <div class="card-header"><h3 class="card-title-row"><span class="card-icon-badge"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.8L3 20l1.3-3.9A7.96 7.96 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></span> Notes</h3></div>
     <ul class="ta-notes-list">
         {% for note in notes %}
         <li>

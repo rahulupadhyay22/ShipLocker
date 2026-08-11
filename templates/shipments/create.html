@@ -14,7 +14,7 @@
 
 {% if not has_kyc %}
 <div class="modern-alert" style="background: var(--warning-bg); border: 1px solid #FCD34D;">
-    <div style="font-size: 1.5rem;">⚠️</div>
+    <div style="color: var(--warning-text);"><svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
     <div style="flex: 1;">
         <strong>KYC Verification Pending</strong>
         <p style="color: var(--warning-text); margin-top: 0.25rem;">
@@ -90,7 +90,7 @@
                                         {% if parcel.images.first %}
                                         <img src="{{ parcel.images.first.image_url }}" alt="Item" loading="lazy" width="80" height="80">
                                         {% else %}
-                                        <span style="font-size: 1.5rem;">📦</span>
+                                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                         {% endif %}
                                     </div>
                                     <div style="flex: 1;">
@@ -105,7 +105,7 @@
                                     </div>
                                     <button type="button" class="psc-remove" aria-label="Remove"
                                         onclick="event.preventDefault(); this.closest('.parcel-select-card').querySelector('.parcel-checkbox').checked=false; updateSummary();">
-                                        ✕
+                                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                                     </button>
                                 </div>
                             </label>
@@ -118,22 +118,22 @@
                     <div class="card-header"><h3>How Shipping Works</h3></div>
                     <div class="card-body how-it-works-grid">
                         <div class="hiw-step">
-                            <span class="hiw-icon">📦</span>
+                            <span class="hiw-icon"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
                             <strong>1. We Pack Securely</strong>
                             <span>Your items are carefully packed at our warehouse.</span>
                         </div>
                         <div class="hiw-step">
-                            <span class="hiw-icon">🚚</span>
+                            <span class="hiw-icon"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V7a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1h1m8 0h4m-4 0a2 2 0 11-4 0m4 0a2 2 0 01-4 0m8 0a2 2 0 11-4 0m4 0a2 2 0 01-4 0m4 0h1a1 1 0 001-1v-3.5a1 1 0 00-.29-.7l-2.5-2.5a1 1 0 00-.71-.3H16v6"/></svg></span>
                             <strong>2. You Ship</strong>
                             <span>Choose a delivery service and confirm shipment.</span>
                         </div>
                         <div class="hiw-step">
-                            <span class="hiw-icon">🛡️</span>
+                            <span class="hiw-icon"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></span>
                             <strong>3. We Deliver</strong>
                             <span>We handle customs and ship to your address.</span>
                         </div>
                         <div class="hiw-step">
-                            <span class="hiw-icon">🏠</span>
+                            <span class="hiw-icon"><svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></span>
                             <strong>4. You Receive</strong>
                             <span>Your items are delivered safely to your doorstep.</span>
                         </div>
@@ -161,7 +161,7 @@
                         </div>
 
                         <div class="modern-alert" style="background: var(--primary-light); border: 1px solid var(--primary); align-items: flex-start; margin-top: 1.5rem;">
-                            <div style="font-size: 1.1rem;">🛡️</div>
+                            <div style="color: var(--primary);"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></div>
                             <div>
                                 <strong>Your items are 100% insured</strong>
                                 <p style="margin-top: 0.25rem; font-size: 0.85rem;">We provide full insurance coverage for your shipment.</p>
@@ -182,7 +182,7 @@
     <div class="wizard-step" data-step="2" hidden>
         <div class="dashboard-layout">
         <div class="card">
-            <div class="card-header"><h3>📍 Delivery Address</h3></div>
+            <div class="card-header"><h3 style="display: flex; align-items: center; gap: 0.5rem;"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Delivery Address</h3></div>
             <div class="card-body">
                 {% if saved_addresses %}
                 <div class="form-group">
@@ -298,7 +298,7 @@
     <div class="wizard-step" data-step="3" hidden>
         <div class="dashboard-layout">
         <div class="card">
-            <div class="card-header"><h3>🚀 Choose Service</h3></div>
+            <div class="card-header"><h3 style="display: flex; align-items: center; gap: 0.5rem;"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Choose Service</h3></div>
             <div class="card-body">
                 <div class="radio-group">
                     <label class="radio-card">
@@ -363,7 +363,7 @@
                 </div>
 
                 <div style="padding-top: 1.5rem; border-top: 2px dashed var(--surface-100);">
-                    <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">📄 Customs Declaration</h4>
+                    <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Customs Declaration</h4>
 
                     <div class="modern-alert"
                         style="background: var(--success-bg); border: 1px solid #BBF7D0; color: #166534; flex-direction: column; align-items: flex-start;">
@@ -372,7 +372,8 @@
                         <a href="{% static 'documents/Customer_Declaration_Authorization.pdf' %}"
                             class="btn btn-sm btn-secondary" style="margin-top: 0.5rem; background: white;"
                             download>
-                            📥 Download Form
+                            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
+                            Download Form
                         </a>
                     </div>
 
@@ -384,7 +385,7 @@
                 </div>
 
                 <div class="modern-alert" style="background: var(--primary-light); border: 1px solid var(--surface-200); margin-top: 1rem;">
-                    <div style="font-size: 1.1rem;">ℹ️</div>
+                    <div style="color: var(--primary);"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
                     <div>
                         <strong>Important</strong>
                         <p style="margin-top: 0.25rem; font-size: 0.85rem;">Please ensure all selected items are ready to ship. Items once shipped cannot be modified.</p>
@@ -403,7 +404,7 @@
 </form>
 {% else %}
 <div class="card" style="text-align: center; padding: 5rem 2rem;">
-    <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+    <div style="margin-bottom: 1rem;"><svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)" style="margin: 0 auto;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
     <h3>No Approved Items</h3>
     <p style="color: var(--text-secondary); margin-bottom: 2rem;">You need to approve items in your locker before you
         can ship them.</p>

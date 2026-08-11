@@ -1,5 +1,5 @@
 ---
-description: Writes and runs tests for a specific ShipLocker feature. Pass the spec name as argument e.g. /test-feature 05-carrier-sync
+description: Writes and runs tests for a specific CamelTrunk feature. Pass the spec name as argument e.g. /test-feature 05-carrier-sync
 allowed-tools: Bash(python manage.py test)
 ---
 

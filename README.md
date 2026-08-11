@@ -1,4 +1,4 @@
-# ShipLocker
+# CamelTrunk
 
 A modern Django-based platform for international parcel forwarding, locker management, and shipping automation. Built for security, scalability, and user experience.
 
@@ -28,8 +28,8 @@ A modern Django-based platform for international parcel forwarding, locker manag
 
 1. **Clone the repo:**
    ```bash
-   git clone https://github.com/your-org/ShipLocker.git
-   cd ShipLocker
+   git clone https://github.com/your-org/CamelTrunk.git
+   cd CamelTrunk
    ```
 
 2. **Install dependencies:**
@@ -89,7 +89,7 @@ apps/
   locker/        # Locker, parcel, images
   shipments/     # Shipments, items, documents
   content/       # Static pages, calculator
-ShipLocker/     # Project settings, middleware, mixins
+CamelTrunk/     # Project settings, middleware, mixins
 static/          # CSS, JS, images
 templates/       # HTML templates
 ```
@@ -103,17 +103,17 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## 👨‍💻 Maintainers
 - Rahul (Lead Developer)
-- ShipLocker Team
+- CamelTrunk Team
 
 ---
 
 ## 🌐 Live Demo
-- [https://your-ShipLocker-app.com](https://your-ShipLocker-app.com)
+- [https://your-CamelTrunk-app.com](https://your-CamelTrunk-app.com)
 
 ---
 
 ## 📣 Contact & Support
 - Email: rahulu825@gmail.com
-- [Open an issue](https://github.com/your-org/ShipLocker/issues)
+- [Open an issue](https://github.com/your-org/CamelTrunk/issues)
 #
 

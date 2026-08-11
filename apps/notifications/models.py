@@ -13,11 +13,11 @@ class AppSettings(models.Model):
     # ===========================
     site_name = models.CharField(
         max_length=100,
-        default="INDIBOX",
+        default="CamelTrunk",
         help_text="Your company/site name"
     )
     support_email = models.EmailField(
-        default="support@indiabox.com",
+        default="support@cameltrunk.com",
         help_text="Support email address"
     )
     support_phone = models.CharField(

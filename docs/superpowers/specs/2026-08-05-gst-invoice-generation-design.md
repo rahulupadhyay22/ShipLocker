@@ -13,7 +13,7 @@ No GST/invoice concept exists in the codebase today (verified via grep — only 
 - **Company GST details**: new fields on `apps.notifications.models.AppSettings` (admin-editable singleton, same place as `site_name`/`warehouse_address`).
 - **Invoice numbering**: sequential per financial year (Apr 1 – Mar 31), e.g. `INV/2026-27/0001`. Race-safe generation, same pattern as `generate_shipment_id`/`generate_shipment_doc_id` in `apps/shipments/models.py` (`select_for_update` on the last invoice of the current FY).
 - **CGST/SGST vs IGST**: full split. Compare `AppSettings.company_state` to `shipment.state` — same state → CGST+SGST (half the configured rate each); different state → IGST (full rate).
-- **Taxable amount** = `shipping_amount + storage_fee_amount + consolidation_fee_amount` (all service charges billed by ShipLocker for this shipment). GST (or the zero-rated note) applies to that sum, not to each line individually.
+- **Taxable amount** = `shipping_amount + storage_fee_amount + consolidation_fee_amount` (all service charges billed by CamelTrunk for this shipment). GST (or the zero-rated note) applies to that sum, not to each line individually.
 - **State comparison for CGST/SGST vs IGST**: `Shipment.state` is free-text (user-typed at shipment creation, no fixed choices), so compare normalized (`.strip().upper()`) against `AppSettings.company_state` (also normalized the same way), not a raw string `==`. This doesn't fix a "Telangana" vs "TG" abbreviation mismatch — that would need a canonical state-code table, which is out of scope here (see Out of Scope) — but it does fix the much more common casing/whitespace mismatch.
 - **Invoice number generation lives in a service function, not on the model.** `apps/payments/models.py` stays a plain model definition; `generate_invoice_number()` (FY-aware, race-safe) lives in `apps/payments/services.py` next to `InvoiceService`, called by it. Keeps the model file free of business logic.
 - **Invoice snapshots customer + payment details too, not just charges.** A `Shipment`'s recipient fields (or the `User`'s account) can change after the invoice is issued (saved address edited, email changed, etc.) — the invoice must freeze what was true at generation time, same reasoning already applied to the charge amounts.
@@ -97,7 +97,7 @@ class Invoice(models.Model):
     customer_name = models.CharField(max_length=255)
     customer_email = models.EmailField(blank=True)
     billing_address = models.TextField()  # recipient_name/address_line1-2/city/state/postal/country, formatted
-    customer_gstin = models.CharField(max_length=20, blank=True)  # optional, if ShipLocker later collects it
+    customer_gstin = models.CharField(max_length=20, blank=True)  # optional, if CamelTrunk later collects it
 
     # Snapshotted payment reference — frozen, independent of the Payment row's own lifecycle
     payment_reference = models.CharField(max_length=100, blank=True)  # razorpay_payment_id

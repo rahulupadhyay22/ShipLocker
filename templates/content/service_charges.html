@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="page-header">
-    <h1 style="font-size: 2rem; font-weight: 700; color: #1F1F1F; letter-spacing: -0.025em; margin-bottom: 0.5rem;">
+    <h1 style="font-size: 2rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.025em; margin-bottom: 0.5rem;">
         Service Charges</h1>
-    <p style="color: #8B8296; font-size: 1.05rem;">Transparent pricing for all our logistical services.</p>
+    <p style="color: var(--text-secondary); font-size: 1.05rem;">Transparent pricing for all our logistical services.</p>
 </div>
 
 <!-- Service Charges Grid -->
@@ -78,21 +78,21 @@
 
     .modern-card {
         background: white;
-        border: 1px solid #E5DAC5;
+        border: 1px solid var(--surface-200);
         border-radius: 20px;
         overflow: hidden;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     .modern-card.bg-gray-50 {
-        background: #F6F1E7;
+        background: var(--surface-50);
         border: none;
         box-shadow: none;
     }
 
     .card-header-clean {
         padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #F1E9DA;
+        border-bottom: 1px solid var(--surface-100);
         display: flex;
         align-items: center;
         gap: 0.75rem;
@@ -109,14 +109,14 @@
     }
 
     .header-icon.green {
-        color: #059669;
+        color: var(--success-text);
     }
 
     .card-header-clean h3 {
         font-size: 1.05rem;
         font-weight: 600;
         margin: 0;
-        color: #1F1F1F;
+        color: var(--text-main);
     }
 
     .card-body-clean {
@@ -139,7 +139,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #F1E9DA;
+        border-bottom: 1px solid var(--surface-100);
         transition: background 0.2s;
     }
 
@@ -148,7 +148,7 @@
     }
 
     .pricing-row:hover {
-        background: #F6F1E7;
+        background: var(--surface-50);
     }
 
     .pricing-info {
@@ -158,25 +158,25 @@
     }
 
     .pricing-info strong {
-        color: #1F1F1F;
+        color: var(--text-main);
         font-weight: 600;
     }
 
     .pricing-desc {
-        color: #8B8296;
+        color: var(--text-secondary);
         font-size: 0.85rem;
     }
 
     .pricing-cost {
         font-weight: 700;
-        color: #1F1F1F;
+        color: var(--text-main);
         font-size: 1.1rem;
         font-family: 'SF Mono', 'Roboto Mono', monospace;
     }
 
     .pricing-cost.free {
-        color: #059669;
-        background: #ECFDF5;
+        color: var(--success-text);
+        background: var(--success-bg);
         padding: 0.25rem 0.75rem;
         border-radius: 99px;
         font-size: 0.85rem;
@@ -184,7 +184,7 @@
     }
 
     .pricing-cost.danger {
-        color: #DC2626;
+        color: var(--danger-text);
     }
 
     /* Notes */
@@ -192,8 +192,8 @@
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        background: #E5DAC5;
-        color: #5C4E70;
+        background: var(--surface-200);
+        color: var(--text-secondary);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -205,13 +205,13 @@
     }
 
     .text-gray-900 {
-        color: #1F1F1F;
+        color: var(--text-main);
     }
 
     .note-list {
         margin: 0;
         padding-left: 1.25rem;
-        color: #5C4E70;
+        color: var(--text-secondary);
         font-size: 0.95rem;
         line-height: 1.6;
     }

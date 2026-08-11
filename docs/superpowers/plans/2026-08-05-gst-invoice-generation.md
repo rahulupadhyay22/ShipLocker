@@ -219,7 +219,7 @@ Insert a new fieldset between them:
 
 - [ ] **Step 5: Verify in admin**
 
-Run: `python manage.py runserver`, visit `/manage-rb-panel/notifications/appsettings/1/change/`, confirm the new "🧾 GST / Invoice Details" section appears with all 6 fields, fill in test values (e.g. `company_legal_name="ShipLocker Logistics Pvt Ltd"`, `company_gstin="36AAAAA0000A1Z5"`, `company_state="Telangana"`, `gst_rate_percent=18.00`), save, reload, confirm values persisted.
+Run: `python manage.py runserver`, visit `/manage-rb-panel/notifications/appsettings/1/change/`, confirm the new "🧾 GST / Invoice Details" section appears with all 6 fields, fill in test values (e.g. `company_legal_name="CamelTrunk Logistics Pvt Ltd"`, `company_gstin="36AAAAA0000A1Z5"`, `company_state="Telangana"`, `gst_rate_percent=18.00`), save, reload, confirm values persisted.
 
 - [ ] **Step 6: Commit**
 
@@ -699,7 +699,7 @@ class InvoiceServiceTests(TestCase):
     def setUp(self):
         self.user = User.objects.create(email='invoice-service-test@example.com', is_active=True)
         settings = AppSettings.get_settings()
-        settings.company_legal_name = 'ShipLocker Logistics Pvt Ltd'
+        settings.company_legal_name = 'CamelTrunk Logistics Pvt Ltd'
         settings.company_gstin = '36AAAAA0000A1Z5'
         settings.company_pan = 'AAAAA0000A'
         settings.company_registered_address = 'Hyderabad, Telangana, India'
@@ -806,7 +806,7 @@ class InvoiceService:
         styles = getSampleStyleSheet()
         story = []
 
-        story.append(Paragraph(context['company_legal_name'] or 'ShipLocker', styles['Title']))
+        story.append(Paragraph(context['company_legal_name'] or 'CamelTrunk', styles['Title']))
         story.append(Paragraph((context['company_registered_address'] or '').replace('\n', '<br/>'), styles['Normal']))
         story.append(Paragraph(
             f"GSTIN: {context['company_gstin'] or '-'} | PAN: {context['company_pan'] or '-'}",

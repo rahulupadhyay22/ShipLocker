@@ -321,7 +321,7 @@ class InvoiceService:
         styles = getSampleStyleSheet()
         story = []
 
-        story.append(Paragraph(context['company_legal_name'] or 'ShipLocker', styles['Title']))
+        story.append(Paragraph(context['company_legal_name'] or 'CamelTrunk', styles['Title']))
         story.append(Paragraph((context['company_registered_address'] or '').replace('\n', '<br/>'), styles['Normal']))
         story.append(Paragraph(
             f"GSTIN: {context['company_gstin'] or '-'} | PAN: {context['company_pan'] or '-'}",

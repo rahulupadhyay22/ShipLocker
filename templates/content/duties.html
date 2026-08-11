@@ -17,12 +17,12 @@
     .page-header h1 {
         font-size: 2rem;
         font-weight: 700;
-        color: #1F1F1F;
+        color: var(--text-main);
         margin-bottom: 0.5rem;
     }
 
     .page-header p {
-        color: #8B8296;
+        color: var(--text-secondary);
         font-size: 1rem;
     }
 
@@ -30,21 +30,21 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        color: #8B8296;
+        color: var(--text-secondary);
         text-decoration: none;
         font-size: 0.9rem;
         margin-bottom: 1.5rem;
     }
 
     .back-link:hover {
-        color: #005F73;
+        color: var(--primary);
     }
 
     /* Info Cards */
     .info-card {
         background: white;
         border-radius: 16px;
-        border: 1px solid #E5DAC5;
+        border: 1px solid var(--surface-200);
         padding: 1.5rem;
         margin-bottom: 1.5rem;
     }
@@ -52,7 +52,7 @@
     .info-card h2 {
         font-size: 1.25rem;
         font-weight: 600;
-        color: #1F1F1F;
+        color: var(--text-main);
         margin-bottom: 1rem;
         display: flex;
         align-items: center;
@@ -60,14 +60,14 @@
     }
 
     .info-card p {
-        color: #5C4E70;
+        color: var(--text-secondary);
         line-height: 1.7;
         margin-bottom: 1rem;
     }
 
     .info-card ul {
         margin-left: 1.25rem;
-        color: #5C4E70;
+        color: var(--text-secondary);
     }
 
     .info-card li {
@@ -77,8 +77,8 @@
 
     /* Alert Box */
     .alert-box {
-        background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
-        border: 1px solid #F59E0B;
+        background: var(--warning-bg);
+        border: 1px solid var(--warning-text);
         border-radius: 12px;
         padding: 1.25rem;
         margin-bottom: 1.5rem;
@@ -94,19 +94,19 @@
     .alert-box h3 {
         font-size: 1rem;
         font-weight: 600;
-        color: #92400E;
+        color: var(--warning-text);
         margin-bottom: 0.25rem;
     }
 
     .alert-box p {
         font-size: 0.9rem;
-        color: #92400E;
+        color: var(--warning-text);
         margin: 0;
     }
 
     /* FAQ Section */
     .faq-item {
-        border-bottom: 1px solid #E5DAC5;
+        border-bottom: 1px solid var(--surface-200);
         padding: 1.25rem 0;
     }
 
@@ -116,19 +116,19 @@
 
     .faq-question {
         font-weight: 600;
-        color: #1F1F1F;
+        color: var(--text-main);
         margin-bottom: 0.5rem;
     }
 
     .faq-answer {
-        color: #8B8296;
+        color: var(--text-secondary);
         font-size: 0.95rem;
         line-height: 1.6;
     }
 
     /* Help Card */
     .help-card {
-        background: linear-gradient(135deg, #005F73 0%, #3A2C52 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         border-radius: 16px;
         padding: 1.5rem;
         color: white;
@@ -153,7 +153,7 @@
         align-items: center;
         gap: 0.35rem;
         background: white;
-        color: #005F73;
+        color: var(--primary);
         padding: 0.5rem 1rem;
         border-radius: 8px;
         font-weight: 600;
@@ -162,7 +162,7 @@
     }
 
     .help-card a:hover {
-        background: #F6F1E7;
+        background: var(--surface-50);
     }
 
     /* Mobile */
@@ -194,13 +194,13 @@
     <a href="{% url 'accounts:dashboard' %}" class="back-link">← Back to Dashboard</a>
 
     <div class="page-header">
-        <h1>📋 Duties & Customs Information</h1>
+        <h1 style="display: flex; align-items: center; gap: 0.6rem;"><svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Duties & Customs Information</h1>
         <p>Understand import duties, taxes, and customs procedures for international shipments.</p>
     </div>
 
     <!-- Important Alert -->
     <div class="alert-box">
-        <span class="icon">⚠️</span>
+        <span class="icon"><svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></span>
         <div>
             <h3>Duties Are Receiver Responsibility</h3>
             <p>Import duties are excluded & assessed by destination customs based on item value. Tariff is emailed to
@@ -210,7 +210,7 @@
 
     <!-- Key Points -->
     <div class="info-card">
-        <h2>🔑 Key Points</h2>
+        <h2><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a4 4 0 11-4 4M15 7a4 4 0 00-4 4m4-4L8 14m3 3l-3-3m0 0l-1.5 1.5m1.5-1.5L6 15.5"/></svg> Key Points</h2>
         <ul>
             <li><strong>Duties are payable by the receiver</strong> - The person receiving the package pays any
                 applicable customs duties.</li>
@@ -225,7 +225,7 @@
 
     <!-- Common Countries -->
     <div class="info-card">
-        <h2>🌍 Common Destination Duty Rates</h2>
+        <h2><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12h18M12 3a15.3 15.3 0 010 18M12 3a15.3 15.3 0 000 18M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Common Destination Duty Rates</h2>
         <p>Approximate duty rates (may vary based on product category):</p>
         <ul>
             <li><strong>USA:</strong> 0-25% (de minimis $800)</li>
@@ -235,7 +235,7 @@
             <li><strong>UAE:</strong> 5% VAT (de minimis varies)</li>
             <li><strong>Singapore:</strong> 7% GST (de minimis $400 SGD)</li>
         </ul>
-        <p style="font-size: 0.85rem; color: #A69FB0; margin-top: 1rem;">* Rates are approximate and subject to change.
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 1rem;">* Rates are approximate and subject to change.
             Always check with local customs.</p>
     </div>
 
@@ -250,14 +250,14 @@
         </ul>
         <p style="margin-top: 1rem;"><strong>Contact for help:</strong></p>
         <ul>
-            <li>📞 DHL Tariff Helpline: +1 (866) 638-7668</li>
-            <li>📞 UPS Tariff Helpline: +1 (866) 493-7140</li>
+            <li><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="vertical-align: -2px; margin-right: 0.3rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h2.28a1 1 0 01.98.804l.812 3.905a1 1 0 01-.481 1.068l-1.63.907a11.042 11.042 0 005.516 5.516l.907-1.63a1 1 0 011.068-.48l3.905.81a1 1 0 01.804.98V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>DHL Tariff Helpline: +1 (866) 638-7668</li>
+            <li><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="vertical-align: -2px; margin-right: 0.3rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h2.28a1 1 0 01.98.804l.812 3.905a1 1 0 01-.481 1.068l-1.63.907a11.042 11.042 0 005.516 5.516l.907-1.63a1 1 0 011.068-.48l3.905.81a1 1 0 01.804.98V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>UPS Tariff Helpline: +1 (866) 493-7140</li>
         </ul>
     </div>
 
     <!-- FAQ -->
     <div class="info-card">
-        <h2>❓ Frequently Asked Questions</h2>
+        <h2><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.09 9a3 3 0 015.83 1c0 2-3 2-3 4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Frequently Asked Questions</h2>
 
         <div class="faq-item">
             <div class="faq-question">What happens if I don't pay duties?</div>
@@ -286,7 +286,7 @@
 
     <!-- Help Card -->
     <div class="help-card">
-        <h3>💬 Need Help with Customs?</h3>
+        <h3 style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.8L3 20l1.3-3.9A7.96 7.96 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg> Need Help with Customs?</h3>
         <p>Our support team can help you understand duties and resolve customs issues.</p>
         <a href="https://wa.me/{{ whatsapp_link }}" target="_blank">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">

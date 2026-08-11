@@ -163,9 +163,10 @@ a.db-stat-card-sm:hover {
     color: var(--ct-navy, var(--primary));
 }
 
-.db-stat-icon.icon-gold { background: var(--accent-light); }
-.db-stat-icon.icon-danger { background: var(--danger-bg); }
-.db-stat-icon.icon-muted { background: var(--surface-100); }
+.db-stat-icon svg { width: 20px; height: 20px; }
+.db-stat-icon.icon-gold { background: var(--accent-light); color: var(--accent-hover); }
+.db-stat-icon.icon-danger { background: var(--danger-bg); color: var(--danger-text); }
+.db-stat-icon.icon-muted { background: var(--surface-100); color: var(--text-secondary); }
 
 .db-stat-card-sm .db-stat-value {
     font-size: 1.35rem;
@@ -254,10 +255,11 @@ a.db-stat-card-sm:hover {
     z-index: 1;
 }
 
-.db-activity-icon.icon-gold { background: var(--accent-light); }
-.db-activity-icon.icon-danger { background: var(--danger-bg); }
-.db-activity-icon.icon-success { background: var(--success-bg); }
-.db-activity-icon.icon-primary { background: var(--primary-light); }
+.db-activity-icon svg { width: 16px; height: 16px; }
+.db-activity-icon.icon-gold { background: var(--accent-light); color: var(--accent-hover); }
+.db-activity-icon.icon-danger { background: var(--danger-bg); color: var(--danger-text); }
+.db-activity-icon.icon-success { background: var(--success-bg); color: var(--success-text); }
+.db-activity-icon.icon-primary { background: var(--primary-light); color: var(--primary); }
 
 .db-activity-text {
     flex: 1;

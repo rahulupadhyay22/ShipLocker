@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='appsettings',
             name='site_name',
-            field=models.CharField(default='INDIBOX', help_text='Your company/site name', max_length=100),
+            field=models.CharField(default='CamelTrunk', help_text='Your company/site name', max_length=100),
         ),
     ]

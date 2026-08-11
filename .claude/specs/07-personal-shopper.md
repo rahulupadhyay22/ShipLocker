@@ -2,7 +2,7 @@
 
 ## Overview
 
-TrunkAssist lets a user ask ShipLocker staff to source and buy an item on their behalf when they can't buy it themselves — a pasted product link, an uploaded photo/cart screenshot, a named boutique, a named local shop, or a free-form custom ask. A user submits one of 6 typed requests, staff assign an executive, source the item, and issue a quotation; the user approves and pays via the existing Razorpay flow; staff purchase the item, it arrives at the warehouse, and staff link it into the user's existing Parcel/Shipment pipeline for onward shipping. The nav already has a dead "Personal Shopping" link (`templates/base.html:142`) anticipating this feature; no backend for it exists today.
+TrunkAssist lets a user ask CamelTrunk staff to source and buy an item on their behalf when they can't buy it themselves — a pasted product link, an uploaded photo/cart screenshot, a named boutique, a named local shop, or a free-form custom ask. A user submits one of 6 typed requests, staff assign an executive, source the item, and issue a quotation; the user approves and pays via the existing Razorpay flow; staff purchase the item, it arrives at the warehouse, and staff link it into the user's existing Parcel/Shipment pipeline for onward shipping. The nav already has a dead "Personal Shopping" link (`templates/base.html:142`) anticipating this feature; no backend for it exists today.
 
 New `apps/personal_shop` app owns the request → quotation lifecycle. It stops owning the item the moment it is "Delivered to Warehouse": at that point staff create/link a `locker.Parcel`, and the item continues through the existing Parcel → Shipment pipeline unmodified — TrunkAssist never re-implements storage, customs declaration, or shipping.
 

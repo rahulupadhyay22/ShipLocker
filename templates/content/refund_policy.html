@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="page-header">
-    <h1 style="font-size: 2rem; font-weight: 700; color: #1F1F1F; letter-spacing: -0.025em; margin-bottom: 0.5rem;">
+    <h1 style="font-size: 2rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.025em; margin-bottom: 0.5rem;">
         Refund Policy</h1>
-    <p style="color: #8B8296; font-size: 1.05rem;">Our commitments to fairness and transparency in cancellations and
+    <p style="color: var(--text-secondary); font-size: 1.05rem;">Our commitments to fairness and transparency in cancellations and
         refunds.</p>
 </div>
 
@@ -99,7 +99,7 @@
 
     .modern-card {
         background: white;
-        border: 1px solid #E5DAC5;
+        border: 1px solid var(--surface-200);
         border-radius: 20px;
         overflow: hidden;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
@@ -108,7 +108,7 @@
 
     .card-header-clean {
         padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #F1E9DA;
+        border-bottom: 1px solid var(--surface-100);
         display: flex;
         align-items: center;
         gap: 0.75rem;
@@ -121,35 +121,35 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #F1E9DA;
-        color: #5C4E70;
+        background: var(--surface-100);
+        color: var(--text-secondary);
     }
 
     .header-icon.purple {
-        background: #EEF2FF;
-        color: #6366F1;
+        background: var(--primary-light);
+        color: var(--primary);
     }
 
     .header-icon.orange {
-        background: #FFF7ED;
-        color: #F97316;
+        background: var(--warning-bg);
+        color: var(--warning-text);
     }
 
     .header-icon.blue {
-        background: #EFF6FF;
-        color: #3B82F6;
+        background: var(--primary-light);
+        color: var(--primary);
     }
 
     .header-icon.red {
-        background: #FEF2F2;
-        color: #EF4444;
+        background: var(--danger-bg);
+        color: var(--danger-text);
     }
 
     .card-header-clean h3 {
         font-size: 1.05rem;
         font-weight: 600;
         margin: 0;
-        color: #1F1F1F;
+        color: var(--text-main);
     }
 
     .card-body-clean {
@@ -165,15 +165,15 @@
     }
 
     .text-green-700 {
-        color: #047857;
+        color: var(--success-text);
     }
 
     .text-red-700 {
-        color: #B91C1C;
+        color: var(--danger-text);
     }
 
     .text-gray-600 {
-        color: #5C4E70;
+        color: var(--text-secondary);
     }
 
     /* Lists */
@@ -189,23 +189,35 @@
         padding-left: 1.5rem;
         margin-bottom: 0.5rem;
         font-size: 0.95rem;
-        color: #3A2C52;
+        color: var(--text-main);
     }
 
     .check-list li::before {
         position: absolute;
         left: 0;
-        font-weight: bold;
+        top: 0.15em;
+        width: 14px;
+        height: 14px;
+        content: '';
+        background-color: currentColor;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
     }
 
     .check-list.green li::before {
-        content: "✓";
-        color: #059669;
+        color: var(--success-text);
+        -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
     }
 
     .check-list.red li::before {
-        content: "✕";
-        color: #DC2626;
+        color: var(--danger-text);
+        -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 18L18 6M6 6l12 12'/%3E%3C/svg%3E");
+        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 18L18 6M6 6l12 12'/%3E%3C/svg%3E");
     }
 
     .bullet-list li {
@@ -213,7 +225,7 @@
         padding-left: 1rem;
         margin-bottom: 0.75rem;
         font-size: 0.95rem;
-        color: #3A2C52;
+        color: var(--text-main);
         line-height: 1.5;
     }
 
@@ -221,7 +233,7 @@
         content: "•";
         position: absolute;
         left: 0;
-        color: #A69FB0;
+        color: var(--text-muted);
         font-weight: bold;
     }
 
@@ -245,7 +257,7 @@
     .step-num {
         width: 24px;
         height: 24px;
-        background: #1F1F1F;
+        background: var(--text-main);
         color: white;
         border-radius: 50%;
         display: flex;
@@ -259,13 +271,13 @@
 
     .step-text {
         font-size: 0.95rem;
-        color: #3A2C52;
+        color: var(--text-main);
         line-height: 1.5;
     }
 
     .policy-content {
         line-height: 1.7;
-        color: #3A2C52;
+        color: var(--text-main);
     }
 
     @media (max-width: 640px) {

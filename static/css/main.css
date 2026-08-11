@@ -1312,3 +1312,17 @@ a {
         width: 100%;
     }
 }
+
+/* Reduced motion: collapse animated transitions to their end state instantly.
+   State changes (hover color, focus rings, expand/collapse) still fire —
+   only the animated motion between states is removed. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

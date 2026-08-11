@@ -1,6 +1,6 @@
 ```md
 ---
-description: Research, brainstorm, architect and generate a production-ready ShipLocker feature specification
+description: Research, brainstorm, architect and generate a production-ready CamelTrunk feature specification
 argument-hint: "Step number and feature name e.g. 09 gst-invoice"
 allowed-tools: Read, Write, Glob, Bash(git:*)
 ---
@@ -187,7 +187,7 @@ For every approach evaluate:
 - maintainability
 - consistency
 - future scalability
-- ShipLocker architecture alignment
+- CamelTrunk architecture alignment
 - migration complexity
 - developer experience
 - testing effort
@@ -275,7 +275,7 @@ The chosen design must be:
 
 - production-ready
 - simplest possible
-- consistent with ShipLocker
+- consistent with CamelTrunk
 - scalable
 - maintainable
 - secure

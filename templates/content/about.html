@@ -21,7 +21,7 @@
         </div>
         <div class="visual-col mission-visual">
             <div class="visual-card">
-                <span class="emoji">🌏</span>
+                <svg class="emoji" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12h18M12 3a15.3 15.3 0 010 18M12 3a15.3 15.3 0 000 18M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <h3>Global Reach</h3>
             </div>
             <div class="visual-card">
@@ -36,17 +36,17 @@
         <h2>Our Core Values</h2>
         <div class="values-grid">
             <div class="value-card">
-                <div class="icon-box blue">🤝</div>
+                <div class="icon-box blue"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
                 <h3>Trust First</h3>
                 <p>We treat your packages like our own. Safety and security are our top priorities.</p>
             </div>
             <div class="value-card">
-                <div class="icon-box purple">⚡</div>
+                <div class="icon-box purple"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 3L4 14h7v7l9-11h-7V3z"/></svg></div>
                 <h3>Speed & Efficiency</h3>
                 <p>We understand you want your items fast. We process shipments within 24 hours.</p>
             </div>
             <div class="value-card">
-                <div class="icon-box orange">💎</div>
+                <div class="icon-box orange"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
                 <h3>Transparency</h3>
                 <p>No hidden fees. What you see on our calculator is what you pay.</p>
             </div>
@@ -93,11 +93,11 @@
         font-weight: 800;
         line-height: 1.1;
         margin-bottom: 1.5rem;
-        color: #1F1F1F;
+        color: var(--text-main);
     }
 
     .about-hero .highlight {
-        background: linear-gradient(135deg, #005F73 0%, #3A2C52 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -105,7 +105,7 @@
 
     .hero-subtitle {
         font-size: 1.25rem;
-        color: #8B8296;
+        color: var(--text-secondary);
         max-width: 600px;
         margin: 0 auto;
     }
@@ -128,12 +128,12 @@
         font-size: 2rem;
         font-weight: 700;
         margin-bottom: 1.5rem;
-        color: #1F1F1F;
+        color: var(--text-main);
     }
 
     .text-col p {
         font-size: 1.1rem;
-        color: #5C4E70;
+        color: var(--text-secondary);
         margin-bottom: 1.5rem;
         line-height: 1.7;
     }
@@ -148,21 +148,24 @@
         background: white;
         padding: 2rem;
         border-radius: 20px;
-        border: 1px solid #E5DAC5;
+        border: 1px solid var(--surface-200);
         text-align: center;
         box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
         width: 180px;
     }
 
     .visual-card .emoji {
-        font-size: 3rem;
+        width: 48px;
+        height: 48px;
         display: block;
-        margin-bottom: 1rem;
+        margin: 0 auto 1rem;
+        color: var(--text-main);
+        stroke-width: 1.5;
     }
 
     .visual-card h3 {
         font-size: 1.1rem;
-        color: #1F1F1F;
+        color: var(--text-main);
     }
 
     /* Values */
@@ -185,7 +188,7 @@
 
     .value-card {
         padding: 2rem;
-        background: #F6F1E7;
+        background: var(--surface-50);
         border-radius: 20px;
         transition: transform 0.3s;
     }
@@ -203,36 +206,41 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.5rem;
         margin: 0 auto 1.5rem;
+        color: var(--text-main);
+    }
+
+    .icon-box svg {
+        width: 24px;
+        height: 24px;
     }
 
     .icon-box.blue {
-        background: #E0EEF0;
+        background: var(--primary-light);
     }
 
     .icon-box.purple {
-        background: #F5E6C6;
+        background: var(--accent-light);
     }
 
     .icon-box.orange {
-        background: #F1E9DA;
+        background: var(--surface-100);
     }
 
     .value-card h3 {
         font-size: 1.25rem;
         margin-bottom: 0.75rem;
-        color: #1F1F1F;
+        color: var(--text-main);
     }
 
     .value-card p {
-        color: #8B8296;
+        color: var(--text-secondary);
         line-height: 1.6;
     }
 
     /* Story */
     .story-section {
-        background: #1F1F1F;
+        background: var(--text-main);
         color: white;
         padding: 4rem;
         border-radius: 30px;
@@ -266,7 +274,7 @@
         font-size: 2.5rem;
         font-weight: 800;
         margin-bottom: 0.5rem;
-        background: linear-gradient(135deg, #7FBFC9 0%, #E3B563 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;

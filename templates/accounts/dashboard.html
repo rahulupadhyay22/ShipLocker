@@ -17,7 +17,8 @@
     </div>
     {% if announcements %}
     <button id="toggle-announcements" onclick="toggleAnnouncements()" class="btn btn-secondary btn-sm">
-        🔔 Hide Announcements
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        Hide Announcements
     </button>
     {% endif %}
 </div>
@@ -66,29 +67,39 @@
 <!-- Stats Row -->
 <div class="db-stats-row-5">
     <a href="{% url 'locker:my_locker' %}" class="db-stat-card-sm">
-        <div class="db-stat-icon icon-gold">📦</div>
+        <div class="db-stat-icon icon-gold">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        </div>
         <div class="db-stat-value">{{ parcels_in_trunk }}</div>
         <div class="db-stat-label">Parcels in Trunk</div>
         <span class="db-stat-view">View All →</span>
     </a>
     <a href="{% url 'locker:action_required' %}" class="db-stat-card-sm">
-        <div class="db-stat-icon icon-danger">🚚</div>
+        <div class="db-stat-icon icon-danger">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V7a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1h1m8 0h4m-4 0a2 2 0 11-4 0m4 0a2 2 0 01-4 0m8 0a2 2 0 11-4 0m4 0a2 2 0 01-4 0m4 0h1a1 1 0 001-1v-3.5a1 1 0 00-.29-.7l-2.5-2.5a1 1 0 00-.71-.3H16v6"/></svg>
+        </div>
         <div class="db-stat-value">{{ incoming_count }}</div>
         <div class="db-stat-label">Incoming</div>
         <span class="db-stat-view">View →</span>
     </a>
     <div class="db-stat-card-sm">
-        <div class="db-stat-icon icon-muted">⚖️</div>
+        <div class="db-stat-icon icon-muted">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v18m0-18L7.5 7.5M12 3l4.5 4.5M4 8l-2 6a3 3 0 006 0l-2-6H4zm16 0l-2 6a3 3 0 006 0l-2-6h-4z"/></svg>
+        </div>
         <div class="db-stat-value">{{ total_weight_kg }} kg</div>
         <div class="db-stat-label">Total Weight</div>
     </div>
     <div class="db-stat-card-sm">
-        <div class="db-stat-icon icon-gold">🗓️</div>
+        <div class="db-stat-icon icon-gold">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
         <div class="db-stat-value">{{ storage_days_left }} Days</div>
         <div class="db-stat-label">Storage Left</div>
     </div>
     <a href="{% url 'content:shipping_calculator' %}" class="db-stat-card-sm" target="_blank">
-        <div class="db-stat-icon icon-muted">💰</div>
+        <div class="db-stat-icon icon-muted">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h11a2 2 0 012 2v1h1a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 13h2"/></svg>
+        </div>
         <div class="db-stat-value">{% if est_shipping_cost %}₹{{ est_shipping_cost }}{% else %}--{% endif %}</div>
         <div class="db-stat-label">Est. Shipping Cost</div>
         <span class="db-stat-view">View →</span>
@@ -165,10 +176,15 @@
                         {% elif parcel.status == 'approved' %}icon-success
                         {% elif parcel.status == 'action_required' %}icon-gold
                         {% else %}icon-danger{% endif %}">
-                        {% if parcel.status == 'shipped' %}✈️
-                        {% elif parcel.status == 'approved' %}✅
-                        {% elif parcel.status == 'action_required' %}📥
-                        {% else %}📦{% endif %}
+                        {% if parcel.status == 'shipped' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                        {% elif parcel.status == 'approved' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        {% elif parcel.status == 'action_required' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        {% else %}
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        {% endif %}
                     </div>
                     <div class="db-activity-text">
                         {% if parcel.status == 'shipped' %}Shipment booked for {{ parcel.item_name|default:parcel.display_id }}
@@ -189,8 +205,14 @@
                 <h3>Quick Actions</h3>
             </div>
             <div class="db-quick-actions">
-                <a href="{% url 'locker:ready_to_ship' %}" class="db-qa-btn primary span-2">📤 Ship My Trunk</a>
-                <a href="{% url 'shipments:list' %}" class="db-qa-btn outline span-2">🚢 View Shipments</a>
+                <a href="{% url 'locker:ready_to_ship' %}" class="db-qa-btn primary span-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    Ship My Trunk
+                </a>
+                <a href="{% url 'shipments:list' %}" class="db-qa-btn outline span-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 18l1.5-5h15L21 18M3 18a2 2 0 002 2h14a2 2 0 002-2M8 13V6h8v7M6 6h12"/></svg>
+                    View Shipments
+                </a>
             </div>
         </div>
     </div>
@@ -251,13 +273,15 @@
         const grid = document.getElementById('announcement-grid');
         const btn = document.getElementById('toggle-announcements');
 
+        const bellIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>';
+
         if (grid.style.display === 'none') {
             grid.style.display = 'grid';
-            btn.innerHTML = '🔔 Hide Announcements';
+            btn.innerHTML = bellIcon + ' Hide Announcements';
             localStorage.setItem('hideAnnouncements', 'false');
         } else {
             grid.style.display = 'none';
-            btn.innerHTML = '🔔 Show Announcements';
+            btn.innerHTML = bellIcon + ' Show Announcements';
             localStorage.setItem('hideAnnouncements', 'true');
         }
     }
@@ -266,11 +290,12 @@
         const hide = localStorage.getItem('hideAnnouncements');
         const grid = document.getElementById('announcement-grid');
         const btn = document.getElementById('toggle-announcements');
+        const bellIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>';
 
         if (grid && btn) {
             if (hide === 'true') {
                 grid.style.display = 'none';
-                btn.innerHTML = '🔔 Show Announcements';
+                btn.innerHTML = bellIcon + ' Show Announcements';
             }
         }
     });

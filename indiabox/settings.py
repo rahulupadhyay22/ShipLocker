@@ -1,5 +1,5 @@
 """
-Django settings for INDIBOX Global Locker project.
+Django settings for CamelTrunk Global Locker project.
 """
 
 import os
@@ -365,8 +365,8 @@ from django.templatetags.static import static
 from django.urls import reverse_lazy
 
 UNFOLD = {
-    "SITE_TITLE": "INDIBOX Admin",
-    "SITE_HEADER": "INDIBOX",
+    "SITE_TITLE": "CamelTrunk Admin",
+    "SITE_HEADER": "CamelTrunk",
     "SITE_SYMBOL": "package",  # Material icon
     "DASHBOARD_CALLBACK": "indiabox.dashboard.dashboard_callback",
     "SHOW_HISTORY": True,

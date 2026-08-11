@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}INDIBOX Global Locker{% endblock %}</title>
+    <title>{% block title %}CamelTrunk Global Locker{% endblock %}</title>
     <meta name="description"
         content="{% block meta_description %}Shop from India, ship worldwide. Your personal locker for international shopping.{% endblock %}">
 
@@ -346,7 +346,7 @@
         function copyToClipboard(text, button) {
             navigator.clipboard.writeText(text).then(() => {
                 const originalText = button.innerHTML;
-                button.innerHTML = '✓ Copied!';
+                button.innerHTML = '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="vertical-align: -1px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg> Copied!';
                 setTimeout(() => {
                     button.innerHTML = originalText;
                 }, 2000);

@@ -23,7 +23,7 @@
 <!-- Carrier Contacts -->
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header">
-        <h3>📞 Carrier Helplines</h3>
+        <h3 style="display: flex; align-items: center; gap: 0.5rem;"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h2.28a1 1 0 01.98.804l.812 3.905a1 1 0 01-.481 1.068l-1.63.907a11.042 11.042 0 005.516 5.516l.907-1.63a1 1 0 011.068-.48l3.905.81a1 1 0 01.804.98V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg> Carrier Helplines</h3>
     </div>
     <div class="card-body" style="padding: 0;">
         {% for carrier in carriers %}
@@ -39,8 +39,9 @@
             </div>
             {% if carrier.upload_url %}
             <div style="margin-top: 0.5rem;">
-                <a href="{{ carrier.upload_url }}" target="_blank" style="font-size: 0.85rem;">
-                    📄 Upload customs documents
+                <a href="{{ carrier.upload_url }}" target="_blank" style="font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Upload customs documents
                 </a>
             </div>
             {% endif %}
@@ -52,7 +53,7 @@
 <!-- Step by Step Guide -->
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header">
-        <h3>📋 Step-by-Step Resolution</h3>
+        <h3 style="display: flex; align-items: center; gap: 0.5rem;"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H6a2 2 0 00-2 2v11a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-3m-6 0a2 2 0 002 2h2a2 2 0 002-2m-6 0a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-7-4h.01m-.01 4h.01"/></svg> Step-by-Step Resolution</h3>
     </div>
     <div class="card-body">
         <ol style="margin: 0; padding-left: 1.25rem;">
@@ -93,7 +94,7 @@
 <!-- Download Documents -->
 <div class="card" style="margin-bottom: 1.5rem;">
     <div class="card-header">
-        <h3>📄 Your Shipment Documents</h3>
+        <h3 style="display: flex; align-items: center; gap: 0.5rem;"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Your Shipment Documents</h3>
     </div>
     <div class="card-body">
         <p style="color: var(--text-muted); font-size: 0.9rem;">
@@ -113,7 +114,7 @@
 <!-- Escalation -->
 <div class="card">
     <div class="card-header">
-        <h3>🚨 Need More Help?</h3>
+        <h3 style="display: flex; align-items: center; gap: 0.5rem;"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> Need More Help?</h3>
     </div>
     <div class="card-body">
         <p style="font-size: 0.9rem;">
