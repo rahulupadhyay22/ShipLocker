@@ -177,9 +177,11 @@
             <button id="pay-now-btn" class="btn btn-primary sd-pay-btn"
                 data-create-url="{% url 'payments:create_order' shipment.pk %}"
                 data-verify-url="{% url 'payments:verify' %}"
+                data-error-target="pay-now-error"
                 {% if not shipment.shipping_cost or shipment.payment_status == 'paid' %}hidden{% endif %}>
                 Pay Now
             </button>
+            <p id="pay-now-error" class="modern-alert alert-danger form-loading-error" role="alert" hidden></p>
         </div>
     </div>
 
@@ -433,12 +435,14 @@
     const payNowBtn = document.getElementById('pay-now-btn');
     if (payNowBtn) {
         payNowBtn.addEventListener('click', async function () {
+            if (payNowBtn.dataset.loading === 'true') {
+                return;
+            }
             const createUrl = this.dataset.createUrl;
             const verifyUrl = this.dataset.verifyUrl;
-            const originalText = this.textContent;
 
-            this.disabled = true;
-            this.textContent = 'Preparing payment...';
+            CamelTrunkLoading.clearError(payNowBtn);
+            CamelTrunkLoading.start(payNowBtn);
 
             try {
                 const createResponse = await fetch(createUrl, {
@@ -476,12 +480,11 @@
                                 window.location.reload();
                                 return;
                             }
-                            alert(verifyResult.error || 'Payment verification failed.');
+                            CamelTrunkLoading.showError(payNowBtn, verifyResult.error || 'Payment verification failed.');
                         } catch (error) {
-                            alert(error.message || 'Payment verification failed.');
+                            CamelTrunkLoading.showError(payNowBtn, error.message || 'Payment verification failed.');
                         } finally {
-                            payNowBtn.disabled = false;
-                            payNowBtn.textContent = originalText;
+                            CamelTrunkLoading.stop(payNowBtn);
                         }
                     },
                     prefill: {
@@ -494,8 +497,7 @@
                     },
                     modal: {
                         ondismiss: function () {
-                            payNowBtn.disabled = false;
-                            payNowBtn.textContent = originalText;
+                            CamelTrunkLoading.stop(payNowBtn);
                         }
                     }
                 };
@@ -503,9 +505,8 @@
                 const rzp = new Razorpay(options);
                 rzp.open();
             } catch (error) {
-                alert(error.message || 'Unable to start payment.');
-                this.disabled = false;
-                this.textContent = originalText;
+                CamelTrunkLoading.showError(payNowBtn, error.message || 'Unable to start payment.');
+                CamelTrunkLoading.stop(payNowBtn);
             }
         });
     }

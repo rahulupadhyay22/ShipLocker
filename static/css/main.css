@@ -724,6 +724,53 @@ a {
     font-size: 0.85rem;
 }
 
+.btn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+/* Button loading state (form-loading.js) */
+.btn[data-loading="true"] {
+    cursor: default;
+}
+
+.btn-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.form-loading-error {
+    opacity: 0;
+    transform: translateY(-4px);
+    animation: form-loading-error-in 200ms ease-out forwards;
+}
+
+@keyframes form-loading-error-in {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .form-loading-error {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+}
+
 /* Forms */
 .form-group {
     margin-bottom: 1.5rem;

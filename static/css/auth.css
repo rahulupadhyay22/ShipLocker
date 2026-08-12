@@ -1,10 +1,22 @@
-/* Auth pages (login / verify OTP) — matches homepage palette: navy #082b3a, gold #f3ae31 */
+/* Auth pages (login / verify OTP) — uses the shared design tokens from main.css (Caravan Teal / Treasure Gold) */
+
+/* Occasional, not decorative: only plays when a real validation/rate-limit error appears.
+   No page-load or hover motion on this file — it's a high-frequency page (frequency rule). */
+.messages .modern-alert {
+    opacity: 0;
+    transform: translateY(-4px);
+    animation: form-loading-error-in 200ms ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .messages .modern-alert {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+}
 
 .auth-split-layout {
-    --primary: #082b3a;
-    --primary-hover: #0d3e52;
-    --primary-light: #e4eef1;
-    --accent: #f3ae31;
     display: flex;
     min-height: 100vh;
     width: 100%;
@@ -14,7 +26,7 @@
 .auth-left {
     display: none;
     width: 50%;
-    background: linear-gradient(160deg, #082b3a 0%, #07293a 65%, #0d3e52 100%);
+    background: linear-gradient(160deg, var(--primary) 0%, var(--primary-hover) 100%);
     position: relative;
     padding: 3rem;
     flex-direction: column;
@@ -22,16 +34,6 @@
     gap: 1.75rem;
     color: #fff;
     overflow: hidden;
-}
-
-.auth-left::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #f3ae31 0%, transparent 70%);
 }
 
 .auth-brand {
@@ -46,13 +48,13 @@
 }
 
 .auth-brand span span {
-    color: #f3ae31;
+    color: var(--accent);
 }
 
 .auth-brand-mark {
     width: 34px;
     height: 34px;
-    color: #f3ae31;
+    color: var(--accent);
     flex-shrink: 0;
 }
 
@@ -69,7 +71,7 @@
     gap: 1.75rem;
 }
 
-.auth-copy h1 {
+.auth-copy h2 {
     font-family: 'Fraunces', serif;
     font-size: 3.2rem;
     font-weight: 700;
@@ -79,7 +81,7 @@
 }
 
 .auth-copy .accent {
-    color: #f3ae31;
+    color: var(--accent);
 }
 
 .auth-copy-sub {
@@ -106,7 +108,7 @@
     height: 40px;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.08);
-    color: #f3ae31;
+    color: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -153,12 +155,12 @@
     font-family: 'Fraunces', serif;
     font-size: 1.9rem;
     font-weight: 700;
-    color: #082b3a;
+    color: var(--primary);
     margin-bottom: 0.5rem;
 }
 
 .auth-heading p {
-    color: var(--text-secondary, #3a2c52);
+    color: var(--text-secondary, #52666b);
     font-size: 1rem;
 }
 
@@ -172,13 +174,13 @@
     text-align: center;
     margin-top: 2rem;
     font-size: 0.85rem;
-    color: var(--text-muted, #8b8296);
+    color: var(--text-muted, #8a9a9e);
 }
 
 .auth-footnote a,
 .auth-link,
 .auth-link-sm {
-    color: #082b3a;
+    color: var(--primary);
     font-weight: 600;
     text-decoration: underline;
 }
@@ -201,7 +203,7 @@
 
 .auth-otp-hint {
     font-size: 0.85rem;
-    color: var(--text-muted, #8b8296);
+    color: var(--text-muted, #8a9a9e);
     margin-top: 0.75rem;
 }
 
@@ -215,7 +217,7 @@
     top: 50%;
     left: 1rem;
     transform: translateY(-50%);
-    color: var(--text-muted, #8b8296);
+    color: var(--text-muted, #8a9a9e);
     pointer-events: none;
 }
 
@@ -229,7 +231,7 @@
     align-items: center;
     gap: 0.75rem;
     margin: 1.5rem 0;
-    color: var(--text-muted, #8b8296);
+    color: var(--text-muted, #8a9a9e);
     font-size: 0.82rem;
 }
 
@@ -273,45 +275,39 @@
 
 .auth-otp-box:focus {
     outline: none;
-    border-color: #082b3a;
-    box-shadow: 0 0 0 4px #e4eef1;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-light);
 }
 
-.auth-lock-note {
+/* The single seal — one gold-badged line of real security truth, not a grid of generic trust icons */
+.auth-seal {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    margin-top: 2rem;
-    font-size: 0.8rem;
-    color: var(--text-muted, #8b8296);
-}
-
-/* Trust badges row — bottom of the login card, both breakpoints */
-.auth-trust-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.6rem;
     margin-top: 2rem;
     padding-top: 1.25rem;
     border-top: 1px solid var(--surface-100, #eee);
+    font-size: 0.82rem;
+    color: var(--text-secondary, #52666b);
+    text-align: center;
 }
 
-.auth-trust-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.4rem;
-    color: #082b3a;
+.auth-seal-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent-light, #fff3d4);
+    color: var(--accent-hover, #df8d00);
+    flex-shrink: 0;
 }
 
-.auth-trust-title {
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
-.auth-trust-subtitle {
-    font-size: 0.7rem;
-    color: var(--text-muted, #8b8296);
+.auth-seal-icon svg {
+    width: 14px;
+    height: 14px;
 }
 
 /* Desktop: two-pane split, marketing panel with feature list + illustration */
@@ -324,7 +320,7 @@
         background: #fff;
         border: 1px solid var(--surface-100, #eee);
         border-radius: 24px;
-        box-shadow: 0 25px 50px -12px rgba(8, 43, 58, 0.18);
+        box-shadow: 0 25px 50px -12px rgba(0, 55, 70, 0.18);
         padding: 2.5rem;
     }
 }
@@ -351,18 +347,15 @@
         position: relative;
         color: #fff;
         padding: 3rem 1.5rem 4rem;
-        background:
-            radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-            linear-gradient(160deg, #082b3a 0%, #07293a 65%, #0d3e52 100%);
-        background-size: 16px 16px, 100% 100%;
+        background: linear-gradient(160deg, var(--primary) 0%, var(--primary-hover) 100%);
     }
 
     .auth-mobile-back {
         position: absolute;
         top: 1.5rem;
         left: 1.5rem;
-        width: 36px;
-        height: 36px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.12);
         display: flex;
@@ -386,7 +379,7 @@
     }
 
     .auth-mobile-brand-text span {
-        color: #f3ae31;
+        color: var(--accent);
     }
 
     .auth-mobile-tagline {
@@ -412,7 +405,7 @@
         font-size: 1.6rem;
     }
 
-    .auth-copy h1 {
+    .auth-copy h2 {
         font-size: 1.9rem;
     }
 

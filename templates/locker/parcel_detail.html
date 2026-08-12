@@ -140,7 +140,7 @@
             </div>
             <div class="card-body">
                 <form method="post" action="{% url 'locker:approve_parcel' pk=parcel.pk %}"
-                    enctype="multipart/form-data">
+                    enctype="multipart/form-data" data-guard-submit>
                     {% csrf_token %}
 
                     <div class="form-group">
@@ -349,7 +349,7 @@
                 style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary);">&times;</button>
         </div>
         <div class="card-body">
-            <form method="post" action="{% url 'locker:request_return' pk=parcel.pk %}">
+            <form method="post" action="{% url 'locker:request_return' pk=parcel.pk %}" data-guard-submit>
                 {% csrf_token %}
                 <div class="form-group">
                     <label class="form-label">Reason for return <span
@@ -377,7 +377,7 @@
             <div class="modern-alert alert-danger" style="margin-top: 0;">
                 <p><strong>This action is IRREVERSIBLE!</strong> The item will be donated or disposed of.</p>
             </div>
-            <form method="post" action="{% url 'locker:request_discard' pk=parcel.pk %}">
+            <form method="post" action="{% url 'locker:request_discard' pk=parcel.pk %}" data-guard-submit>
                 {% csrf_token %}
                 <div class="form-group">
                     <label class="form-label">Reason (optional)</label>
