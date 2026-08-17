@@ -33,7 +33,11 @@
                 {% endif %}
             </div>
             <div class="pricing-cost">
+                {% if charge.charge_type == 'percentage' %}
+                {{ charge.percentage_rate }}% <span class="pricing-min">(min {{ charge.currency }} {{ charge.amount }})</span>
+                {% else %}
                 {{ charge.currency }} {{ charge.amount }}
+                {% endif %}
             </div>
         </div>
         {% endfor %}
@@ -172,6 +176,12 @@
         color: var(--text-main);
         font-size: 1.1rem;
         font-family: 'SF Mono', 'Roboto Mono', monospace;
+    }
+
+    .pricing-min {
+        font-weight: 400;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
     }
 
     .pricing-cost.free {

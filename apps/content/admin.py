@@ -1,8 +1,12 @@
+from django import forms
 from django.contrib import admin
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.decorators import display
-from .models import Announcement, StaticPage, ServiceCharge, AdminLog, PageSection, ShippingZone, ShippingRate
+from .models import (
+    Announcement, StaticPage, ServiceCharge, AdminLog, PageSection, ShippingZone, ShippingRate,
+    KNOWN_SERVICE_CHARGE_CODES,
+)
 
 
 # ---- Announcement severity colors ----
@@ -79,14 +83,41 @@ class StaticPageAdmin(ModelAdmin):
     section_count.short_description = 'Sections'
 
 
+class ServiceChargeAdminForm(forms.ModelForm):
+    code = forms.ChoiceField(
+        choices=[('', '— No code (informational only) —')] + KNOWN_SERVICE_CHARGE_CODES,
+        required=False,
+        help_text="Only pick a code if this row is meant to drive an actual computed fee "
+                   "(TrunkAssist pricing, consolidation fee, etc.) — leave it as 'No code' "
+                   "for a purely informational row on the public Service Charges page.",
+    )
+
+    class Meta:
+        model = ServiceCharge
+        fields = '__all__'
+
+    def clean_code(self):
+        # The dropdown's blank option submits '' — store that as None, not
+        # '', so multiple informational rows don't collide on the unique
+        # constraint (many NULLs are fine; many empty strings are not).
+        return self.cleaned_data['code'] or None
+
+
 @admin.register(ServiceCharge)
 class ServiceChargeAdmin(ModelAdmin):
-    list_display = ['name', 'formatted_amount', 'currency', 'is_active']
-    list_filter = ['is_active', 'currency']
+    form = ServiceChargeAdminForm
+    list_display = ['name', 'code', 'charge_type', 'formatted_amount', 'currency', 'is_active']
+    list_filter = ['is_active', 'charge_type', 'currency']
     list_editable = ['is_active']
-    
+    search_fields = ['name', 'code']
+    readonly_fields = ['updated_at']
+
     def formatted_amount(self, obj):
         symbol = '₹' if obj.currency == 'INR' else obj.currency
+        if obj.charge_type == 'percentage':
+            return format_html(
+                '<strong>{}% (min {} {})</strong>', obj.percentage_rate, symbol, obj.amount,
+            )
         return format_html('<strong>{} {}</strong>', symbol, obj.amount)
     formatted_amount.short_description = 'Amount'
     formatted_amount.admin_order_field = 'amount'

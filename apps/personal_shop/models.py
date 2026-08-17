@@ -1,5 +1,9 @@
 import uuid
+from decimal import Decimal
 
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.utils import timezone
 
@@ -98,6 +102,12 @@ class PersonalShopRequest(models.Model):
     delivered_at = models.DateTimeField(null=True, blank=True)
     added_to_trunk_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
+    work_started_at = models.DateTimeField(null=True, blank=True)
+    work_started_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+',
+        help_text="Staff member who marked work started — audit trail for a non-refundable fee decision.",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -108,6 +118,9 @@ class PersonalShopRequest(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['locker', 'status'], name='idx_pshop_locker_status'),
+        ]
+        permissions = [
+            ('mark_work_started', 'Can mark TrunkAssist work as started (locks fee as non-refundable)'),
         ]
 
     # Auto-stamp the matching timeline timestamp whenever status is set to it directly
@@ -252,6 +265,16 @@ class PersonalShopNote(models.Model):
         return f"Note on {self.request.display_id}"
 
 
+# Which quotation_type values are valid for which request_type — per spec 10's
+# §8/§10 rules: research_fee only for Custom Request; expense_advance only for
+# the physical-visit request types (Boutique Purchase, Local Shop Purchase).
+# 'purchase' has no entry here — it's valid for every request_type.
+QUOTATION_TYPE_ALLOWED_REQUEST_TYPES = {
+    'research_fee': {'custom_request'},
+    'expense_advance': {'boutique_purchase', 'local_shop_purchase'},
+}
+
+
 class PersonalShopQuotation(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -262,8 +285,26 @@ class PersonalShopQuotation(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     request = models.ForeignKey(PersonalShopRequest, on_delete=models.CASCADE, related_name='quotations')
+    quotation_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('purchase', 'Purchase'),
+            ('research_fee', 'Research Fee'),
+            ('expense_advance', 'Expense Advance'),
+        ],
+        default='purchase',
+    )
     domestic_shipping_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     service_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    research_fee_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        validators=[MinValueValidator(Decimal('0'))],
+        help_text="Only used on Research Fee quotations — auto-suggested when Quotation type is set to Research Fee.",
+    )
+    travel_expense_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        validators=[MinValueValidator(Decimal('0'))],
+    )
     payment_gateway_charge = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -283,12 +324,56 @@ class PersonalShopQuotation(models.Model):
             ),
         ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._loaded_quotation_type = self.quotation_type
+        self._loaded_status = self.status
+
+    def clean(self):
+        super().clean()
+        self._check_quotation_type_matches_request_type(as_field_error=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk and self._loaded_status == 'approved' and self._loaded_quotation_type != self.quotation_type:
+            raise ValidationError("Cannot change quotation_type after the quotation has been approved.")
+        self._check_quotation_type_matches_request_type(as_field_error=False)
+        super().save(*args, **kwargs)
+        self._loaded_quotation_type = self.quotation_type
+        self._loaded_status = self.status
+
+    def _check_quotation_type_matches_request_type(self, as_field_error):
+        """research_fee is only valid on a Custom Request; expense_advance only
+        on Boutique/Local Shop Purchase — see QUOTATION_TYPE_ALLOWED_REQUEST_TYPES.
+        Called from both clean() (admin-form UX, a field-specific error) and
+        save() (the actual hard guarantee, holds for shell/script edits too)."""
+        if not self.request_id:
+            return
+        allowed = QUOTATION_TYPE_ALLOWED_REQUEST_TYPES.get(self.quotation_type)
+        if allowed is None or self.request.request_type in allowed:
+            return
+        message = (
+            f"quotation_type '{self.get_quotation_type_display()}' is not valid for a "
+            f"'{self.request.get_request_type_display()}' request."
+        )
+        if as_field_error:
+            raise ValidationError({'quotation_type': message})
+        raise ValidationError(message)
+
     def __str__(self):
         return f"Quotation for {self.request.display_id} (₹{self.total_amount})"
 
     @property
     def is_expired(self):
         return self.status == 'pending' and timezone.now() > self.valid_until
+
+    @property
+    def is_refundable(self):
+        """Post-payment refund-eligibility check only — always True before payment,
+        since work_started_at can't be set until the quotation is approved. Must not
+        drive any pre-payment UI; the quotation template's warning is quotation_type-driven."""
+        if self.quotation_type in ('research_fee', 'expense_advance') and self.request.work_started_at is not None:
+            return False
+        return True
 
 
 class PersonalShopQuotationLineItem(models.Model):
