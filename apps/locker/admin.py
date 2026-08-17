@@ -1,9 +1,19 @@
 from django.contrib import admin
+from django.utils import timezone
 from django.utils.html import format_html
 from django import forms
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display
-from .models import Parcel, ParcelImage, ReturnRequest, DiscardRequest
+from .models import Parcel, ParcelImage, ReturnRequest, DiscardRequest, Batch, UserQuota
+from .services.batch_billing import get_open_batch, check_abandonment
+
+
+BATCH_STATUS_COLORS = {
+    'active_free': ('badge-approved', '🆓'),
+    'active_chargeable': ('badge-action-required', '💰'),
+    'closed': ('badge-discarded', '🔒'),
+    'pending': ('badge-pending', '⏳'),
+}
 
 
 # ---- Status color maps ----
@@ -151,29 +161,51 @@ class ParcelAdmin(ModelAdmin):
     customer_name.admin_order_field = 'locker__user__full_name'
     
     def storage_info(self, obj):
-        days = obj.storage_days
-        if days is None:
+        # Storage is billed per Trunk ID (Batch), not per parcel — "days
+        # remaining free" comes from the locker's one open batch. `days`
+        # itself is just this parcel's own age, independent of billing.
+        if obj is None or not obj.received_at:
             return '-'
-        remaining = obj.days_remaining_free
-        if remaining is not None and remaining <= 0:
+        days = (timezone.now() - obj.received_at).days
+
+        batch = get_open_batch(obj.locker)
+        if batch is None or batch.free_storage_end_date is None:
+            if batch is not None and batch.batch_status == 'active_chargeable':
+                return format_html('<span style="color:#EF4444;font-weight:600;">{}d (overdue)</span>', days)
+            return format_html('{}d', days)
+
+        remaining = (batch.free_storage_end_date - timezone.localdate()).days
+        if remaining <= 0:
             return format_html('<span style="color:#EF4444;font-weight:600;">{}d (overdue)</span>', days)
-        elif remaining is not None and remaining <= 5:
+        elif remaining <= 5:
             return format_html('<span style="color:#F59E0B;font-weight:600;">{}d ({}d left)</span>', days, remaining)
         return format_html('{}d', days)
     storage_info.short_description = 'Storage'
     
+    # Individual .save() calls below, not bulk .update() — Django never
+    # sends pre_save/post_save signals for QuerySet.update(), and
+    # apps/locker/signals.py relies on those to create/join/close the
+    # locker's batch when a parcel's status crosses the warehouse boundary.
+
     @admin.action(description='⏳ Mark as Pending')
     def mark_pending(self, request, queryset):
-        queryset.update(status='pending')
-    
+        for parcel in queryset:
+            parcel.status = 'pending'
+            parcel.save(update_fields=['status', 'updated_at'])
+
     @admin.action(description='⚠️ Mark as Action Required')
     def mark_action_required(self, request, queryset):
-        queryset.update(status='action_required')
-    
+        for parcel in queryset:
+            parcel.status = 'action_required'
+            parcel.save(update_fields=['status', 'updated_at'])
+
     @admin.action(description='✅ Mark as Approved')
     def mark_approved(self, request, queryset):
         from django.utils import timezone
-        queryset.update(status='approved', approved_at=timezone.now())
+        for parcel in queryset:
+            parcel.status = 'approved'
+            parcel.approved_at = timezone.now()
+            parcel.save(update_fields=['status', 'approved_at', 'updated_at'])
 
 
 @admin.register(ParcelImage)
@@ -274,3 +306,65 @@ class DiscardRequestAdmin(ModelAdmin):
     def mark_discarded(self, request, queryset):
         from django.utils import timezone
         queryset.update(status='discarded', discarded_at=timezone.now())
+
+
+@admin.register(Batch)
+class BatchAdmin(ModelAdmin):
+    """Read-mostly view of the batch storage/billing state machine — see
+    apps/locker/README_STORAGE_BILLING.md. Batches are created/updated by
+    apps/locker/services/batch_billing.py, not edited by hand; this admin
+    exists for visibility (manual testing, support lookups), not data entry."""
+    list_display = [
+        'locker', 'status_badge', 'plan_type_at_creation', 'current_parcel_count',
+        'first_parcel_received_date', 'free_storage_end_date', 'first_unpaid_charge_date',
+        'abandonment_status', 'closed_at',
+    ]
+    list_filter = ['batch_status', 'plan_type_at_creation', 'quota_year']
+    search_fields = ['locker__locker_id', 'locker__user__email']
+    raw_id_fields = ['locker']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'first_parcel_received_date'
+
+    @display(
+        description='Status',
+        ordering='batch_status',
+        label={
+            'active_free': 'success',
+            'active_chargeable': 'warning',
+            'closed': 'info',
+            'pending': 'warning',
+        }
+    )
+    def status_badge(self, obj):
+        return obj.batch_status
+
+    def abandonment_status(self, obj):
+        """Visibility only — mirrors batch_billing.check_abandonment() so
+        staff can see the 60-day clock without dropping into a shell. This
+        admin does not lock the Trunk ID or restrict shipments itself; that
+        enforcement is still a future view/action, per the storage-fee spec."""
+        if obj.first_unpaid_charge_date is None:
+            return '—'
+        overdue_days = (timezone.localdate() - obj.first_unpaid_charge_date).days
+        if check_abandonment(obj, timezone.localdate()):
+            return format_html(
+                '<span style="color:#EF4444;font-weight:600;">⚠️ Abandoned ({}d)</span>', overdue_days
+            )
+        elif overdue_days >= 45:
+            return format_html(
+                '<span style="color:#F59E0B;font-weight:600;">{}d overdue</span>', overdue_days
+            )
+        return f'{overdue_days}d overdue'
+    abandonment_status.short_description = 'Abandonment Clock'
+
+
+@admin.register(UserQuota)
+class UserQuotaAdmin(ModelAdmin):
+    """Free-plan annual batch-pass pool, one row per user (shared across
+    every Trunk ID that user has). Visibility only — passes_remaining/
+    passes_used are managed by batch_billing.py, not hand-edited here."""
+    list_display = ['user', 'passes_remaining', 'passes_used', 'annual_quota', 'quota_year', 'updated_at']
+    list_filter = ['quota_year']
+    search_fields = ['user__email']
+    raw_id_fields = ['user']
+    readonly_fields = ['updated_at']

@@ -153,12 +153,26 @@ TIMELINE_STEPS = [
     ('added_to_trunk_at', 'Added to My Trunk'),
 ]
 
+# Spec 10's research-fee/expense-advance flows cycle status back through these
+# after an initial payment (a second quotation needs its own payment). Every
+# other timestamp is "set once, stays true forever" (matches the linear spec-07
+# flow this timeline was built for), but paid_at must not still read as "done"
+# while the request is sitting in one of these — that would tell the customer
+# they're all paid up when a fresh payment is actually pending.
+AWAITING_NEW_QUOTATION_PAYMENT_STATUSES = {
+    'quotation_ready', 'quotation_declined', 'quotation_expired', 'payment_pending',
+}
+
 
 def build_timeline(obj):
     timeline = []
     for field, label in TIMELINE_STEPS:
         timestamp = getattr(obj, field)
-        timeline.append({'label': label, 'timestamp': timestamp, 'done': timestamp is not None})
+        done = timestamp is not None
+        if field == 'paid_at' and obj.status in AWAITING_NEW_QUOTATION_PAYMENT_STATUSES:
+            done = False
+            timestamp = None
+        timeline.append({'label': label, 'timestamp': timestamp, 'done': done})
     if obj.status == 'cancelled':
         timeline.append({'label': 'Cancelled', 'timestamp': obj.cancelled_at, 'done': True})
     return timeline

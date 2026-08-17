@@ -13,9 +13,11 @@ persistence, "Select All"/"Ship Selected" checkbox JS behavior.
 """
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import User, Locker
 from apps.locker.models import Parcel, ReturnRequest, DiscardRequest
+from apps.locker.services.batch_billing import get_open_batch
 
 
 class MyTrunkViewTests(TestCase):
@@ -140,7 +142,11 @@ class MyTrunkViewTests(TestCase):
         self.assertIn('pk', item)
 
         parcel.refresh_from_db()
-        self.assertEqual(item['days_left'], parcel.days_remaining_free)
+        # Storage is billed per Trunk ID (Batch) now, not per parcel — assert
+        # against the locker's open batch, mirroring MyTrunkView's own calc.
+        batch = get_open_batch(self.locker)
+        expected_days_left = max(0, (batch.free_storage_end_date - timezone.localdate()).days)
+        self.assertEqual(item['days_left'], expected_days_left)
         self.assertEqual(item['pk'], parcel.pk)
         self.assertEqual(item['status_label'], 'Ready to Ship')
 

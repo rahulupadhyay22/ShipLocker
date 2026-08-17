@@ -1,8 +1,8 @@
 {% extends "accounts/auth_base.html" %}
 {% block title %}Verify OTP - CamelTrunk{% endblock %}
 
-{% block marketing_headline %}Almost there.<br>Verify to <span class="accent">continue</span>{% endblock %}
-{% block marketing_body %}Secure. Reliable. Worldwide.{% endblock %}
+{% block marketing_headline %}Almost There.<br>Verify to <span class="accent">Continue</span>.{% endblock %}
+{% block marketing_body %}We've sent a 6-digit code — no password needed, ever.{% endblock %}
 
 {% block form_content %}
 <div class="auth-otp-label-row">
@@ -24,7 +24,7 @@
 </div>
 {% endif %}
 
-<form method="post" action="{% url 'accounts:verify_otp' %}" id="otp-form">
+<form method="post" action="{% url 'accounts:verify_otp' %}" id="otp-form" data-guard-submit>
     {% csrf_token %}
     <input type="hidden" name="otp_session_token" value="{{ otp_session_token }}">
     <input type="hidden" name="otp" id="otp-combined">
@@ -46,12 +46,11 @@
     <a href="{% url 'accounts:login' %}" class="auth-link">Resend</a>
 </p>
 
-<div class="auth-lock-note">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="5" y="10" width="14" height="10" rx="2"/>
-        <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
-    </svg>
-    Your information is secure and encrypted
+<div class="auth-seal">
+    <span class="auth-seal-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    </span>
+    <span>Secured with one-time codes — no passwords, ever.</span>
 </div>
 
 <script>

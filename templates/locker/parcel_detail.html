@@ -50,8 +50,8 @@
                         <span class="pd-hero-stat-label">Weight</span>
                     </div>
                     <div class="pd-hero-stat">
-                        <span class="pd-hero-stat-value {% if parcel.is_storage_overdue %}overdue{% endif %}">
-                            {% if parcel.is_storage_overdue %}Overdue{% else %}{{ parcel.days_remaining_free }} Days{% endif %}
+                        <span class="pd-hero-stat-value {% if storage_is_overdue %}overdue{% endif %}">
+                            {% if storage_is_overdue %}Overdue{% else %}{{ storage_days_remaining }} Days{% endif %}
                         </span>
                         <span class="pd-hero-stat-label">Storage Left</span>
                     </div>
@@ -140,7 +140,7 @@
             </div>
             <div class="card-body">
                 <form method="post" action="{% url 'locker:approve_parcel' pk=parcel.pk %}"
-                    enctype="multipart/form-data">
+                    enctype="multipart/form-data" data-guard-submit>
                     {% csrf_token %}
 
                     <div class="form-group">
@@ -349,7 +349,7 @@
                 style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary);">&times;</button>
         </div>
         <div class="card-body">
-            <form method="post" action="{% url 'locker:request_return' pk=parcel.pk %}">
+            <form method="post" action="{% url 'locker:request_return' pk=parcel.pk %}" data-guard-submit>
                 {% csrf_token %}
                 <div class="form-group">
                     <label class="form-label">Reason for return <span
@@ -377,7 +377,7 @@
             <div class="modern-alert alert-danger" style="margin-top: 0;">
                 <p><strong>This action is IRREVERSIBLE!</strong> The item will be donated or disposed of.</p>
             </div>
-            <form method="post" action="{% url 'locker:request_discard' pk=parcel.pk %}">
+            <form method="post" action="{% url 'locker:request_discard' pk=parcel.pk %}" data-guard-submit>
                 {% csrf_token %}
                 <div class="form-group">
                     <label class="form-label">Reason (optional)</label>

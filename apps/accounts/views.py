@@ -8,6 +8,7 @@ from django.http import JsonResponse, HttpResponse
 from django.db.models import Count, Q, Sum
 from django.urls import reverse
 from django.template.loader import render_to_string
+from django.utils import timezone
 import logging
 
 from indiabox.mixins import ObjectOwnershipRequiredMixin, SecureActionMixin
@@ -209,9 +210,17 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         total_weight_kg = sum(weights)
         avg_weight_per_item = round(total_weight_kg / parcels_in_trunk, 2) if parcels_in_trunk else 0
 
-        storage_days_left = min((p.days_remaining_free for p in trunk_parcels), default=30)
+        # Storage is billed per Trunk ID (Batch), not per parcel — "days left"
+        # comes from the locker's one open batch, not a per-parcel property.
+        from apps.locker.services.batch_billing import get_open_batch
+        open_batch = get_open_batch(locker)
+        if open_batch and open_batch.free_storage_end_date:
+            storage_days_left = max(0, (open_batch.free_storage_end_date - timezone.localdate()).days)
+        else:
+            storage_days_left = 0
+
         avg_storage_days = round(
-            sum(p.storage_days for p in trunk_parcels) / parcels_in_trunk, 1
+            sum((timezone.now() - p.received_at).days for p in trunk_parcels if p.received_at) / parcels_in_trunk, 1
         ) if parcels_in_trunk else 0
 
         declared_value_total = sum(float(p.item_price) for p in trunk_parcels if p.item_price)

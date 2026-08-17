@@ -1,8 +1,10 @@
 """Content models for CMS functionality."""
 
-from django.db import models
-from django.conf import settings
 import uuid
+from decimal import Decimal
+
+from django.conf import settings
+from django.db import models
 
 
 class Announcement(models.Model):
@@ -117,23 +119,72 @@ class PageSection(models.Model):
 
 
 
+# Every code some other part of the software actually looks up by — kept as
+# a fixed list (not free text) so a typo in the admin can't silently break a
+# lookup (pricing.py/services.py would just get None back, no error raised).
+# apps/content/admin.py's ServiceChargeAdminForm renders this as a dropdown.
+KNOWN_SERVICE_CHARGE_CODES = [
+    ('trunkassist_product_link', 'TrunkAssist – Product Link'),
+    ('trunkassist_image_search', 'TrunkAssist – Image Search'),
+    ('trunkassist_cart_screenshot', 'TrunkAssist – Cart Screenshot'),
+    ('trunkassist_boutique_purchase', 'TrunkAssist – Boutique Purchase'),
+    ('trunkassist_local_shop_purchase', 'TrunkAssist – Local Shop Purchase'),
+    ('trunkassist_custom_request', 'TrunkAssist – Custom Request'),
+    ('consolidation_fee', 'Consolidation Fee'),
+]
+
+
 class ServiceCharge(models.Model):
-    """Service charges and fees configuration."""
-    
+    """Service charges and fees configuration — the single admin-editable
+    source of truth for every fee this software charges a user, wherever
+    that fee is actually computed (TrunkAssist pricing, the consolidation
+    fee, etc.) — those call sites read from here via `code`/`compute()`
+    instead of hardcoding numbers, so an admin edit here takes effect
+    everywhere without a deploy."""
+
+    CHARGE_TYPE_CHOICES = [
+        ('flat', 'Flat'),
+        ('percentage', 'Percentage of Value'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    code = models.SlugField(
+        max_length=60, unique=True, null=True, blank=True,
+        help_text="Stable key other code looks this charge up by (e.g. 'trunkassist_product_link', "
+                   "'consolidation_fee'). Leave blank for a purely informational row nothing reads programmatically.",
+    )
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    charge_type = models.CharField(max_length=10, choices=CHARGE_TYPE_CHOICES, default='flat')
+    percentage_rate = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="e.g. 5.00 for 5%. Only used when Charge Type is Percentage.",
+    )
+    amount = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        help_text="The flat fee (Charge Type = Flat) or the minimum floor amount (Charge Type = Percentage).",
+    )
     currency = models.CharField(max_length=3, default='INR')
     is_active = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = 'Service Charge'
         verbose_name_plural = 'Service Charges'
-    
+
     def __str__(self):
         return f"{self.name} - {self.currency} {self.amount}"
+
+    def compute(self, product_value=None):
+        """Resolves this charge to an actual amount for a given product_value.
+        Percentage type: whichever is higher of (product_value * rate) or the
+        minimum floor (`amount`) — matches never-charge-less-than-the-minimum
+        pricing everywhere in this software. Flat type ignores product_value."""
+        if self.charge_type == 'percentage' and self.percentage_rate is not None:
+            if product_value is None:
+                return self.amount
+            return max(Decimal(product_value) * (self.percentage_rate / Decimal('100')), self.amount)
+        return self.amount
 
 
 class AdminLog(models.Model):

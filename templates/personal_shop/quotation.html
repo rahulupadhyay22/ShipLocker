@@ -26,7 +26,14 @@
 </div>
 
 <div class="card">
-    <div class="card-header"><h3 class="card-title">Quotation Breakdown</h3></div>
+    <div class="card-header">
+        <h3 class="card-title">Quotation Breakdown</h3>
+        <span class="ta-quote-type-badge">
+            {% if quotation.quotation_type == 'research_fee' %}Research Fee
+            {% elif quotation.quotation_type == 'expense_advance' %}Expense Advance (Travel)
+            {% else %}Purchase Quotation{% endif %}
+        </span>
+    </div>
     <div class="ta-quote-table-wrap">
     <table class="ta-quote-table">
         <thead>
@@ -43,10 +50,18 @@
                 <td>₹{{ item.line_total }}</td>
             </tr>
             {% endfor %}
+            {% if quotation.quotation_type == 'purchase' %}
             <tr><td>Domestic Shipping</td><td></td><td>₹{{ quotation.domestic_shipping_amount }}</td></tr>
             <tr><td>TrunkAssist Service Fee</td><td></td><td>₹{{ quotation.service_fee_amount }}</td></tr>
             <tr class="ta-quote-subtotal"><td>Sub Total</td><td></td><td>₹{{ quotation.subtotal }}</td></tr>
             <tr><td>Payment Gateway Charges</td><td></td><td>₹{{ quotation.payment_gateway_charge }}</td></tr>
+            {% endif %}
+            {% if quotation.research_fee_amount %}
+            <tr><td>Research Fee</td><td></td><td>₹{{ quotation.research_fee_amount }}</td></tr>
+            {% endif %}
+            {% if quotation.travel_expense_amount %}
+            <tr><td>Travel / Local Expense</td><td></td><td>₹{{ quotation.travel_expense_amount }}</td></tr>
+            {% endif %}
             <tr class="ta-quote-total"><td>Total Amount</td><td></td><td>₹{{ quotation.total_amount }}</td></tr>
         </tbody>
     </table>
@@ -58,17 +73,26 @@
     </p>
 
     {% if quotation.status == 'pending' %}
+    <p class="ta-quote-note ta-quote-refund-note">
+        {% if quotation.quotation_type == 'purchase' %}
+        Fully refundable if you decline before purchase.
+        {% else %}
+        This fee becomes non-refundable once we begin work.
+        {% endif %}
+    </p>
     <div class="ta-form-actions ta-quote-actions">
-        <form method="post" action="{% url 'personal_shop:quotation_decline' pk=shop_request.pk %}">
+        <form method="post" action="{% url 'personal_shop:quotation_decline' pk=shop_request.pk %}" data-guard-submit>
             {% csrf_token %}
             <button type="submit" class="btn btn-secondary">Decline</button>
         </form>
         <button id="pay-now-btn" class="btn btn-primary"
             data-create-url="{% url 'personal_shop:quotation_pay' pk=shop_request.pk %}"
-            data-verify-url="{% url 'payments:verify' %}">
+            data-verify-url="{% url 'payments:verify' %}"
+            data-error-target="pay-now-error">
             Approve &amp; Pay
         </button>
     </div>
+    <p id="pay-now-error" class="modern-alert alert-danger form-loading-error" role="alert" hidden></p>
     {% elif quotation.status == 'approved' %}
     <div class="ta-quote-status-note ta-quote-status-approved">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -112,12 +136,14 @@
     const payNowBtn = document.getElementById('pay-now-btn');
     if (payNowBtn) {
         payNowBtn.addEventListener('click', async function () {
+            if (payNowBtn.dataset.loading === 'true') {
+                return;
+            }
             const createUrl = this.dataset.createUrl;
             const verifyUrl = this.dataset.verifyUrl;
-            const originalText = this.textContent;
 
-            this.disabled = true;
-            this.textContent = 'Preparing payment...';
+            CamelTrunkLoading.clearError(payNowBtn);
+            CamelTrunkLoading.start(payNowBtn);
 
             try {
                 const createResponse = await fetch(createUrl, {
@@ -153,19 +179,17 @@
                                 window.location.href = "{% url 'personal_shop:payment_confirmation' pk=shop_request.pk %}";
                                 return;
                             }
-                            alert(verifyResult.error || 'Payment verification failed.');
+                            CamelTrunkLoading.showError(payNowBtn, verifyResult.error || 'Payment verification failed.');
                         } catch (error) {
-                            alert(error.message || 'Payment verification failed.');
+                            CamelTrunkLoading.showError(payNowBtn, error.message || 'Payment verification failed.');
                         } finally {
-                            payNowBtn.disabled = false;
-                            payNowBtn.textContent = originalText;
+                            CamelTrunkLoading.stop(payNowBtn);
                         }
                     },
                     theme: { color: '#f6a313' },
                     modal: {
                         ondismiss: function () {
-                            payNowBtn.disabled = false;
-                            payNowBtn.textContent = originalText;
+                            CamelTrunkLoading.stop(payNowBtn);
                         }
                     }
                 };
@@ -173,9 +197,8 @@
                 const rzp = new Razorpay(options);
                 rzp.open();
             } catch (error) {
-                alert(error.message || 'Unable to start payment.');
-                payNowBtn.disabled = false;
-                payNowBtn.textContent = originalText;
+                CamelTrunkLoading.showError(payNowBtn, error.message || 'Unable to start payment.');
+                CamelTrunkLoading.stop(payNowBtn);
             }
         });
     }

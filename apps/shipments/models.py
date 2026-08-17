@@ -140,7 +140,7 @@ class Shipment(models.Model):
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     consolidation_fee = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
-        help_text="Locked in at creation when 2+ parcels are combined into this shipment."
+        help_text="Locked in at shipment creation, regardless of parcel count."
     )
     currency = models.CharField(max_length=3, default='INR')
     

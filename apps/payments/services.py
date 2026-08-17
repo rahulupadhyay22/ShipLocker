@@ -153,92 +153,20 @@ class RazorpayService:
         return is_valid
 
 
-def _get_daily_storage_fee_amount() -> Decimal:
-    """Resolve daily storage fee amount from active service charges.
-
-    Looks for an active ServiceCharge containing both "storage" and "day" in the name,
-    then falls back to any active storage charge. If not configured, uses ₹50/day.
-    """
-    from django.db.models import Q
-    from apps.content.models import ServiceCharge
-
-    named_daily_charge = ServiceCharge.objects.filter(
-        Q(name__icontains='storage') & Q(name__icontains='day'),
-        is_active=True,
-    ).order_by('updated_at').first()
-    if named_daily_charge:
-        return Decimal(str(named_daily_charge.amount))
-
-    generic_storage_charge = ServiceCharge.objects.filter(
-        is_active=True,
-        name__icontains='storage',
-    ).order_by('updated_at').first()
-    if generic_storage_charge:
-        return Decimal(str(generic_storage_charge.amount))
-
-    return Decimal('50.00')
-
-
 def _get_consolidation_fee_amount() -> Decimal:
     """Resolve the consolidation fee from active service charges.
 
-    Looks for an active ServiceCharge with "consolidat" in the name (matches
-    "Consolidation"). Not configured -> 0 (fee simply isn't shown/charged).
+    Looks up the active ServiceCharge with code='consolidation_fee' (a stable
+    key, not a name-text match — renaming the row in admin no longer breaks
+    this lookup). Not configured -> 0 (fee simply isn't shown/charged).
     """
     from apps.content.models import ServiceCharge
 
-    charge = ServiceCharge.objects.filter(
-        is_active=True,
-        name__icontains='consolidat',
-    ).order_by('updated_at').first()
+    charge = ServiceCharge.objects.filter(is_active=True, code='consolidation_fee').first()
     if charge:
-        return Decimal(str(charge.amount))
+        return Decimal(str(charge.compute()))
 
     return Decimal('0.00')
-
-
-def ensure_storage_fee_for_parcel(parcel):
-    """Create or update pending StorageFee automatically after 30 free days."""
-    from .models import StorageFee
-
-    if not parcel or not parcel.received_at:
-        return None
-
-    overdue_days = max(0, parcel.storage_days - 30)
-    if overdue_days <= 0:
-        return None
-
-    daily_fee = _get_daily_storage_fee_amount()
-    total_fee = daily_fee * Decimal(overdue_days)
-
-    storage_fee = StorageFee.objects.filter(
-        parcel=parcel,
-        status='pending',
-    ).order_by('-created_at').first()
-
-    if storage_fee:
-        updated = False
-        if storage_fee.days_overdue != overdue_days:
-            storage_fee.days_overdue = overdue_days
-            updated = True
-        if storage_fee.fee_amount != total_fee:
-            storage_fee.fee_amount = total_fee
-            updated = True
-        if updated:
-            storage_fee.save(update_fields=['days_overdue', 'fee_amount'])
-        return storage_fee
-
-    # Do not auto-create another fee if one is already paid/waived.
-    historical_fee = StorageFee.objects.filter(parcel=parcel).exists()
-    if historical_fee:
-        return None
-
-    return StorageFee.objects.create(
-        parcel=parcel,
-        fee_amount=total_fee,
-        days_overdue=overdue_days,
-        status='pending',
-    )
 
 
 def _financial_year_label(invoice_date):

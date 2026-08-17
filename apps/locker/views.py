@@ -15,93 +15,6 @@ from .models import Parcel, ParcelImage, ReturnRequest, DiscardRequest
 logger = logging.getLogger('security')
 
 
-def _sync_overdue_storage_fees(user):
-    """Batch-optimized storage fee sync after 30 free days.
-
-    Performance: reduces N×2 queries (per parcel) down to 3 fixed queries
-    regardless of parcel count. Wrapped in try/except so page loads are
-    never blocked by storage-fee calculation failures.
-    """
-    try:
-        from apps.payments.models import StorageFee
-        from apps.payments.services import _get_daily_storage_fee_amount
-        from decimal import Decimal
-
-        if not hasattr(user, 'locker'):
-            return
-
-        # Query 1: Get all eligible parcels in ONE query
-        eligible_parcels = list(Parcel.objects.filter(
-            locker=user.locker,
-            status__in=[
-                'pending', 'action_required', 'approved',
-                'return_requested', 'return_approved', 'discard_requested',
-            ],
-        ).only('id', 'received_at', 'display_id'))
-
-        if not eligible_parcels:
-            return
-
-        # Query 2: Get ALL existing pending fees in ONE query
-        existing_fees = {
-            sf.parcel_id: sf
-            for sf in StorageFee.objects.filter(
-                parcel__in=eligible_parcels, status='pending',
-            ).select_related('parcel')
-        }
-
-        # IDs of parcels that already have ANY fee (pending, paid, or waived)
-        parcels_with_any_fee = set(
-            StorageFee.objects.filter(
-                parcel__in=eligible_parcels,
-            ).values_list('parcel_id', flat=True)
-        )
-
-        daily_fee = _get_daily_storage_fee_amount()
-        now = timezone.now()
-        to_create = []
-        to_update = []
-
-        for parcel in eligible_parcels:
-            if not parcel.received_at:
-                continue
-
-            storage_days = max(0, (now - parcel.received_at).days)
-            overdue_days = max(0, storage_days - 30)
-            if overdue_days <= 0:
-                continue
-
-            total_fee = daily_fee * Decimal(overdue_days)
-            existing = existing_fees.get(parcel.pk)
-
-            if existing:
-                # Update existing pending fee if values changed
-                if existing.days_overdue != overdue_days or existing.fee_amount != total_fee:
-                    existing.days_overdue = overdue_days
-                    existing.fee_amount = total_fee
-                    to_update.append(existing)
-            elif parcel.pk not in parcels_with_any_fee:
-                # Only create if no historical fee exists (paid/waived)
-                to_create.append(StorageFee(
-                    parcel=parcel,
-                    fee_amount=total_fee,
-                    days_overdue=overdue_days,
-                    status='pending',
-                ))
-
-        # Query 3a: Bulk create new fees
-        if to_create:
-            StorageFee.objects.bulk_create(to_create)
-
-        # Query 3b: Bulk update changed fees
-        if to_update:
-            StorageFee.objects.bulk_update(to_update, ['days_overdue', 'fee_amount'])
-
-    except Exception as e:
-        logger.error(f"Storage fee sync failed for user {getattr(user, 'email', 'unknown')}: {e}")
-        # Fail silently — fees will sync on next page visit
-
-
 def _get_locker_tab_counts(locker):
     """Get all locker tab counts in a single aggregate query.
 
@@ -131,8 +44,18 @@ class MyTrunkView(LoginRequiredMixin, View):
     template_name = 'locker/my_trunk.html'
 
     def get(self, request):
-        _sync_overdue_storage_fees(request.user)
         locker = request.user.locker
+
+        # Storage is billed per Trunk ID (Batch), not per parcel — every
+        # parcel in this locker shares the same "days left" figure, so
+        # compute it once from the locker's one open batch instead of a
+        # removed per-parcel property.
+        from .services.batch_billing import get_open_batch
+        open_batch = get_open_batch(locker)
+        if open_batch and open_batch.free_storage_end_date:
+            locker_days_left = max(0, (open_batch.free_storage_end_date - timezone.localdate()).days)
+        else:
+            locker_days_left = 0
 
         items = []
         for p in Parcel.objects.filter(locker=locker, status='action_required').prefetch_related('images'):
@@ -140,14 +63,14 @@ class MyTrunkView(LoginRequiredMixin, View):
                 'parcel': p, 'kind': 'action_required', 'status_label': 'Action Required',
                 'status_class': 'status-action', 'title': p.item_name or 'Unnamed Item',
                 'weight_kg': p.weight_kg, 'display_id': p.display_id, 'date': p.received_at,
-                'image': p.images.first(), 'pk': p.pk, 'days_left': p.days_remaining_free,
+                'image': p.images.first(), 'pk': p.pk, 'days_left': locker_days_left,
             })
         for p in Parcel.objects.filter(locker=locker, status='approved').prefetch_related('images'):
             items.append({
                 'parcel': p, 'kind': 'ready_to_ship', 'status_label': 'Ready to Ship',
                 'status_class': 'status-approved', 'title': p.item_name or 'Unnamed Item',
                 'weight_kg': p.weight_kg, 'display_id': p.display_id, 'date': p.received_at,
-                'image': p.images.first(), 'pk': p.pk, 'days_left': p.days_remaining_free,
+                'image': p.images.first(), 'pk': p.pk, 'days_left': locker_days_left,
             })
         return_status_class = {
             'completed': 'status-delivered', 'rejected': 'status-action',
@@ -158,7 +81,7 @@ class MyTrunkView(LoginRequiredMixin, View):
                 'status_class': return_status_class.get(r.status, 'status-pending'),
                 'title': r.parcel.item_name or r.parcel.tracking_number,
                 'weight_kg': r.parcel.weight_kg, 'display_id': r.parcel.display_id, 'date': r.requested_at,
-                'image': r.parcel.images.first(), 'pk': r.parcel.pk, 'days_left': r.parcel.days_remaining_free,
+                'image': r.parcel.images.first(), 'pk': r.parcel.pk, 'days_left': locker_days_left,
             })
         discard_status_class = {'discarded': 'status-delivered'}
         for d in DiscardRequest.objects.filter(parcel__locker=locker).exclude(status='discarded').select_related('parcel').prefetch_related('parcel__images'):
@@ -167,7 +90,7 @@ class MyTrunkView(LoginRequiredMixin, View):
                 'status_class': discard_status_class.get(d.status, 'status-action'),
                 'title': d.parcel.item_name or d.parcel.tracking_number,
                 'weight_kg': d.parcel.weight_kg, 'display_id': d.parcel.display_id, 'date': d.requested_at,
-                'image': d.parcel.images.first(), 'pk': d.parcel.pk, 'days_left': d.parcel.days_remaining_free,
+                'image': d.parcel.images.first(), 'pk': d.parcel.pk, 'days_left': locker_days_left,
             })
 
         items.sort(key=lambda i: i['date'] or timezone.now(), reverse=True)
@@ -203,7 +126,6 @@ class ParcelDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        _sync_overdue_storage_fees(self.request.user)
 
         images = list(self.object.images.all())
         context['primary_image'] = images[0] if images else None
@@ -211,6 +133,17 @@ class ParcelDetailView(LoginRequiredMixin, DetailView):
 
         shipment_items = list(self.object.shipment_items.all())
         context['shipment_item'] = shipment_items[0] if shipment_items else None
+
+        # Storage is billed per Trunk ID (Batch) now, not per parcel — this
+        # parcel's "storage left" comes from its locker's one open batch.
+        from .services.batch_billing import get_open_batch
+        batch = get_open_batch(self.object.locker)
+        if batch and batch.free_storage_end_date:
+            context['storage_days_remaining'] = max(0, (batch.free_storage_end_date - timezone.localdate()).days)
+            context['storage_is_overdue'] = context['storage_days_remaining'] <= 0
+        else:
+            context['storage_days_remaining'] = 0
+            context['storage_is_overdue'] = batch is not None and batch.batch_status == 'active_chargeable'
 
         return context
 
