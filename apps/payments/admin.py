@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 from unfold.decorators import display
-from .models import Payment, StorageFee, Invoice
+from .models import Payment, BatchCharge, Invoice
 
 
 PAYMENT_STATUS_COLORS = {
@@ -14,7 +14,7 @@ PAYMENT_STATUS_COLORS = {
     'partially_refunded': ('badge-returned', '↩️'),
 }
 
-STORAGE_STATUS_COLORS = {
+CHARGE_STATUS_COLORS = {
     'pending': ('badge-pending', '⏳'),
     'paid':    ('badge-delivered', '✅'),
     'waived':  ('badge-info', 'ℹ️'),
@@ -101,26 +101,24 @@ class PaymentAdmin(ModelAdmin):
         queryset.filter(status__in=['pending', 'authorized']).update(status='failed')
 
 
-@admin.register(StorageFee)
-class StorageFeeAdmin(ModelAdmin):
+@admin.register(BatchCharge)
+class BatchChargeAdmin(ModelAdmin):
     list_display = [
-        'parcel', 'formatted_fee', 'days_overdue',
+        'batch', 'formatted_amount', 'charge_date',
         'status_badge', 'payment', 'created_at'
     ]
-    list_filter = ['status', 'created_at']
-    search_fields = ['parcel__display_id', 'parcel__locker__locker_id']
-    raw_id_fields = ['parcel', 'payment']
+    list_filter = ['status', 'charge_date']
+    search_fields = ['batch__locker__locker_id']
+    raw_id_fields = ['batch', 'payment']
     readonly_fields = ['created_at', 'paid_at']
 
-    actions = ['waive_fees', 'remove_fees']
+    actions = ['waive_charges', 'remove_charges']
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        shipment_id = request.GET.get('shipment_id')
-        if shipment_id:
-            queryset = queryset.filter(
-                parcel__shipment_items__shipment_id=shipment_id
-            ).distinct()
+        locker_id = request.GET.get('locker_id')
+        if locker_id:
+            queryset = queryset.filter(batch__locker__locker_id=locker_id)
         return queryset
 
     @display(
@@ -135,22 +133,22 @@ class StorageFeeAdmin(ModelAdmin):
     def status_badge(self, obj):
         return obj.status
 
-    def formatted_fee(self, obj):
+    def formatted_amount(self, obj):
         symbol = '₹' if obj.currency == 'INR' else obj.currency
-        return format_html('<strong>{} {}</strong>', symbol, obj.fee_amount)
-    formatted_fee.short_description = 'Fee'
-    formatted_fee.admin_order_field = 'fee_amount'
+        return format_html('<strong>{} {}</strong>', symbol, obj.amount)
+    formatted_amount.short_description = 'Amount'
+    formatted_amount.admin_order_field = 'amount'
 
-    @admin.action(description='ℹ️ Waive selected fees')
-    def waive_fees(self, request, queryset):
+    @admin.action(description='ℹ️ Waive selected charges')
+    def waive_charges(self, request, queryset):
         queryset.filter(status='pending').update(
             status='waived', waived_reason='Waived by admin'
         )
 
-    @admin.action(description='🗑️ Remove selected storage fees')
-    def remove_fees(self, request, queryset):
+    @admin.action(description='🗑️ Remove selected batch charges')
+    def remove_charges(self, request, queryset):
         deleted_count, _ = queryset.delete()
-        self.message_user(request, f'Removed {deleted_count} storage fee record(s).')
+        self.message_user(request, f'Removed {deleted_count} batch charge record(s).')
 
 
 @admin.register(Invoice)

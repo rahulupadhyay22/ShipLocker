@@ -2,7 +2,7 @@ import uuid
 from django.db import models, transaction
 from apps.accounts.models import User
 from apps.shipments.models import Shipment
-from apps.locker.models import Parcel
+from apps.locker.models import Batch
 
 
 def generate_payment_id(user):
@@ -51,6 +51,11 @@ class Payment(models.Model):
         ('partially_refunded', 'Partially Refunded'),
     ]
 
+    PAYMENT_TYPE_CHOICES = [
+        ('shipment', 'Shipment'),
+        ('storage_batch', 'Storage Batch'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     display_id = models.CharField(
         max_length=60, unique=True, editable=False, db_index=True,
@@ -74,6 +79,11 @@ class Payment(models.Model):
     # Amount
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='INR')
+
+    # Type
+    payment_type = models.CharField(
+        max_length=20, choices=PAYMENT_TYPE_CHOICES, default='shipment'
+    )
 
     # Method & Status
     payment_method = models.CharField(
@@ -143,8 +153,11 @@ class Payment(models.Model):
         return self.status == 'captured' and not self.refund_id
 
 
-class StorageFee(models.Model):
-    """Storage fee charged when parcel exceeds free storage period."""
+class BatchCharge(models.Model):
+    """One daily storage charge line item for a Batch. Replaces StorageFee's
+    role — see apps/locker/services/batch_billing.py for how these are
+    created (run_daily_billing) and apps/locker/README_STORAGE_BILLING.md
+    for the billing model overview."""
 
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -154,39 +167,43 @@ class StorageFee(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    parcel = models.ForeignKey(
-        Parcel, on_delete=models.CASCADE, related_name='storage_fees'
+    # PROTECT, not CASCADE: this is a financial ledger row — a Batch being
+    # deleted must never silently delete the charges billed against it.
+    batch = models.ForeignKey(
+        Batch, on_delete=models.PROTECT, related_name='charges'
     )
     payment = models.ForeignKey(
         Payment, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='storage_fees',
-        help_text="Payment that covered this fee"
+        null=True, blank=True, related_name='batch_charges',
+        help_text="Payment that covered this charge"
     )
 
-    # Fee details
-    fee_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    charge_date = models.DateField()
+    parcel_count_snapshot = models.PositiveIntegerField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='INR')
-    days_overdue = models.PositiveIntegerField(
-        help_text="Number of days beyond free storage period"
-    )
 
-    # Status
     status = models.CharField(
         max_length=10, choices=STATUS_CHOICES, default='pending'
     )
     waived_reason = models.CharField(max_length=255, blank=True)
 
-    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     paid_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        verbose_name = 'Storage Fee'
-        verbose_name_plural = 'Storage Fees'
-        ordering = ['-created_at']
+        verbose_name = 'Batch Charge'
+        verbose_name_plural = 'Batch Charges'
+        ordering = ['-charge_date']
+        constraints = [
+            # Idempotency guard for the daily billing job: running it twice
+            # on the same day for the same batch raises IntegrityError on
+            # the second attempt rather than double-charging.
+            models.UniqueConstraint(fields=['batch', 'charge_date'], name='unique_batch_charge_per_day'),
+        ]
 
     def __str__(self):
-        return f"{self.parcel.display_id} — ₹{self.fee_amount} ({self.get_status_display()})"
+        return f"{self.batch.locker.locker_id} — {self.charge_date} — ₹{self.amount} ({self.get_status_display()})"
 
 
 class Invoice(models.Model):

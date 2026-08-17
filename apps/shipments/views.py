@@ -34,21 +34,32 @@ def _match_shipping_zone(shipment):
 def _payment_summary(shipment):
     """Shipping/storage/total figures shown in the Payment Summary card.
     Shared by the detail page context and the AJAX service-selection response
-    so both compute the total-due math identically."""
+    so both compute the total-due math identically.
+
+    Storage is billed per Trunk ID (Batch), not per shipment — BatchCharge
+    doesn't belong to any specific shipment's parcels, so "pending" here is
+    the locker's whole outstanding storage balance (not just charges from
+    parcels in this shipment). CreatePaymentOrderView bundles that same
+    pending total into this shipment's Razorpay order, so paying for the
+    shipment settles the storage balance too. "Paid" is scoped to storage
+    charges actually settled via a payment for *this* shipment."""
     from decimal import Decimal
     from django.db.models import Sum
-    from apps.payments.models import StorageFee
+    from apps.payments.models import BatchCharge
 
-    parcel_ids = list(shipment.items.values_list('parcel_id', flat=True))
-    if not parcel_ids:
+    locker = getattr(shipment.user, 'locker', None)
+    if locker is None:
+        # No Locker exists for this user (shouldn't happen in the normal
+        # signup flow, but nothing here should ever 500 on a payment path) —
+        # there can be no batches, so no storage balance either.
         pending_total = paid_total = Decimal('0.00')
     else:
-        pending_total = StorageFee.objects.filter(
-            parcel_id__in=parcel_ids, status='pending',
-        ).aggregate(total=Sum('fee_amount'))['total'] or Decimal('0.00')
-        paid_total = StorageFee.objects.filter(
-            parcel_id__in=parcel_ids, status='paid',
-        ).aggregate(total=Sum('fee_amount'))['total'] or Decimal('0.00')
+        pending_total = BatchCharge.objects.filter(
+            batch__locker=locker, status='pending',
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        paid_total = BatchCharge.objects.filter(
+            batch__locker=locker, status='paid', payment__shipment=shipment,
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
     shipping_amount = Decimal(str(shipment.shipping_cost or 0))
     consolidation_fee = Decimal(str(shipment.consolidation_fee or 0))
@@ -286,20 +297,24 @@ class CreateShipmentView(LoginRequiredMixin, View):
         if preselected_ids:
             available_parcels = available_parcels.filter(id__in=preselected_ids)
 
-        # Attach a live storage-fee preview + billable weight to each parcel
-        # for the create-shipment summary sidebar. No StorageFee row exists
-        # yet at this point (those are only created later, from the admin) —
-        # this is just an estimate using the same daily rate that flow uses.
-        from decimal import Decimal
-        from apps.payments.services import _get_daily_storage_fee_amount, _get_consolidation_fee_amount
+        # Attach billable weight to each parcel for the create-shipment
+        # summary sidebar. Storage is billed per Trunk ID (Batch), not per
+        # parcel, so there's no per-parcel "overdue days" figure anymore —
+        # instead we show the locker's whole outstanding storage balance
+        # once below, independent of which parcels happen to be checked.
+        from apps.payments.services import _get_consolidation_fee_amount
+        from apps.payments.views import _get_pending_batch_charges_for_locker
         from apps.content.services import build_zones_json
-        daily_storage_rate = _get_daily_storage_fee_amount()
+        from django.db.models import Sum
+        from decimal import Decimal
+
         parcels = list(available_parcels)
         for parcel in parcels:
-            overdue_days = max(parcel.storage_days - 30, 0)
-            parcel.storage_overdue_days = overdue_days
-            parcel.storage_fee_estimate = (daily_storage_rate * overdue_days) if overdue_days else Decimal('0.00')
             parcel.billable_weight = parcel.billable_weight_kg or 0
+
+        pending_charges = _get_pending_batch_charges_for_locker(locker)
+        storage_fee_pending = pending_charges.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        storage_fee_days_pending = pending_charges.count()
 
         return render(request, self.template_name, {
             'parcels': parcels,
@@ -307,7 +322,8 @@ class CreateShipmentView(LoginRequiredMixin, View):
             'zones': zones,
             'zones_json': build_zones_json(),
             'consolidation_fee_amount': _get_consolidation_fee_amount(),
-            'daily_storage_rate': daily_storage_rate,
+            'storage_fee_pending': storage_fee_pending,
+            'storage_fee_days_pending': storage_fee_days_pending,
             'default_address': default_address,
             'saved_addresses': saved_addresses,
             'preselected_ids': preselected_ids,
@@ -377,8 +393,9 @@ class CreateShipmentView(LoginRequiredMixin, View):
         
         # Locked in now, at creation, so it doesn't drift if the admin later
         # edits the 'Consolidation' ServiceCharge amount (e.g. after payment).
+        # Applies to every shipment regardless of parcel count, not just 2+.
         from apps.payments.services import _get_consolidation_fee_amount
-        consolidation_fee = _get_consolidation_fee_amount() if len(parcels) >= 2 else None
+        consolidation_fee = _get_consolidation_fee_amount()
 
         with transaction.atomic():
             # Create shipment with declaration_pending status
@@ -448,7 +465,13 @@ class CreateShipmentView(LoginRequiredMixin, View):
             ShipmentItem.objects.bulk_create(
                 [ShipmentItem(shipment=shipment, parcel=parcel) for parcel in parcels]
             )
-            Parcel.objects.filter(pk__in=[parcel.pk for parcel in parcels]).update(status='shipped')
+            # Individual .save() calls, not a bulk .update() — Django never
+            # sends pre_save/post_save signals for QuerySet.update(), and
+            # apps/locker/signals.py relies on those to decrement/close the
+            # locker's batch when a parcel leaves the warehouse.
+            for parcel in parcels:
+                parcel.status = 'shipped'
+                parcel.save(update_fields=['status', 'updated_at'])
         
         messages.success(request, 'Shipment created! Your declaration is pending approval.')
         return redirect('shipments:detail', pk=shipment.pk)

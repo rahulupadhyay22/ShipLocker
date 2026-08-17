@@ -417,11 +417,6 @@ UNFOLD = {
                         "link": reverse_lazy("admin:locker_parcel_changelist"),
                     },
                     {
-                        "title": "Parcel Images",
-                        "icon": "photo_library",
-                        "link": reverse_lazy("admin:locker_parcelimage_changelist"),
-                    },
-                    {
                         "title": "Return Requests",
                         "icon": "keyboard_return",
                         "link": reverse_lazy("admin:locker_returnrequest_changelist"),
@@ -430,6 +425,16 @@ UNFOLD = {
                         "title": "Discard Requests",
                         "icon": "delete",
                         "link": reverse_lazy("admin:locker_discardrequest_changelist"),
+                    },
+                    {
+                        "title": "Batches",
+                        "icon": "inventory",
+                        "link": reverse_lazy("admin:locker_batch_changelist"),
+                    },
+                    {
+                        "title": "User Quotas",
+                        "icon": "confirmation_number",
+                        "link": reverse_lazy("admin:locker_userquota_changelist"),
                     },
                 ],
             },
@@ -476,7 +481,12 @@ UNFOLD = {
                     {
                         "title": "Storage Fees",
                         "icon": "garage",
-                        "link": reverse_lazy("admin:payments_storagefee_changelist"),
+                        "link": reverse_lazy("admin:payments_batchcharge_changelist"),
+                    },
+                    {
+                        "title": "Invoices",
+                        "icon": "receipt",
+                        "link": reverse_lazy("admin:payments_invoice_changelist"),
                     },
                 ],
             },

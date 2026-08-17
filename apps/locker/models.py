@@ -1,6 +1,6 @@
 import uuid
 from django.db import models, transaction
-from apps.accounts.models import Locker
+from apps.accounts.models import Locker, User
 
 
 def generate_parcel_id(locker):
@@ -191,25 +191,6 @@ class Parcel(models.Model):
         return self.status == 'approved'
 
     @property
-    def storage_days(self):
-        from django.utils import timezone
-        if not self.received_at:
-            return 0
-        delta = timezone.now() - self.received_at
-        return delta.days
-
-    @property
-    def days_remaining_free(self):
-        # 30 days free storage
-        used = self.storage_days
-        remaining = 30 - used
-        return max(0, remaining)
-    
-    @property
-    def is_storage_overdue(self):
-        return self.days_remaining_free == 0
-
-    @property
     def volumetric_weight_kg(self):
         """Calculate volumetric weight: (L x W x H) / 5000 (industry standard)."""
         if self.length_cm and self.width_cm and self.height_cm:
@@ -334,6 +315,81 @@ class DiscardRequest(models.Model):
         if not self.display_id:
             self.display_id = generate_discard_request_id(self.parcel)
         super().save(*args, **kwargs)
-    
+
     def __str__(self):
         return f"{self.display_id}"
+
+
+class Batch(models.Model):
+    """A shipment batch: the free-storage/billing unit for a Trunk ID.
+
+    Opens on the first parcel received while no batch is active; closes
+    permanently once current_parcel_count reaches 0. See
+    apps/locker/services/batch_billing.py for the full state machine and
+    apps/locker/README_STORAGE_BILLING.md for the diagram.
+    """
+
+    PLAN_CHOICES = [('free', 'Free'), ('paid', 'Paid')]
+    STATUS_CHOICES = [
+        ('active_free', 'Active - Free'),
+        ('active_chargeable', 'Active - Chargeable'),
+        ('closed', 'Closed'),
+        ('pending', 'Pending (Grace Period)'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    locker = models.ForeignKey(Locker, on_delete=models.CASCADE, related_name='batches')
+
+    plan_type_at_creation = models.CharField(max_length=10, choices=PLAN_CHOICES)
+    quota_year = models.PositiveIntegerField(help_text="Calendar year of first_parcel_received_date")
+    batch_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active_free', db_index=True)
+
+    first_parcel_received_date = models.DateField()
+    free_storage_end_date = models.DateField(null=True, blank=True)
+    closed_at = models.DateField(null=True, blank=True)
+    current_parcel_count = models.PositiveIntegerField(default=0)
+    first_unpaid_charge_date = models.DateField(null=True, blank=True)
+    refund_issued = models.BooleanField(
+        default=False,
+        help_text="24-hour cancellation pass refund already applied — guards double-refund"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Batch'
+        verbose_name_plural = 'Batches'
+        ordering = ['-first_parcel_received_date']
+        indexes = [
+            models.Index(fields=['locker', 'batch_status'], name='idx_batch_locker_status'),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['locker'],
+                condition=models.Q(batch_status__in=['active_free', 'active_chargeable', 'pending']),
+                name='unique_open_batch_per_locker',
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.locker.locker_id} batch ({self.get_batch_status_display()})"
+
+
+class UserQuota(models.Model):
+    """Free-plan annual batch-pass pool. Scoped by user_id, not locker_id —
+    shared across every Trunk ID a user has, per the batch-billing spec."""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='quota')
+    annual_quota = models.PositiveIntegerField(default=3)
+    passes_used = models.PositiveIntegerField(default=0)
+    passes_remaining = models.PositiveIntegerField(default=3)
+    quota_year = models.PositiveIntegerField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'User Quota'
+        verbose_name_plural = 'User Quotas'
+
+    def __str__(self):
+        return f"{self.user.email} — {self.passes_remaining}/{self.annual_quota} passes ({self.quota_year})"

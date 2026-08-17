@@ -78,13 +78,20 @@ def generate_locker_id():
 
 class Locker(models.Model):
     """Virtual locker assigned to each user."""
-    
+
+    PLAN_CHOICES = [('free', 'Free'), ('paid', 'Paid')]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='locker')
     locker_id = models.CharField(max_length=20, unique=True, default=generate_locker_id)
     is_active = models.BooleanField(default=True, help_text="Whether this locker is active")
+    plan_type = models.CharField(max_length=10, choices=PLAN_CHOICES, default='free')
+    payment_grace_until = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Set when a paid-plan renewal fails; non-null and not yet expired means the account is in its 7-day grace period."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         verbose_name = 'Locker'
         verbose_name_plural = 'Lockers'

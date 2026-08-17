@@ -14,39 +14,41 @@ from django.utils import timezone
 from django.db import transaction
 from django.db.models import Sum
 
-from .models import Payment, StorageFee
+from .models import Payment, BatchCharge
 from .services import RazorpayService
 from apps.shipments.models import Shipment
 
 logger = logging.getLogger('security')
 
 
-def _get_pending_storage_fees_for_shipment(shipment):
-    return StorageFee.objects.filter(
-        parcel__shipment_items__shipment=shipment,
-        status='pending',
-    ).distinct()
+def _get_pending_batch_charges_for_locker(locker):
+    """All pending BatchCharge rows for this locker's batches. Unlike the old
+    per-parcel StorageFee (scoped to a shipment via its parcels), a
+    BatchCharge belongs to a Batch (a Trunk ID) — so this pulls in every
+    outstanding charge across all of the locker's batches, not just ones
+    tied to the parcels in the shipment being paid for. Used by
+    CreatePaymentOrderView to bundle the locker's storage balance into a
+    shipment's Razorpay order, same as the old StorageFee flow did."""
+    return BatchCharge.objects.filter(batch__locker=locker, status='pending')
 
 
-def _mark_storage_fees_paid(payment):
-    if not payment.shipment:
-        return
-
-    fee_ids = []
+def _mark_batch_charges_paid(payment):
+    """Marks the BatchCharge rows referenced in payment.notes['batch_charge_ids']
+    as paid. Works for any payment_type — a future storage_batch payment
+    flow populates this list the same way shipment payments once populated
+    storage_fee_ids."""
+    charge_ids = []
     if payment.notes:
         try:
             notes_data = json.loads(payment.notes)
-            fee_ids = notes_data.get('storage_fee_ids', []) or []
+            charge_ids = notes_data.get('batch_charge_ids', []) or []
         except (TypeError, json.JSONDecodeError):
-            fee_ids = []
+            charge_ids = []
 
-    fees_qs = StorageFee.objects.filter(status='pending')
-    if fee_ids:
-        fees_qs = fees_qs.filter(id__in=fee_ids)
-    else:
-        fees_qs = fees_qs.filter(parcel__shipment_items__shipment=payment.shipment).distinct()
+    if not charge_ids:
+        return
 
-    fees_qs.update(
+    BatchCharge.objects.filter(status='pending', id__in=charge_ids).update(
         status='paid',
         payment=payment,
         paid_at=timezone.now(),
@@ -74,8 +76,12 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
 
         shipping_due = shipment.shipping_cost if shipment.payment_status != 'paid' else Decimal('0.00')
 
-        pending_fees_qs = _get_pending_storage_fees_for_shipment(shipment)
-        pending_storage_total = pending_fees_qs.aggregate(total=Sum('fee_amount'))['total'] or Decimal('0.00')
+        # Storage is billed per Trunk ID (Batch), not per shipment, but
+        # paying for a shipment is a natural moment to settle the locker's
+        # outstanding storage balance too — bundle it into the same order.
+        locker = getattr(shipment.user, 'locker', None)
+        pending_charges_qs = _get_pending_batch_charges_for_locker(locker) if locker else BatchCharge.objects.none()
+        pending_storage_total = pending_charges_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
         pending_storage_total = pending_storage_total.quantize(Decimal('0.01'))
 
         total_due = (shipping_due + pending_storage_total).quantize(Decimal('0.01'))
@@ -85,7 +91,7 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         # Amount in paise
         amount_paise = int(total_due * 100)
 
-        fee_ids = [str(fee_id) for fee_id in pending_fees_qs.values_list('id', flat=True)]
+        charge_ids = [str(charge_id) for charge_id in pending_charges_qs.values_list('id', flat=True)]
         description_parts = []
         if shipping_due > 0:
             description_parts.append('shipping')
@@ -127,7 +133,7 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
                     'shipment_id': str(shipment.pk),
                     'shipping_due': str(shipping_due),
                     'storage_due': str(pending_storage_total),
-                    'storage_fee_ids': fee_ids,
+                    'batch_charge_ids': charge_ids,
                 }),
             )
 
@@ -203,7 +209,7 @@ class VerifyPaymentView(LoginRequiredMixin, View):
             payment.paid_at = timezone.now()
             payment.save()
 
-            _mark_storage_fees_paid(payment)
+            _mark_batch_charges_paid(payment)
 
             # Update shipment payment status
             if payment.shipment:
@@ -213,6 +219,8 @@ class VerifyPaymentView(LoginRequiredMixin, View):
                 payment.shipment.save()
             elif payment.personal_shop_request:
                 payment.personal_shop_request.mark_paid()
+            elif payment.payment_type == 'storage_batch':
+                logger.info(f"Storage batch payment captured: payment={payment.pk} amount={payment.amount}")
 
         logger.info(
             f"Payment VERIFIED: user={request.user.email} "
@@ -269,7 +277,7 @@ class RazorpayWebhookView(View):
                             payment.status = 'captured'
                             payment.paid_at = timezone.now()
                             payment.save()
-                            _mark_storage_fees_paid(payment)
+                            _mark_batch_charges_paid(payment)
                             if payment.shipment:
                                 payment.shipment.payment_status = 'paid'
                                 payment.shipment.paid_at = timezone.now()
@@ -277,6 +285,8 @@ class RazorpayWebhookView(View):
                                 payment.shipment.save()
                             elif payment.personal_shop_request:
                                 payment.personal_shop_request.mark_paid()
+                            elif payment.payment_type == 'storage_batch':
+                                logger.info(f"Storage batch payment captured via webhook: payment={payment.pk}")
                         logger.info(f"Webhook: Payment captured for order {order_id}")
                 except Payment.DoesNotExist:
                     logger.warning(f"Webhook: Payment not found for order {order_id}")

@@ -79,9 +79,7 @@
                             {% for parcel in parcels %}
                             <label class="parcel-select-card" data-weight="{{ parcel.weight_kg|default:'0' }}"
                                 data-price="{{ parcel.item_price|default:'0' }}"
-                                data-billable-weight="{{ parcel.billable_weight|default:'0' }}"
-                                data-storage-fee="{{ parcel.storage_fee_estimate|default:'0' }}"
-                                data-overdue-days="{{ parcel.storage_overdue_days|default:'0' }}">
+                                data-billable-weight="{{ parcel.billable_weight|default:'0' }}">
                                 <input type="checkbox" name="parcels" value="{{ parcel.id }}" class="parcel-checkbox"
                                     {% if parcel.id|stringformat:"s" in preselected_ids %}checked{% endif %}
                                     onchange="updateSummary()">
@@ -417,7 +415,8 @@
 <script>
     const ZONES_DATA = JSON.parse('{{ zones_json|escapejs }}');
     const CONSOLIDATION_FEE = parseFloat('{{ consolidation_fee_amount|default:"0" }}') || 0;
-    const DAILY_STORAGE_RATE = parseFloat('{{ daily_storage_rate|default:"0" }}') || 0;
+    const STORAGE_FEE_PENDING = parseFloat('{{ storage_fee_pending|default:"0" }}') || 0;
+    const STORAGE_FEE_DAYS_PENDING = parseInt('{{ storage_fee_days_pending|default:"0" }}', 10) || 0;
 
     function toggleSelectAll(checkbox) {
         document.querySelectorAll('.parcel-checkbox').forEach(function (cb) {
@@ -436,8 +435,6 @@
         let totalWeight = 0;
         let totalValue = 0;
         let totalBillableWeight = 0;
-        let totalStorageFee = 0;
-        let totalOverdueDays = 0;
 
         cards.forEach(function (card) {
             const cb = card.querySelector('.parcel-checkbox');
@@ -446,8 +443,6 @@
                 totalWeight += parseFloat(card.dataset.weight) || 0;
                 totalValue += parseFloat(card.dataset.price) || 0;
                 totalBillableWeight += parseFloat(card.dataset.billableWeight) || 0;
-                totalStorageFee += parseFloat(card.dataset.storageFee) || 0;
-                totalOverdueDays += parseInt(card.dataset.overdueDays, 10) || 0;
                 card.classList.add('selected');
             } else {
                 card.classList.remove('selected');
@@ -461,20 +456,25 @@
         document.querySelectorAll('.js-sum-weight').forEach(function (el) { el.textContent = totalWeight.toFixed(2) + ' kg'; });
         document.querySelectorAll('.js-sum-value').forEach(function (el) { el.textContent = totalValue.toFixed(2); });
 
-        const storageBreakdownText = totalOverdueDays > 0
-            ? '(' + totalOverdueDays + ' day' + (totalOverdueDays === 1 ? '' : 's') + ' overdue × ' + fmtMoney(DAILY_STORAGE_RATE) + '/day)'
+        // Storage is billed per Trunk ID, not per parcel — this is the
+        // locker's whole outstanding balance, shown whenever any items are
+        // selected (paying for this shipment settles it), independent of
+        // which specific parcels are checked.
+        const storageBreakdownText = STORAGE_FEE_DAYS_PENDING > 0
+            ? '(' + STORAGE_FEE_DAYS_PENDING + ' day' + (STORAGE_FEE_DAYS_PENDING === 1 ? '' : 's') + ' billed, unpaid)'
             : '';
-        document.querySelectorAll('.js-storage-fee-row').forEach(function (el) { el.hidden = totalStorageFee <= 0; });
-        document.querySelectorAll('.js-sum-storage-fee').forEach(function (el) { el.textContent = fmtMoney(totalStorageFee); });
+        const showStorageFee = count > 0 && STORAGE_FEE_PENDING > 0;
+        document.querySelectorAll('.js-storage-fee-row').forEach(function (el) { el.hidden = !showStorageFee; });
+        document.querySelectorAll('.js-sum-storage-fee').forEach(function (el) { el.textContent = fmtMoney(STORAGE_FEE_PENDING); });
         document.querySelectorAll('.js-sum-storage-breakdown').forEach(function (el) { el.textContent = storageBreakdownText; });
 
-        document.querySelectorAll('.js-consolidation-fee-row').forEach(function (el) { el.hidden = count < 2; });
+        document.querySelectorAll('.js-consolidation-fee-row').forEach(function (el) { el.hidden = count < 1; });
         document.querySelectorAll('.js-sum-consolidation-fee').forEach(function (el) { el.textContent = fmtMoney(CONSOLIDATION_FEE); });
 
         const nextBtn = document.getElementById('step1NextBtn');
         if (nextBtn) nextBtn.disabled = count === 0;
 
-        const otherFees = totalStorageFee + (count >= 2 ? CONSOLIDATION_FEE : 0);
+        const otherFees = (showStorageFee ? STORAGE_FEE_PENDING : 0) + (count >= 1 ? CONSOLIDATION_FEE : 0);
         updateShippingEstimate(totalBillableWeight, otherFees);
     }
 

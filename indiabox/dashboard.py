@@ -1,7 +1,7 @@
 from apps.accounts.models import User, KYCDocument
 from apps.locker.models import Parcel, ReturnRequest, DiscardRequest
 from apps.shipments.models import Shipment
-from apps.payments.models import StorageFee, Payment
+from apps.payments.models import BatchCharge, Payment
 from django.db.models import Sum
 
 
@@ -30,8 +30,8 @@ def dashboard_callback(request, context):
     # 4. Payments & Revenue Statistics
     total_payments = Payment.objects.filter(status='captured').count()
     captured_payment_sum = Payment.objects.filter(status='captured').aggregate(total=Sum('amount'))['total'] or 0
-    pending_fees = StorageFee.objects.filter(status='pending').count()
-    pending_fees_sum = StorageFee.objects.filter(status='pending').aggregate(total=Sum('fee_amount'))['total'] or 0
+    pending_fees = BatchCharge.objects.filter(status='pending').count()
+    pending_fees_sum = BatchCharge.objects.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
 
     # User Statistics
     total_users = User.objects.filter(is_active=True).count()

@@ -50,8 +50,8 @@
                         <span class="pd-hero-stat-label">Weight</span>
                     </div>
                     <div class="pd-hero-stat">
-                        <span class="pd-hero-stat-value {% if parcel.is_storage_overdue %}overdue{% endif %}">
-                            {% if parcel.is_storage_overdue %}Overdue{% else %}{{ parcel.days_remaining_free }} Days{% endif %}
+                        <span class="pd-hero-stat-value {% if storage_is_overdue %}overdue{% endif %}">
+                            {% if storage_is_overdue %}Overdue{% else %}{{ storage_days_remaining }} Days{% endif %}
                         </span>
                         <span class="pd-hero-stat-label">Storage Left</span>
                     </div>
