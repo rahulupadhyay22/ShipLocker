@@ -761,6 +761,11 @@
                 <strong id="estDelivery">-</strong>
             </div>
 
+            <div class="shipcalc-field" id="speedField">
+                <label class="shipcalc-label">Shipping Speed</label>
+                <div class="shipcalc-toggle-group" id="speedOptions"></div>
+            </div>
+
             <div class="shipcalc-breakdown">
                 <div class="shipcalc-breakdown-row">
                     <span>Service Type</span>
@@ -899,30 +904,55 @@
             return;
         }
 
-        const rate = zone.rates.find(r => r.service_type === 'standard' && finalWeight >= r.min_weight && finalWeight < r.max_weight);
-        if (!rate) {
+        const SERVICE_LABELS = { express: 'Express', standard: 'Standard', economy: 'Economy' };
+        const SERVICE_ORDER = ['express', 'standard', 'economy'];
+
+        const rates = zone.rates
+            .filter(r => finalWeight >= r.min_weight && finalWeight < r.max_weight)
+            .sort((a, b) => SERVICE_ORDER.indexOf(a.service_type) - SERVICE_ORDER.indexOf(b.service_type));
+
+        if (!rates.length) {
             alert('Sorry, no rate found for this weight (' + finalWeight + ' kg). Please contact support for heavy shipments.');
             return;
         }
 
-        const baseCost = rate.rate_type === 'fixed' ? rate.price : finalWeight * rate.price;
-        const deliveryMin = rate.delivery_min;
-        const deliveryMax = rate.delivery_max;
-        const serviceType = 'Standard Shipping';
+        function rateCost(rate) {
+            return Math.round(rate.rate_type === 'fixed' ? rate.price : finalWeight * rate.price);
+        }
 
-        const totalCost = Math.round(baseCost);
+        function renderEstimate(rate) {
+            const totalCost = rateCost(rate);
+            document.getElementById('estTotalPrice').textContent = fmtMoney(totalCost);
+            document.getElementById('estDelivery').textContent = rate.delivery_min + ' - ' + rate.delivery_max + ' Days';
+            document.getElementById('estServiceType').textContent = (SERVICE_LABELS[rate.service_type] || rate.service_type) + ' Shipping';
+            document.getElementById('estBaseCharge').textContent = fmtMoney(totalCost);
+            document.getElementById('estTotalCost').textContent = fmtMoney(totalCost);
+        }
+
+        const speedOptions = document.getElementById('speedOptions');
+        speedOptions.innerHTML = rates.map((r, i) => `
+            <label class="shipcalc-toggle">
+                <input type="radio" name="speedOption" value="${i}" ${i === 0 ? 'checked' : ''}>
+                <span class="shipcalc-toggle-card">
+                    <span>
+                        <strong>${SERVICE_LABELS[r.service_type] || r.service_type}</strong>
+                        <span>${r.delivery_min}-${r.delivery_max} days &middot; ${fmtMoney(rateCost(r))}</span>
+                    </span>
+                </span>
+            </label>`).join('');
+
+        speedOptions.querySelectorAll('input[name="speedOption"]').forEach(input => {
+            input.addEventListener('change', () => renderEstimate(rates[parseInt(input.value, 10)]));
+        });
 
         document.getElementById('estimateEmpty').style.display = 'none';
         document.getElementById('estimateResult').style.display = 'block';
 
-        document.getElementById('estTotalPrice').textContent = fmtMoney(totalCost);
-        document.getElementById('estDelivery').textContent = deliveryMin + ' - ' + deliveryMax + ' Days';
-        document.getElementById('estServiceType').textContent = serviceType;
         document.getElementById('estActualWeight').textContent = actualWeight.toFixed(2) + ' kg';
         document.getElementById('estChargeableWeight').textContent = finalWeight.toFixed(2) + ' kg';
         document.getElementById('estDeclaredValue').textContent = fmtMoney(declaredValue);
-        document.getElementById('estBaseCharge').textContent = fmtMoney(totalCost);
-        document.getElementById('estTotalCost').textContent = fmtMoney(totalCost);
+
+        renderEstimate(rates[0]);
 
         document.getElementById('estimateResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });

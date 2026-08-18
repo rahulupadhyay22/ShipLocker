@@ -70,13 +70,57 @@ class GoogleLoginView(View):
         
         try:
             auth = SupabaseAuth()
-            # Get the OAuth URL from Supabase
-            redirect_url = request.build_absolute_uri('/accounts/dashboard/')
-            oauth_url = auth.sign_in_with_google(redirect_url)
+            # Get the OAuth URL from Supabase — must point back at our callback,
+            # not the dashboard directly, so we can exchange the code for a session.
+            redirect_url = request.build_absolute_uri(reverse('accounts:google_callback'))
+            oauth_url, code_verifier = auth.sign_in_with_google(redirect_url)
+            # PKCE: the verifier has to survive until the callback request, so
+            # it rides in the Django session (mirrors the OTP session token below).
+            request.session['google_code_verifier'] = code_verifier
             return redirect(oauth_url)
         except Exception as e:
             logger.error(f'Google login failed: {e}')
             messages.error(request, 'Google login is temporarily unavailable. Please try email login.')
+            return redirect('accounts:login')
+
+
+class GoogleCallbackView(View):
+    """Exchange the Supabase Google OAuth callback code for a Django session."""
+
+    def get(self, request):
+        error = request.GET.get('error_description') or request.GET.get('error')
+        if error:
+            logger.error(f'Google login failed: {error}')
+            messages.error(request, 'Google login was cancelled or failed. Please try again.')
+            return redirect('accounts:login')
+
+        code = request.GET.get('code')
+        code_verifier = request.session.pop('google_code_verifier', None)
+        if not code or not code_verifier:
+            messages.error(request, 'Google login session expired. Please try again.')
+            return redirect('accounts:login')
+
+        try:
+            auth = SupabaseAuth()
+            result = auth.exchange_code_for_session(code, code_verifier)
+
+            email = result.user.email
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={'supabase_id': result.user.id}
+            )
+            if created:
+                Locker.objects.create(user=user)
+            if not user.supabase_id:
+                user.supabase_id = result.user.id
+                user.save()
+
+            login(request, user)
+            messages.success(request, 'Welcome back!' if not created else 'Account created successfully!')
+            return redirect('accounts:dashboard')
+        except Exception as e:
+            logger.error(f'Google login callback failed: {e}')
+            messages.error(request, 'Google login failed. Please try again or use email login.')
             return redirect('accounts:login')
 
 
@@ -150,7 +194,7 @@ class LogoutView(View):
     def post(self, request):
         logout(request)
         messages.success(request, 'You have been logged out.')
-        return redirect('accounts:login')
+        return redirect('content:home')
     
     def get(self, request):
         # Redirect GET requests to dashboard (don't log out on GET)

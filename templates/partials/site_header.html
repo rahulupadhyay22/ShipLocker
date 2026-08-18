@@ -1,0 +1,47 @@
+    <header class="site-header" id="siteHeader">
+        <div class="nav-shell">
+            <a href="/" class="brand" aria-label="CamelTrunk home">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 36c0-8 6-15 14-15h4c6 0 11 5 11 11v6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M17 37h27c5 0 9 4 9 9v3H12v-6c0-3 2-6 5-6Z" fill="currentColor"/>
+                        <path d="M21 40h6" stroke="#082b3a" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M27 19c0-2 2-4 4-4h4l2 6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="43" cy="17" r="2.5" fill="currentColor"/>
+                    </svg>
+                </span>
+                <span class="brand-text">Camel<span>Trunk</span></span>
+            </a>
+
+            <nav class="nav-links" aria-label="Primary">
+                <a href="#how-it-works" class="nav-link">How It Works</a>
+                <a href="#estimate" class="nav-link">Pricing</a>
+                <a href="#trusted" class="nav-link">Countries</a>
+                <a href="{% url 'accounts:login' %}" class="nav-link">Track Shipment</a>
+                <a href="{% url 'content:faq' %}" class="nav-link">Help Center</a>
+                <a href="{% url 'accounts:login' %}" class="nav-link nav-login">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4h-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M12 13a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Log In
+                </a>
+                <a href="{% url 'accounts:login' %}" class="cta-button">Get Your Trunk</a>
+                <button type="button" class="mobile-toggle" id="mobileMenuToggle" aria-label="Open menu" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="mobile-panel" id="mobilePanel">
+            <a href="#how-it-works">How It Works</a>
+            <a href="#estimate">Pricing</a>
+            <a href="#trusted">Countries</a>
+            <a href="{% url 'accounts:login' %}">Track Shipment</a>
+            <a href="{% url 'content:faq' %}">Help Center</a>
+            <a href="{% url 'accounts:login' %}">Log In</a>
+            <a href="{% url 'accounts:login' %}" class="cta-button mobile-cta">Get Your Trunk</a>
+        </div>
+    </header>

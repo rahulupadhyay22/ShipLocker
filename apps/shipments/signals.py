@@ -5,14 +5,31 @@ When a tracking number is added to a shipment, automatically fetch
 the latest tracking status from the carrier API.
 """
 
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 import logging
 
-from .models import Shipment, TrackingEvent
+from .models import Shipment, ShipmentDocument, TrackingEvent
 
 logger = logging.getLogger(__name__)
+
+
+@receiver(post_delete, sender=ShipmentDocument)
+def delete_document_from_storage(sender, instance, **kwargs):
+    """Also fires when a Shipment is deleted and cascades to its documents.
+
+    Skips the physical file if an Invoice still references the same path --
+    Invoice.pdf_document_url is a durable financial record and must survive
+    deletion of the ShipmentDocument row that happens to point at it too.
+    """
+    from apps.accounts.services import delete_storage_file
+    from apps.payments.models import Invoice
+
+    if Invoice.objects.filter(pdf_document_url=instance.document_url).exists():
+        return
+
+    delete_storage_file('invoices', instance.document_url)
 
 
 # Track original values before save

@@ -229,7 +229,8 @@ class LegacyShipmentRoutesTests(TestCase):
 
 class ApproveDeclarationMethodTests(TestCase):
     """Shipment.approve_declaration(): declaration_pending -> pending_payment
-    (or straight to packing if already paid), gated on shipping_cost being set."""
+    (or straight to packing if already paid). Not gated on shipping_cost --
+    the customer sets that later by choosing a shipping speed."""
 
     def setUp(self):
         self.user = User.objects.create(email='approve@example.com')
@@ -241,16 +242,20 @@ class ApproveDeclarationMethodTests(TestCase):
         self.assertFalse(result)
         self.assertEqual(shipment.status, 'packing')
 
-    def test_skipped_when_no_shipping_cost_set(self):
-        shipment = make_shipment(self.user, status='declaration_pending', shipping_cost=None)
+    def test_unset_shipping_cost_does_not_block_approval(self):
+        """shipping_cost is set later by the customer, not at approval time,
+        so approve_declaration() must not gate on it being present."""
+        shipment = make_shipment(
+            self.user, status='declaration_pending',
+            shipping_cost=None, payment_status='unpaid',
+        )
         result = shipment.approve_declaration()
         shipment.refresh_from_db()
-        self.assertFalse(result)
-        self.assertEqual(shipment.status, 'declaration_pending')
+        self.assertTrue(result)
+        self.assertEqual(shipment.status, 'pending_payment')
 
-    def test_zero_shipping_cost_is_a_valid_price_not_treated_as_unset(self):
-        """A legitimately free/promo shipment (cost=0.00) must still be
-        approvable -- only a genuinely unset (None) cost should block it."""
+    def test_zero_shipping_cost_is_a_valid_price(self):
+        """A legitimately free/promo shipment (cost=0.00) must still be approvable."""
         shipment = make_shipment(
             self.user, status='declaration_pending',
             shipping_cost=Decimal('0.00'), payment_status='unpaid',

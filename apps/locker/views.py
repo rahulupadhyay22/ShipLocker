@@ -182,7 +182,8 @@ class ApproveParcelView(LoginRequiredMixin, View):
                     invoice_url = upload_invoice(
                         file=invoice_file,
                         locker_id=str(request.user.locker.locker_id),
-                        parcel_display_id=parcel.display_id
+                        parcel_display_id=parcel.display_id,
+                        is_personal_shop=parcel.personal_shop_request.exists(),
                     )
                     parcel.invoice_url = invoice_url
                 except Exception as e:

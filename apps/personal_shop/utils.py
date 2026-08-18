@@ -1,8 +1,8 @@
 """File upload utilities for TrunkAssist reference images.
 
 Reuses the existing private `parcel-images` Supabase bucket (no new bucket)
-under a `personal-shop/` path prefix, and the existing signed-URL helper in
-apps.locker.utils.
+under a `personal-shopper/` path prefix, and the existing signed-URL helper
+in apps.locker.utils.
 """
 
 import uuid
@@ -17,14 +17,14 @@ logger = logging.getLogger('security')
 def upload_personal_shop_image(file: UploadedFile, locker_id: str, request_display_id: str) -> str:
     """Upload a TrunkAssist reference image to the parcel-images bucket.
 
-    Storage structure: personal-shop/{locker_id}/{request_display_id}/{image_name}.ext
+    Storage structure: personal-shopper/{locker_id}/{request_display_id}/{image_name}.ext
 
     Returns:
         File path in storage (use apps.locker.utils.get_signed_parcel_image_url to access)
     """
     storage = SupabaseStorage()
     ext = os.path.splitext(file.name)[1].lower()
-    filename = f"personal-shop/{locker_id}/{request_display_id}/photo_{uuid.uuid4().hex[:6]}{ext}"
+    filename = f"personal-shopper/{locker_id}/{request_display_id}/photo_{uuid.uuid4().hex[:6]}{ext}"
 
     file_data = file.read()
     content_type = file.content_type

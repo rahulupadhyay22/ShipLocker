@@ -7,13 +7,20 @@ storage-fee spec's Rules section."""
 import logging
 
 from django.db import IntegrityError
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from .models import Parcel
+from .models import Parcel, ParcelImage
 
 logger = logging.getLogger(__name__)
+
+
+@receiver(post_delete, sender=ParcelImage)
+def delete_image_from_storage(sender, instance, **kwargs):
+    """Also fires when a Parcel is deleted and cascades to its images."""
+    from apps.accounts.services import delete_storage_file
+    delete_storage_file('parcel-images', instance.image_path)
 
 # "Physically in warehouse" — must match apps/locker/services/batch_billing.py.
 IN_WAREHOUSE_STATUSES = {'pending', 'action_required', 'approved'}

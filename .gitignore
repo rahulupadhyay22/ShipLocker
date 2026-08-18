@@ -80,3 +80,4 @@ static/admin/
 .venv/
 package.json
 package-lock.json
+prod-checklist.md

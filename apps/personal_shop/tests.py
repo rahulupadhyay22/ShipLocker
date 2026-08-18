@@ -2,6 +2,7 @@ import re
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib import admin as django_admin
 from django.contrib.auth.models import Permission
@@ -18,7 +19,7 @@ from apps.payments.models import Payment
 from . import pricing
 from .admin import PersonalShopQuotationAdmin, PersonalShopQuotationAdminForm, PersonalShopRequestAdmin
 from .models import (
-    PersonalShopRequest, PersonalShopQuotation, PersonalShopQuotationLineItem,
+    PersonalShopRequest, PersonalShopQuotation, PersonalShopQuotationLineItem, PersonalShopImage,
     generate_personal_shop_request_id,
 )
 from .views import build_timeline
@@ -1630,3 +1631,41 @@ class ServiceFeeHelpTextReflectsLiveServiceChargeTests(TestCase):
 
         ServiceCharge.objects.filter(code='trunkassist_product_link').update(is_active=False)
         self.assertNotIn('product_link', self._help_text())
+
+
+class PersonalShopImageStorageCleanupTests(TestCase):
+    """PersonalShopImage rows must not orphan their Supabase Storage file on delete."""
+
+    def setUp(self):
+        self.locker = _make_locker('pshopimg@example.com')
+        self.request = _make_request(self.locker)
+
+    @patch('apps.accounts.services.SupabaseStorage.delete_file')
+    def test_deleting_image_deletes_its_storage_file(self, mock_delete):
+        image = PersonalShopImage.objects.create(
+            request=self.request, image_path='personal-shop/RB-1/RB-1-TA001/photo_abc123.jpg',
+        )
+
+        image.delete()
+
+        mock_delete.assert_called_once_with('parcel-images', 'personal-shop/RB-1/RB-1-TA001/photo_abc123.jpg')
+
+    @patch('apps.accounts.services.SupabaseStorage.delete_file')
+    def test_deleting_request_cascades_to_its_images_storage_files(self, mock_delete):
+        PersonalShopImage.objects.create(request=self.request, image_path='personal-shop/RB-1/RB-1-TA001/photo_x.jpg')
+        PersonalShopImage.objects.create(request=self.request, image_path='personal-shop/RB-1/RB-1-TA001/photo_y.jpg')
+
+        self.request.delete()
+
+        self.assertEqual(mock_delete.call_count, 2)
+
+    @patch('apps.accounts.services.SupabaseStorage.delete_file', side_effect=Exception('storage down'))
+    def test_storage_failure_does_not_block_the_db_delete(self, mock_delete):
+        image = PersonalShopImage.objects.create(
+            request=self.request, image_path='personal-shop/RB-1/RB-1-TA001/photo_z.jpg',
+        )
+        image_pk = image.pk
+
+        image.delete()  # must not raise
+
+        self.assertFalse(PersonalShopImage.objects.filter(pk=image_pk).exists())

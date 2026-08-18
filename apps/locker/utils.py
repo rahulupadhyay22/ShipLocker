@@ -36,27 +36,37 @@ def get_user_locker_id(user) -> str:
 # UPLOAD FUNCTIONS - Return file path (not URL since buckets are private)
 # =============================================================================
 
-def upload_invoice(file: UploadedFile, locker_id: str, parcel_display_id: str) -> str:
+def upload_invoice(file: UploadedFile, locker_id: str, parcel_display_id: str, is_personal_shop: bool = False) -> str:
     """Upload invoice to private Supabase Storage.
-    
+
+    Storage structure: {my-trunk|personal-shopper}/{locker_id}/{parcel_display_id}/invoice.ext
+    Fixed filename (no random suffix): re-uploading a new invoice for the same
+    parcel overwrites the old one at the same path, since Parcel.invoice_url
+    only ever points at one file — a random suffix would just leave the
+    previous upload as an orphan nothing references anymore.
+
     Args:
         file: The uploaded file
         locker_id: User's locker ID (e.g., 'RB-12345')
         parcel_display_id: Parcel display ID (e.g., 'RB-12345-P001')
-    
+        is_personal_shop: True if this parcel originated from a TrunkAssist
+            (PersonalShopRequest) purchase — routes into personal-shopper/
+            instead of my-trunk/.
+
     Returns:
         File path in storage (use get_signed_invoice_url to access)
     """
     storage = SupabaseStorage()
     ext = os.path.splitext(file.name)[1].lower()
-    # Path: invoice/{locker_id}/invoice_{parcel_display_id}_{unique}.ext
-    filename = f"invoice/{locker_id}/invoice_{parcel_display_id}_{uuid.uuid4().hex[:6]}{ext}"
-    
+    folder = 'personal-shopper' if is_personal_shop else 'my-trunk'
+    filename = f"{folder}/{locker_id}/{parcel_display_id}/invoice{ext}"
+
     storage.upload_file(
         bucket_name='invoices',
         file_path=filename,
         file_data=file.read(),
-        content_type=file.content_type
+        content_type=file.content_type,
+        upsert=True
     )
     return filename  # Return path, not URL
 
@@ -72,17 +82,17 @@ def upload_parcel_image(file: UploadedFile, locker_id: str, parcel_display_id: s
         parcel_display_id: Parcel display ID (e.g., 'RB-12345-P001')
         is_primary: Whether this is the primary image
     
-    Storage structure: {locker_id}/{parcel_display_id}/{image_name}.ext
-    Example: RB-12345/RB-12345-P001/primary_abc123.jpg
-    
+    Storage structure: my-trunk/{locker_id}/{parcel_display_id}/{image_name}.ext
+    Example: my-trunk/RB-12345/RB-12345-P001/primary_abc123.jpg
+
     Returns:
         File path in storage (use get_signed_parcel_image_url to access)
     """
     storage = SupabaseStorage()
     ext = os.path.splitext(file.name)[1].lower()
     prefix = "primary" if is_primary else "photo"
-    # Organized by: locker_id/parcel_display_id/image_name.ext
-    filename = f"{locker_id}/{parcel_display_id}/{prefix}_{uuid.uuid4().hex[:6]}{ext}"
+    # Organized by: my-trunk/locker_id/parcel_display_id/image_name.ext
+    filename = f"my-trunk/{locker_id}/{parcel_display_id}/{prefix}_{uuid.uuid4().hex[:6]}{ext}"
     
     # Compress image if it's an image file
     file_data = file.read()
@@ -314,3 +324,4 @@ def get_signed_shipment_doc_url(file_path: str, expires_in: int = SEVEN_DAYS) ->
     except Exception as e:
         logger.warning(f'Signed shipment doc URL failed for {file_path}: {e}')
         return ''
+

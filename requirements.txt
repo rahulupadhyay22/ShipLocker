@@ -11,3 +11,4 @@ dj-database-url==3.0.1
 django-unfold>=0.33.0
 django-redis==5.4.0
 redis==5.2.1
+cryptography==46.0.2

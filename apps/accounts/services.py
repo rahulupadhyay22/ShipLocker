@@ -1,9 +1,12 @@
 """Supabase integration services for authentication and storage."""
 
+import logging
 import os
 from supabase import create_client, Client
 from django.conf import settings
 from indiabox.circuit_breaker import CircuitBreaker, CircuitOpenError
+
+logger = logging.getLogger('security')
 
 # Storage backs parcel-image/KYC/invoice uploads and the signed URLs
 # dashboards fetch per image, all on request threads.
@@ -88,15 +91,34 @@ class SupabaseAuth:
             })
 
     def sign_in_with_google(self, redirect_url: str):
-        """Get Google OAuth URL for sign in."""
+        """Get Google OAuth URL for sign in.
+
+        The gotrue client uses the PKCE flow: it generates a code_verifier
+        and only keeps it in its own (per-instance, in-memory) storage. Since
+        a fresh client is built per request, we have to pull it out here and
+        hand it back to the caller to stash somewhere that survives until the
+        callback request (e.g. the Django session) — otherwise the later
+        exchange_code_for_session() has no verifier to send and Supabase
+        rejects it with "auth code and code verifier should be non-empty".
+        """
         with _auth_breaker.call():
-            response = self.client.auth.sign_in_with_oauth({
+            gotrue = self.client.auth
+            response = gotrue.sign_in_with_oauth({
                 "provider": "google",
                 "options": {
                     "redirect_to": redirect_url
                 }
             })
-        return response.url
+            code_verifier = gotrue._storage.get_item(f"{gotrue._storage_key}-code-verifier")
+        return response.url, code_verifier
+
+    def exchange_code_for_session(self, auth_code: str, code_verifier: str):
+        """Exchange the OAuth callback's authorization code for a Supabase session."""
+        with _auth_breaker.call():
+            return self.client.auth.exchange_code_for_session({
+                "auth_code": auth_code,
+                "code_verifier": code_verifier,
+            })
 
     def get_user(self, access_token: str):
         """Get user from access token."""
@@ -121,11 +143,13 @@ class SupabaseStorage:
     def __init__(self):
         self.client = get_supabase_client()
     
-    def upload_file(self, bucket_name: str, file_path: str, file_data: bytes, content_type: str = None):
+    def upload_file(self, bucket_name: str, file_path: str, file_data: bytes, content_type: str = None, upsert: bool = False):
         """Upload file to Supabase storage."""
         options = {}
         if content_type:
             options['content-type'] = content_type
+        if upsert:
+            options['upsert'] = 'true'
 
         with _storage_breaker.call():
             return self.client.storage.from_(bucket_name).upload(
@@ -150,3 +174,16 @@ class SupabaseStorage:
         """Delete a file from storage."""
         with _storage_breaker.call():
             return self.client.storage.from_(bucket_name).remove([file_path])
+
+
+def delete_storage_file(bucket_name: str, file_path: str):
+    """Best-effort Supabase Storage delete for use in model post_delete
+    signals — never raises, so a Storage outage can't block the DB delete
+    that triggered it (the file would just become an orphan to clean up
+    later, same as if this call didn't exist)."""
+    if not file_path:
+        return
+    try:
+        SupabaseStorage().delete_file(bucket_name, file_path)
+    except Exception as e:
+        logger.warning(f'Storage cleanup failed for {bucket_name}/{file_path}: {e}')

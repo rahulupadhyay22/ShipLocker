@@ -154,6 +154,20 @@ a {
     line-height: 1;
 }
 
+.sidebar-nav-heading {
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(245, 251, 249, 0.36);
+    padding: 0 0.72rem;
+    margin: 1.05rem 0 0.4rem;
+}
+
+.sidebar-nav-heading:first-child {
+    margin-top: 0;
+}
+
 .nav-item {
     display: flex;
     align-items: center;

@@ -1,0 +1,64 @@
+    <footer class="site-footer">
+        <div class="footer-shell">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="brand brand-footer">
+                        <span class="brand-mark" aria-hidden="true">
+                            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M15 36c0-8 6-15 14-15h4c6 0 11 5 11 11v6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M17 37h27c5 0 9 4 9 9v3H12v-6c0-3 2-6 5-6Z" fill="currentColor"/>
+                                <path d="M21 40h6" stroke="#082b3a" stroke-width="3" stroke-linecap="round"/>
+                                <path d="M27 19c0-2 2-4 4-4h4l2 6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="43" cy="17" r="2.5" fill="currentColor"/>
+                            </svg>
+                        </span>
+                        <span class="brand-text">Camel<span>Trunk</span></span>
+                    </a>
+                    <p>Bringing India closer to you.<br>Shop, ship and smile.</p>
+                </div>
+
+                <div class="footer-col">
+                    <h3>Company</h3>
+                    <a href="{% url 'content:about' %}">About Us</a>
+                    <a href="#">Careers</a>
+                    <a href="#">Press</a>
+                    <a href="#">Blog</a>
+                    <a href="mailto:support@cameltrunk.com">Contact Us</a>
+                </div>
+
+                <div class="footer-col">
+                    <h3>Services</h3>
+                    <a href="#how-it-works">How It Works</a>
+                    <a href="{% url 'content:shipping_calculator' %}">Shipping Calculator</a>       
+                    <a href="{% url 'content:service_charges' %}">Service Charges</a>
+                    <a href="{% url 'content:prohibited_items' %}">Prohibited Items</a>
+                    <a href="{% url 'content:duties' %}">Shipping Duties</a>
+                </div>
+
+                <div class="footer-col">
+                    <h3>Support</h3>
+                    <a href="mailto:support@cameltrunk.com">Help Center</a>
+                    <a href="{% url 'accounts:login' %}">Track Shipment</a>
+                    <a href="{% url 'content:faq' %}">FAQs</a>
+                    <a href="{% url 'content:refund_policy' %}">Refund Policy</a>
+                    <a href="{% url 'content:privacy' %}">Privacy Policy</a>
+                </div>
+
+                <div class="footer-col newsletter-col">
+                    <h3>Newsletter</h3>
+                    <p>Subscribe for tips, offers and updates.</p>
+                    <form class="newsletter-form" onsubmit="return false;">
+                        <input type="email" placeholder="Enter your email" aria-label="Email address">
+                        <button type="submit" aria-label="Subscribe">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 11.5 21 3l-6.5 18-3.2-7.4L3 11.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M21 3 11.3 13.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <span>&copy; 2026 CamelTrunk. All rights reserved.</span>
+                <span>Made with heart in India</span>
+            </div>
+        </div>
+    </footer>

@@ -93,6 +93,15 @@ body.home-page img {
     box-shadow: var(--shadow-header-active);
 }
 
+/* Non-hero public/help pages have no dark hero behind the header to give the
+   transparent/unscrolled state contrast, so keep it in its opaque "scrolled"
+   look at all times. */
+.public-page .site-header {
+    background: rgba(8, 43, 58, 0.96);
+    backdrop-filter: blur(18px);
+    box-shadow: var(--shadow-header-scrolled);
+}
+
 .home-page .nav-shell {
     max-width: none;
     margin: 0 auto;
@@ -246,6 +255,14 @@ body.home-page img {
     background: linear-gradient(180deg, var(--primary) 0%, var(--primary-hover) 100%);
     color: #fff;
     padding: 108px 0 38px;
+}
+
+/* Non-hero public/help pages: same fixed-header offset as .hero-section, without the hero styling */
+.home-page .public-page-content {
+    padding: 108px 5% 4rem;
+    max-width: 1280px;
+    min-height: 80vh;
+    margin: 0 auto;
 }
 
 @keyframes heroFadeUp {

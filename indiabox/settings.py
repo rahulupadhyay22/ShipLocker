@@ -24,6 +24,15 @@ if not SECRET_KEY:
     else:
         raise RuntimeError('SECRET_KEY environment variable must be set when DEBUG=False.')
 
+# Key for encrypting sensitive AppSettings fields (e.g. supabase_service_role_key)
+# at rest in the database — see indiabox/fields.py:EncryptedCharField.
+FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
+if not FIELD_ENCRYPTION_KEY:
+    if DEBUG:
+        FIELD_ENCRYPTION_KEY = '7otxE81xsbonPqgAHLZydPe_e7MG3Tbh2WfF-ZWXLLE='
+    else:
+        raise RuntimeError('FIELD_ENCRYPTION_KEY environment variable must be set when DEBUG=False.')
+
 allowed_hosts_env = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') if host.strip()]
 
 # Railway provides this automatically for public services.

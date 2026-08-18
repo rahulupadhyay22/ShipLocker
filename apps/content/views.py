@@ -5,8 +5,22 @@ from django.views.generic import TemplateView, DetailView, ListView
 
 from .models import StaticPage, ServiceCharge
 
-# ponytail: 15min cache_page on rarely-changing public pages, skip HomeView (auth-conditional redirect)
+# ponytail: 15min cache_page on rarely-changing public pages that render identically
+# regardless of auth state. Skipped on HomeView (auth-conditional redirect), and on
+# ShippingCalculatorView/ServiceChargesView (AuthAwareBaseMixin renders a different
+# base template for logged-in users).
 STATIC_PAGE_CACHE_SECONDS = 60 * 15
+
+
+class AuthAwareBaseMixin:
+    """Renders inside the app shell (base.html) for logged-in users, the
+    marketing shell (public_base.html) otherwise -- same page either way."""
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            context['base_template'] = 'base.html'
+        return context
 
 
 class HomeView(TemplateView):
@@ -42,7 +56,7 @@ class StaticPageView(DetailView):
 class ProhibitedItemsView(TemplateView):
     """Prohibited items page."""
     template_name = 'content/prohibited_items.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         try:
@@ -52,7 +66,7 @@ class ProhibitedItemsView(TemplateView):
         return context
 
 
-class ShippingCalculatorView(TemplateView):
+class ShippingCalculatorView(AuthAwareBaseMixin, TemplateView):
     """Shipping calculator page."""
     template_name = 'content/shipping_calculator.html'
     
@@ -64,13 +78,10 @@ class ShippingCalculatorView(TemplateView):
         zones_data = get_zones_data()
         context['zones_json'] = build_zones_json()  # same cached data, just JSON-encoded
         context['zones'] = zones_data
-        if self.request.user.is_authenticated:
-            context['base_template'] = 'base.html'
         return context
 
 
-@method_decorator(cache_page(STATIC_PAGE_CACHE_SECONDS), name='dispatch')
-class ServiceChargesView(ListView):
+class ServiceChargesView(AuthAwareBaseMixin, ListView):
     """Service charges page."""
     template_name = 'content/service_charges.html'
     context_object_name = 'charges'
@@ -83,7 +94,7 @@ class ServiceChargesView(ListView):
 class RefundPolicyView(TemplateView):
     """Refund policy page."""
     template_name = 'content/refund_policy.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         try:
@@ -97,7 +108,7 @@ class RefundPolicyView(TemplateView):
 class DutiesView(TemplateView):
     """Duties and customs information page."""
     template_name = 'content/duties.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         try:

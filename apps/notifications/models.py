@@ -1,5 +1,9 @@
+import copy
+
 from django.db import models
 from django.core.cache import cache
+
+from indiabox.fields import EncryptedCharField, encrypt_value, decrypt_value
 
 
 class AppSettings(models.Model):
@@ -232,10 +236,10 @@ class AppSettings(models.Model):
         blank=True,
         help_text="Supabase Anon/Public Key"
     )
-    supabase_service_role_key = models.CharField(
-        max_length=500,
+    supabase_service_role_key = EncryptedCharField(
+        max_length=1000,
         blank=True,
-        help_text="Supabase Service Role Key (for server-side operations)"
+        help_text="Supabase Service Role Key (for server-side operations) — stored encrypted at rest"
     )
 
     # ===========================
@@ -296,11 +300,23 @@ class AppSettings(models.Model):
         """
         Get the singleton settings instance.
         Uses caching for performance.
+
+        The cached copy keeps the service-role key re-encrypted rather than
+        the decrypted plaintext -- that field is encrypted at rest
+        specifically to keep it out of any plaintext store, and the shared
+        cache (often Redis, persistable to disk) is exactly such a store.
         """
         settings = cache.get('app_settings')
-        if settings is None:
-            settings, created = cls.objects.get_or_create(pk=1)
-            cache.set('app_settings', settings, 300)  # Cache 5 minutes
+        if settings is not None:
+            if settings.supabase_service_role_key:
+                settings.supabase_service_role_key = decrypt_value(settings.supabase_service_role_key)
+            return settings
+
+        settings, created = cls.objects.get_or_create(pk=1)
+        cached_copy = copy.copy(settings)
+        if cached_copy.supabase_service_role_key:
+            cached_copy.supabase_service_role_key = encrypt_value(cached_copy.supabase_service_role_key)
+        cache.set('app_settings', cached_copy, 300)  # Cache 5 minutes
         return settings
     
     @classmethod
