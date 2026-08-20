@@ -29,7 +29,7 @@ if not SECRET_KEY:
 FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
 if not FIELD_ENCRYPTION_KEY:
     if DEBUG:
-        FIELD_ENCRYPTION_KEY = '7otxE81xsbonPqgAHLZydPe_e7MG3Tbh2WfF-ZWXLLE='
+        FIELD_ENCRYPTION_KEY = 'CojLDhe4IKi4qtjOVW1LBjdDLnaqvQjop2X_JFa6SW8='
     else:
         raise RuntimeError('FIELD_ENCRYPTION_KEY environment variable must be set when DEBUG=False.')
 
