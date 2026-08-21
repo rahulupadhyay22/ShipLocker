@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin
 from unfold.decorators import display
-from .models import Payment, BatchCharge, Invoice
+from .models import Payment, BatchCharge, Invoice, PersonalShopInvoice
 
 
 PAYMENT_STATUS_COLORS = {
@@ -200,6 +200,57 @@ class InvoiceAdmin(ModelAdmin):
 
     def has_add_permission(self, request):
         return False  # Invoices are only created by InvoiceService
+
+    def has_delete_permission(self, request, obj=None):
+        return False  # PROTECT on the FK already blocks this; admin shouldn't offer it either
+
+
+@admin.register(PersonalShopInvoice)
+class PersonalShopInvoiceAdmin(ModelAdmin):
+    list_display = ['invoice_number', 'quotation', 'customer_name', 'invoice_date', 'total_amount']
+    list_filter = ['invoice_date']
+    search_fields = ['invoice_number', 'quotation__request__display_id', 'customer_name', 'customer_email']
+    raw_id_fields = ['quotation']
+    readonly_fields = [
+        'quotation', 'invoice_number', 'invoice_date',
+        'customer_name', 'customer_email',
+        'payment_reference', 'payment_method',
+        'domestic_shipping_amount', 'service_fee_amount', 'research_fee_amount',
+        'travel_expense_amount', 'payment_gateway_charge', 'subtotal', 'total_amount',
+        'pdf_document_url', 'created_at', 'download_link',
+    ]
+    date_hierarchy = 'invoice_date'
+    list_per_page = 25
+
+    def download_link(self, obj):
+        if not obj.pdf_document_url:
+            return '-'
+        try:
+            return format_html('<a href="{}" target="_blank">📄 Download PDF</a>', obj.signed_url)
+        except Exception:
+            return 'Unavailable'
+    download_link.short_description = 'PDF'
+
+    fieldsets = (
+        ('Invoice', {
+            'fields': ('quotation', 'invoice_number', 'invoice_date', 'download_link')
+        }),
+        ('Customer', {
+            'fields': ('customer_name', 'customer_email')
+        }),
+        ('Payment', {
+            'fields': ('payment_reference', 'payment_method')
+        }),
+        ('Amounts', {
+            'fields': (
+                'domestic_shipping_amount', 'service_fee_amount', 'research_fee_amount',
+                'travel_expense_amount', 'payment_gateway_charge', 'subtotal', 'total_amount',
+            )
+        }),
+    )
+
+    def has_add_permission(self, request):
+        return False  # Invoices are only created by PersonalShopInvoiceService
 
     def has_delete_permission(self, request, obj=None):
         return False  # PROTECT on the FK already blocks this; admin shouldn't offer it either

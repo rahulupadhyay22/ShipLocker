@@ -243,7 +243,8 @@ class PersonalShopRequestCreateView(LoginRequiredMixin, View):
             raise Http404('Unknown request type')
         FormClass, template = entry
         return render(request, template, {
-            'form': FormClass(), 'request_type': request_type, **self._extra_context(request_type),
+            'form': FormClass(locker=request.user.locker), 'request_type': request_type,
+            **self._extra_context(request_type),
         })
 
     def post(self, request, request_type):
@@ -251,7 +252,7 @@ class PersonalShopRequestCreateView(LoginRequiredMixin, View):
         if entry is None:
             raise Http404('Unknown request type')
         FormClass, template = entry
-        form = FormClass(request.POST, request.FILES)
+        form = FormClass(request.POST, request.FILES, locker=request.user.locker)
         if not form.is_valid():
             return render(request, template, {
                 'form': form, 'request_type': request_type, **self._extra_context(request_type),
@@ -265,14 +266,11 @@ class PersonalShopRequestCreateView(LoginRequiredMixin, View):
                 messages.error(request, str(e))
                 return render(request, template, {'form': form, 'request_type': request_type})
 
-        default_address = request.user.saved_addresses.first()
-
         with transaction.atomic():
             instance = form.save(commit=False)
             instance.locker = request.user.locker
             instance.request_type = request_type
             instance.status = 'reviewing' if request_type == 'custom_request' else 'submitted'
-            instance.destination_country = default_address.country if default_address else 'India'
             instance.save()
 
             if reference_image:
@@ -301,6 +299,7 @@ class PersonalShopRequestDetailView(LoginRequiredMixin, LockerOwnershipMixin, De
         context['notes'] = obj.notes.all().order_by('-created_at')
         context['turnaround'] = EXPECTED_TURNAROUND.get(obj.request_type, '')
         context['payment'] = obj.payments.filter(status='captured').order_by('-paid_at').first()
+        context['invoice'] = getattr(obj.active_quotation, 'invoice', None)
         return context
 
 
@@ -313,7 +312,7 @@ class PersonalShopRequestEditView(LoginRequiredMixin, LockerOwnershipMixin, Secu
             raise PermissionDenied('This request can no longer be edited.')
         FormClass = TYPE_FORM_MAP[obj.request_type][0]
         return render(request, 'personal_shop/request_edit.html', {
-            'form': FormClass(instance=obj), 'shop_request': obj,
+            'form': FormClass(instance=obj, locker=request.user.locker), 'shop_request': obj,
         })
 
     def post(self, request, *args, **kwargs):
@@ -321,7 +320,7 @@ class PersonalShopRequestEditView(LoginRequiredMixin, LockerOwnershipMixin, Secu
         if not obj.is_editable:
             raise PermissionDenied('This request can no longer be edited.')
         FormClass = TYPE_FORM_MAP[obj.request_type][0]
-        form = FormClass(request.POST, request.FILES, instance=obj)
+        form = FormClass(request.POST, request.FILES, instance=obj, locker=request.user.locker)
         if not form.is_valid():
             return render(request, 'personal_shop/request_edit.html', {
                 'form': form, 'shop_request': obj,
@@ -393,6 +392,7 @@ class PersonalShopQuotationView(LoginRequiredMixin, LockerOwnershipMixin, Single
             'quotation': quotation,
             'line_items': quotation.line_items.all(),
             'expires_in': expires_in,
+            'invoice': getattr(quotation, 'invoice', None),
         })
 
 

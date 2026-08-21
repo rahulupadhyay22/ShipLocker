@@ -399,3 +399,197 @@ class InvoiceService:
 
         logger.info(f"Invoice {invoice_number} generated for shipment {shipment.pk}")
         return invoice
+
+
+def generate_personal_shop_invoice_number(invoice_date):
+    """Sequential invoice number within a financial year: TA-INV/2026-27/0001.
+    Own sequence, separate from generate_invoice_number's shipment INV/ series."""
+    from .models import PersonalShopInvoice
+
+    prefix = f"TA-INV/{_financial_year_label(invoice_date)}/"
+
+    with transaction.atomic():
+        last = (
+            PersonalShopInvoice.objects
+            .select_for_update()
+            .filter(invoice_number__startswith=prefix)
+            .order_by('-invoice_number')
+            .first()
+        )
+        if last:
+            try:
+                num = int(last.invoice_number.rsplit('/', 1)[1]) + 1
+            except (ValueError, IndexError):
+                num = PersonalShopInvoice.objects.filter(invoice_number__startswith=prefix).count() + 1
+        else:
+            num = 1
+
+    return f"{prefix}{num:04d}"
+
+
+class PersonalShopInvoiceService:
+    """Single entry point for TrunkAssist quotation invoice generation.
+    Same shape as InvoiceService, minus the GST table — TrunkAssist quotations
+    carry no tax breakdown (see PersonalShopInvoice's docstring)."""
+
+    @staticmethod
+    def generate_pdf(context):
+        import io
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.lib.units import mm
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=20 * mm)
+        styles = getSampleStyleSheet()
+        story = []
+
+        story.append(Paragraph(context['company_legal_name'] or 'CamelTrunk', styles['Title']))
+        story.append(Paragraph((context['company_registered_address'] or '').replace('\n', '<br/>'), styles['Normal']))
+        story.append(Paragraph(f"GSTIN: {context['company_gstin'] or '-'}", styles['Normal']))
+        story.append(Spacer(1, 10 * mm))
+
+        story.append(Paragraph(f"Invoice Number: {context['invoice_number']}", styles['Heading2']))
+        story.append(Paragraph(f"Invoice Date: {context['invoice_date'].strftime('%d %b %Y')}", styles['Normal']))
+        story.append(Paragraph(f"Request: {context['request_display_id']}", styles['Normal']))
+        story.append(Spacer(1, 5 * mm))
+
+        story.append(Paragraph('Bill To:', styles['Heading3']))
+        story.append(Paragraph(context['customer_name'], styles['Normal']))
+        if context.get('customer_email'):
+            story.append(Paragraph(context['customer_email'], styles['Normal']))
+        story.append(Spacer(1, 8 * mm))
+
+        rows = [['Description', 'Amount (INR)']]
+        for item in context['line_items']:
+            label = item['name']
+            if item.get('variant_details'):
+                label += f" ({item['variant_details']})"
+            if item['qty'] != 1:
+                label += f" x{item['qty']}"
+            rows.append([label, f"{item['line_total']:.2f}"])
+
+        if context['domestic_shipping_amount'] > 0:
+            rows.append(['Domestic Shipping', f"{context['domestic_shipping_amount']:.2f}"])
+        if context['service_fee_amount'] > 0:
+            rows.append(['TrunkAssist Service Fee', f"{context['service_fee_amount']:.2f}"])
+        if context['research_fee_amount'] > 0:
+            rows.append(['Research Fee', f"{context['research_fee_amount']:.2f}"])
+        if context['travel_expense_amount'] > 0:
+            rows.append(['Travel / Local Expense', f"{context['travel_expense_amount']:.2f}"])
+        if context['payment_gateway_charge'] > 0:
+            rows.append(['Payment Gateway Charges', f"{context['payment_gateway_charge']:.2f}"])
+
+        rows.append(['Total Amount', f"{context['total_amount']:.2f}"])
+
+        table = Table(rows, colWidths=[120 * mm, 50 * mm])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#003746')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('LINEABOVE', (0, -1), (-1, -1), 1, colors.black),
+        ]))
+        story.append(table)
+        story.append(Spacer(1, 8 * mm))
+
+        if context.get('payment_reference'):
+            story.append(Paragraph(
+                f"Paid via {context.get('payment_method') or 'online payment'} — Reference: {context['payment_reference']}",
+                styles['Normal'],
+            ))
+
+        doc.build(story)
+        return buffer.getvalue()
+
+    @staticmethod
+    def upload_pdf(pdf_bytes, request):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.locker.utils import upload_personal_shop_invoice, get_user_locker_id
+
+        locker_id = get_user_locker_id(request.locker.user)
+        filename = f"invoice_{request.display_id}.pdf"
+        uploaded_file = SimpleUploadedFile(filename, pdf_bytes, content_type='application/pdf')
+        return upload_personal_shop_invoice(uploaded_file, locker_id, request.display_id)
+
+    @staticmethod
+    def generate_for_request(request, quotation=None):
+        from django.utils import timezone
+        from .models import PersonalShopInvoice, Payment
+        from apps.notifications.models import AppSettings
+
+        quotation = quotation or request.active_quotation
+        if quotation is None:
+            logger.warning(f"No quotation to invoice for TrunkAssist request {request.pk}")
+            return None
+
+        existing = PersonalShopInvoice.objects.filter(quotation=quotation).first()
+        if existing:
+            logger.info(
+                f"Invoice already exists for quotation {quotation.pk} ({existing.invoice_number}), skipping"
+            )
+            return existing
+
+        invoice_date = timezone.now()
+        settings = AppSettings.get_settings()
+
+        customer = request.locker.user
+        payment = Payment.objects.filter(
+            personal_shop_request=request, status='captured'
+        ).order_by('-paid_at').first()
+
+        invoice_number = generate_personal_shop_invoice_number(invoice_date)
+
+        pdf_context = {
+            'company_legal_name': settings.company_legal_name,
+            'company_registered_address': settings.company_registered_address,
+            'company_gstin': settings.company_gstin,
+            'invoice_number': invoice_number,
+            'invoice_date': invoice_date,
+            'request_display_id': request.display_id,
+            'customer_name': customer.get_full_name() or customer.email,
+            'customer_email': customer.email,
+            'line_items': [
+                {
+                    'name': item.name, 'variant_details': item.variant_details,
+                    'qty': item.qty, 'line_total': item.line_total,
+                }
+                for item in quotation.line_items.all()
+            ],
+            'domestic_shipping_amount': quotation.domestic_shipping_amount,
+            'service_fee_amount': quotation.service_fee_amount,
+            'research_fee_amount': quotation.research_fee_amount,
+            'travel_expense_amount': quotation.travel_expense_amount,
+            'payment_gateway_charge': quotation.payment_gateway_charge,
+            'total_amount': quotation.total_amount,
+            'payment_reference': payment.razorpay_payment_id if payment else '',
+            'payment_method': payment.get_payment_method_display() if payment else '',
+        }
+
+        pdf_bytes = PersonalShopInvoiceService.generate_pdf(pdf_context)
+        pdf_path = PersonalShopInvoiceService.upload_pdf(pdf_bytes, request)
+
+        invoice = PersonalShopInvoice.objects.create(
+            quotation=quotation,
+            invoice_number=invoice_number,
+            invoice_date=invoice_date,
+            customer_name=pdf_context['customer_name'],
+            customer_email=pdf_context['customer_email'],
+            payment_reference=pdf_context['payment_reference'],
+            payment_method=pdf_context['payment_method'],
+            domestic_shipping_amount=quotation.domestic_shipping_amount,
+            service_fee_amount=quotation.service_fee_amount,
+            research_fee_amount=quotation.research_fee_amount,
+            travel_expense_amount=quotation.travel_expense_amount,
+            payment_gateway_charge=quotation.payment_gateway_charge,
+            subtotal=quotation.subtotal,
+            total_amount=quotation.total_amount,
+            pdf_document_url=pdf_path,
+        )
+
+        logger.info(f"TrunkAssist invoice {invoice_number} generated for request {request.pk}")
+        return invoice

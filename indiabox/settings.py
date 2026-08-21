@@ -145,6 +145,13 @@ if SELECTED_DATABASE_URL:
         db_options = DATABASES['default'].setdefault('OPTIONS', {})
         db_options.setdefault('connect_timeout', int(os.getenv('DB_CONNECT_TIMEOUT', '10')))
 
+        # Supabase's connection pooler runs PgBouncer in transaction-pooling mode, which can
+        # hand a query's later fetches to a different backend connection than the one that
+        # opened it — Django's named server-side cursors (used for normal queryset iteration,
+        # not just .iterator()) then fail with "cursor ... does not exist". Disabling them is
+        # the standard fix for PgBouncer transaction pooling.
+        DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
+
         # Optional: force IPv4 when provider network cannot reach IPv6 addresses.
         database_hostaddr = os.getenv('DATABASE_HOSTADDR', '').strip()
         if database_hostaddr:

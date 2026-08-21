@@ -112,7 +112,7 @@ class PersonalShopRequestAdmin(ModelAdmin):
     ]
     list_filter = ['status', 'request_type', 'refund_required', 'created_at']
     search_fields = ['display_id', 'locker__locker_id', 'locker__user__email', 'shop_name', 'boutique_name', 'product_url']
-    autocomplete_fields = ['locker', 'assigned_executive', 'parcel']
+    autocomplete_fields = ['locker', 'assigned_executive', 'parcel', 'source_parcel']
     readonly_fields = ['display_id', 'trunk_id', 'customer_name', 'created_at', 'updated_at']
     inlines = [PersonalShopImageInline, PersonalShopNoteInline]
     date_hierarchy = 'created_at'
@@ -120,9 +120,13 @@ class PersonalShopRequestAdmin(ModelAdmin):
 
     actions = ['assign_to_me', 'mark_searching', 'mark_needs_info', 'mark_delivered_to_warehouse']
 
+    class Media:
+        js = ('js/admin/personal_shop/admin_request_type_fields.js',)
+
     def get_queryset(self, request):
         return super().get_queryset(request).select_related(
-            'locker', 'locker__user', 'assigned_executive', 'parcel', 'active_quotation', 'work_started_by',
+            'locker', 'locker__user', 'assigned_executive', 'parcel', 'source_parcel',
+            'active_quotation', 'work_started_by',
         )
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
@@ -209,7 +213,8 @@ class PersonalShopRequestAdmin(ModelAdmin):
             parcel = Parcel.objects.create(
                 locker=obj.locker,
                 status='approved',
-                item_name=obj.shop_name or obj.boutique_name or obj.display_id,
+                item_name=obj.shop_name or obj.boutique_name
+                or (obj.source_parcel.item_name if obj.source_parcel_id else '') or obj.display_id,
                 approved_at=timezone.now(),
             )
             ParcelImage.objects.bulk_create([

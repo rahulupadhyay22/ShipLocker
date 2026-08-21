@@ -109,7 +109,6 @@
         <div class="card-header"><h3 class="card-title">Request Summary</h3></div>
         <dl class="ta-meta-list">
             <dt>Method</dt><dd>{{ shop_request.get_request_type_display }}</dd>
-            <dt>Destination</dt><dd>{{ shop_request.destination_country|default:"—" }}</dd>
             <dt>Assigned Executive</dt><dd>{{ shop_request.assigned_executive.get_full_name|default:"Not yet assigned" }}</dd>
             <dt>Last Updated</dt><dd>{{ shop_request.updated_at|date:"d M Y, H:i" }}</dd>
             {% if shop_request.turnaround %}<dt>Expected Turnaround</dt><dd>{{ shop_request.turnaround }}</dd>{% endif %}
@@ -152,6 +151,13 @@
     <a href="{% url 'personal_shop:request_edit' pk=shop_request.pk %}" class="ta-action-row">
         <span class="card-icon-badge">&#9998;</span>
         <span class="ta-action-row-text">Edit Request<br><small>Update the details you submitted</small></span>
+        <span class="ta-action-arrow">&rarr;</span>
+    </a>
+    {% endif %}
+    {% if invoice %}
+    <a href="{{ invoice.signed_url }}" target="_blank" class="ta-action-row">
+        <span class="card-icon-badge">&#8595;</span>
+        <span class="ta-action-row-text">Download Invoice<br><small>Get a PDF copy of your TrunkAssist invoice</small></span>
         <span class="ta-action-arrow">&rarr;</span>
     </a>
     {% endif %}

@@ -22,14 +22,34 @@
     <div class="card ta-request-card">
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            <h3 class="ta-form-section-title">1. Boutique Details <span class="ta-required">*</span></h3>
-            <div class="form-group">
-                <label class="form-label" for="{{ form.boutique_name.id_for_label }}">{{ form.boutique_name.label }}</label>
-                {{ form.boutique_name }}
-                {% if form.boutique_name.errors %}<p class="ta-field-error">{{ form.boutique_name.errors|join:", " }}</p>{% endif %}
+            <h3 class="ta-form-section-title">1. How would you like to proceed? <span class="ta-required">*</span></h3>
+            <div class="ta-source-toggle">
+                {% for radio in form.source_mode %}
+                <label class="ta-source-option">{{ radio.tag }} {{ radio.choice_label }}</label>
+                {% endfor %}
             </div>
 
-            <h3 class="ta-form-section-title">2. Product / Order Details</h3>
+            <div id="ta-source-trunk" class="ta-source-panel">
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.source_parcel.id_for_label }}">{{ form.source_parcel.label }}</label>
+                    {{ form.source_parcel }}
+                    {% if form.source_parcel.errors %}<p class="ta-field-error">{{ form.source_parcel.errors|join:", " }}</p>{% endif %}
+                    {% if not form.source_parcel.field.queryset.exists %}
+                    <p class="ta-field-hint">No parcels in your trunk yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div id="ta-source-new" class="ta-source-panel">
+                <h3 class="ta-form-section-title">2. Boutique Details <span class="ta-required">*</span></h3>
+                <div class="form-group">
+                    <label class="form-label" for="{{ form.boutique_name.id_for_label }}">{{ form.boutique_name.label }}</label>
+                    {{ form.boutique_name }}
+                    {% if form.boutique_name.errors %}<p class="ta-field-error">{{ form.boutique_name.errors|join:", " }}</p>{% endif %}
+                </div>
+            </div>
+
+            <h3 class="ta-form-section-title">3. Product / Order Details</h3>
             <div class="ta-field-row">
                 <div class="form-group">
                     <label class="form-label" for="{{ form.item_description.id_for_label }}">What do you want to buy?</label>
@@ -42,19 +62,21 @@
                 </div>
             </div>
 
-            <h3 class="ta-form-section-title">3. Upload Reference Images (Optional)</h3>
-            <div class="form-group">
-                <label class="ta-dropzone" id="ta-dropzone" for="{{ form.reference_image.id_for_label }}">
-                    {{ form.reference_image }}
-                    <img class="ta-dropzone-preview-img" id="ta-dropzone-preview-img" alt="Selected image preview" hidden>
-                    <span class="ta-dropzone-placeholder" id="ta-dropzone-placeholder">
-                        <svg class="ta-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 18a4 4 0 0 1-1-7.87A5.5 5.5 0 0 1 16.5 8h.5a4 4 0 0 1 0 8h-1M12 11v8m0-8-3 3m3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        <span>Drag &amp; drop images here or <span class="ta-dropzone-link">Choose Files</span></span>
-                        <span class="ta-dropzone-meta">JPG, PNG or WebP &middot; Max 5MB each</span>
-                    </span>
-                    <span class="ta-dropzone-filename" id="ta-dropzone-filename" hidden></span>
-                </label>
-                {% if form.reference_image.errors %}<p class="ta-field-error">{{ form.reference_image.errors|join:", " }}</p>{% endif %}
+            <div id="ta-source-images" class="ta-source-panel">
+                <h3 class="ta-form-section-title">4. Upload Reference Images (Optional)</h3>
+                <div class="form-group">
+                    <label class="ta-dropzone" id="ta-dropzone" for="{{ form.reference_image.id_for_label }}">
+                        {{ form.reference_image }}
+                        <img class="ta-dropzone-preview-img" id="ta-dropzone-preview-img" alt="Selected image preview" hidden>
+                        <span class="ta-dropzone-placeholder" id="ta-dropzone-placeholder">
+                            <svg class="ta-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 18a4 4 0 0 1-1-7.87A5.5 5.5 0 0 1 16.5 8h.5a4 4 0 0 1 0 8h-1M12 11v8m0-8-3 3m3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <span>Drag &amp; drop images here or <span class="ta-dropzone-link">Choose Files</span></span>
+                            <span class="ta-dropzone-meta">JPG, PNG or WebP &middot; Max 5MB each</span>
+                        </span>
+                        <span class="ta-dropzone-filename" id="ta-dropzone-filename" hidden></span>
+                    </label>
+                    {% if form.reference_image.errors %}<p class="ta-field-error">{{ form.reference_image.errors|join:", " }}</p>{% endif %}
+                </div>
             </div>
 
             <div class="ta-form-actions">
@@ -76,4 +98,23 @@
 
 {% block extra_js %}
 <script src="{% static 'js/ta_dropzone.js' %}"></script>
+<script>
+(function () {
+    var radios = document.querySelectorAll('input[name="source_mode"]');
+    var panels = {
+        trunk: document.getElementById('ta-source-trunk'),
+        new: document.getElementById('ta-source-new'),
+        images: document.getElementById('ta-source-images'),
+    };
+    function sync() {
+        var checked = document.querySelector('input[name="source_mode"]:checked');
+        var mode = checked ? checked.value : 'new';
+        panels.trunk.hidden = mode !== 'trunk';
+        panels.new.hidden = mode !== 'new';
+        panels.images.hidden = mode === 'trunk';
+    }
+    radios.forEach(function (r) { r.addEventListener('change', sync); });
+    sync();
+})();
+</script>
 {% endblock %}

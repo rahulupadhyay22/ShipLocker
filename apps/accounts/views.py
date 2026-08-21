@@ -248,7 +248,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             locker=locker, status__in=['action_required', 'approved']
         ))
         parcels_in_trunk = len(trunk_parcels)
-        incoming_count = Parcel.objects.filter(locker=locker, status='pending').count()
+        from apps.personal_shop.models import PersonalShopRequest
+        incoming_count = PersonalShopRequest.objects.filter(locker=locker, status='purchased').count()
 
         weights = [float(p.weight_kg) for p in trunk_parcels if p.weight_kg]
         total_weight_kg = sum(weights)

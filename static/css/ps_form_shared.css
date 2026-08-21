@@ -37,7 +37,7 @@
 
 .ta-field-hint {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     margin: -0.6rem 0 1rem;
 }
 
@@ -48,7 +48,7 @@
 .ta-request-card textarea,
 .ta-request-card input:not([type="file"]) {
     background: #fff;
-    border: 1.5px solid #c7cdd2;
+    border: 1.5px solid var(--surface-300);
 }
 
 .ta-request-card .form-input:hover,
@@ -127,6 +127,45 @@
     font-weight: 600;
     color: var(--text-main);
     margin-top: 0.5rem;
+}
+
+.ta-source-toggle {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.ta-source-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+    border: 1.5px solid var(--surface-300);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.ta-source-option:hover { border-color: var(--primary); }
+
+.ta-source-option input[type="radio"] {
+    accent-color: var(--primary);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.ta-source-option:has(input:checked) {
+    border-color: var(--primary);
+    background: var(--surface-50);
+    color: var(--primary);
 }
 
 .ta-field-row {
@@ -270,6 +309,7 @@
     .ta-request-card { padding: 1.25rem; }
     .ta-form-actions { flex-direction: column-reverse; gap: 0.75rem; align-items: stretch; }
     .ta-field-row { grid-template-columns: 1fr; }
+    .ta-source-toggle { flex-direction: column; }
 }
 
 @media (max-width: 420px) {

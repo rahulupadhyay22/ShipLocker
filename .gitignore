@@ -85,3 +85,11 @@ prod-chceklist.txt
 final.txt
 *-using-cached-stren.txt
 scratchpad/
+
+# Claude Code / tooling local state
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+.impeccable/
+.superpowers/
+*.txt
+!requirements*.txt

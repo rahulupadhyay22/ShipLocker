@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -225,3 +226,99 @@ class ShipmentPaidSignalTests(TestCase):
             self.shipment.save()  # must not raise
 
         self.assertEqual(Invoice.objects.filter(shipment=self.shipment).count(), 0)
+
+
+from apps.accounts.models import Locker
+from apps.payments.models import PersonalShopInvoice
+from apps.payments.services import PersonalShopInvoiceService, generate_personal_shop_invoice_number
+from apps.personal_shop.models import PersonalShopRequest, PersonalShopQuotation
+
+
+def _make_personal_shop_request(user):
+    locker = Locker.objects.create(user=user)
+    return PersonalShopRequest.objects.create(
+        locker=locker, request_type='custom_request', status='searching',
+    )
+
+
+def _make_personal_shop_quotation(req, **extra):
+    return PersonalShopQuotation.objects.create(
+        request=req, subtotal=Decimal('1000.00'), service_fee_amount=Decimal('100.00'),
+        total_amount=Decimal('1100.00'), valid_until=timezone.now() + timedelta(hours=48),
+        **extra,
+    )
+
+
+class PersonalShopInvoiceServiceTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email='ps-invoice-test@example.com', is_active=True)
+        self.request = _make_personal_shop_request(self.user)
+        self.quotation = _make_personal_shop_quotation(self.request)
+        self.request.active_quotation = self.quotation
+        self.request.save()
+
+        Payment.objects.create(
+            user=self.user, personal_shop_request=self.request, amount=Decimal('1100.00'),
+            payment_method='razorpay', status='captured',
+            razorpay_payment_id='pay_ps_test123', paid_at=timezone.now(),
+        )
+
+    def test_generate_for_request_creates_invoice(self):
+        invoice = PersonalShopInvoiceService.generate_for_request(self.request)
+
+        self.assertIsNotNone(invoice)
+        self.assertEqual(invoice.quotation, self.quotation)
+        self.assertTrue(invoice.invoice_number.startswith('TA-INV/'))
+        self.assertEqual(invoice.total_amount, Decimal('1100.00'))
+        self.assertEqual(invoice.payment_reference, 'pay_ps_test123')
+        self.assertTrue(invoice.pdf_document_url)
+
+    def test_generate_for_request_is_idempotent(self):
+        first = PersonalShopInvoiceService.generate_for_request(self.request)
+        second = PersonalShopInvoiceService.generate_for_request(self.request)
+
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(PersonalShopInvoice.objects.filter(quotation=self.quotation).count(), 1)
+
+    def test_upload_failure_leaves_no_partial_record(self):
+        with patch('apps.payments.services.PersonalShopInvoiceService.upload_pdf', side_effect=Exception('Supabase timeout')):
+            with self.assertRaises(Exception):
+                PersonalShopInvoiceService.generate_for_request(self.request)
+
+        self.assertEqual(PersonalShopInvoice.objects.filter(quotation=self.quotation).count(), 0)
+
+
+class PersonalShopRequestPaidSignalTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email='ps-signal-test@example.com', is_active=True)
+        self.request = _make_personal_shop_request(self.user)
+        self.quotation = _make_personal_shop_quotation(self.request)
+        self.request.active_quotation = self.quotation
+        self.request.save()
+
+    def test_marking_request_paid_generates_invoice(self):
+        self.assertEqual(PersonalShopInvoice.objects.filter(quotation=self.quotation).count(), 0)
+
+        self.request.status = 'paid'
+        self.request.save()
+
+        self.assertEqual(PersonalShopInvoice.objects.filter(quotation=self.quotation).count(), 1)
+
+    def test_saving_an_already_paid_request_again_does_not_duplicate(self):
+        self.request.status = 'paid'
+        self.request.save()
+        self.assertEqual(PersonalShopInvoice.objects.filter(quotation=self.quotation).count(), 1)
+
+        self.request.refund_required = False
+        self.request.save()
+        self.assertEqual(PersonalShopInvoice.objects.filter(quotation=self.quotation).count(), 1)
+
+    def test_invoice_generation_failure_does_not_raise_out_of_save(self):
+        with patch(
+            'apps.payments.services.PersonalShopInvoiceService.upload_pdf',
+            side_effect=Exception('Supabase down'),
+        ):
+            self.request.status = 'paid'
+            self.request.save()  # must not raise
+
+        self.assertEqual(PersonalShopInvoice.objects.filter(quotation=self.quotation).count(), 0)

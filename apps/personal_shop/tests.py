@@ -33,7 +33,7 @@ def _make_locker(email):
 def _make_request(locker, status='submitted', **extra):
     return PersonalShopRequest.objects.create(
         locker=locker, request_type='custom_request', status=status,
-        destination_country='USA', **extra,
+        **extra,
     )
 
 
@@ -321,7 +321,7 @@ class RequestListFilterPaginationTests(TestCase):
 
     def test_filters_by_request_type(self):
         product_link_req = PersonalShopRequest.objects.create(
-            locker=self.locker, request_type='product_link', destination_country='USA',
+            locker=self.locker, request_type='product_link',
         )
         _make_request(self.locker, status='submitted')  # custom_request type
         url = reverse('personal_shop:request_list')
@@ -463,7 +463,7 @@ class QuotationIsRefundableTests(TestCase):
         # not the class's default custom_request self.req — needs its own request.
         req = PersonalShopRequest.objects.create(
             locker=_make_locker('expense-advance-refundable@example.com'),
-            request_type='local_shop_purchase', status='searching', destination_country='USA',
+            request_type='local_shop_purchase', status='searching',
         )
         quotation = _make_quotation(req, quotation_type='expense_advance')
         req.work_started_at = timezone.now()
@@ -597,7 +597,7 @@ class QuotationTotalAmountForResearchFeeTests(TestCase):
         self.locker = _make_locker('research-fee-total-test@example.com')
         self.req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='custom_request',
-            status='searching', destination_country='USA',
+            status='searching',
         )
         self.quotation = _make_quotation(
             self.req, quotation_type='research_fee',
@@ -619,7 +619,7 @@ class QuotationTotalAmountForResearchFeeTests(TestCase):
             _make_quotation(
                 PersonalShopRequest.objects.create(
                     locker=_make_locker('negative-research-fee-test@example.com'),
-                    request_type='custom_request', status='searching', destination_country='USA',
+                    request_type='custom_request', status='searching',
                 ),
                 research_fee_amount=Decimal('-499'),
             ).full_clean()
@@ -633,7 +633,7 @@ class QuotationTotalAmountForExpenseAdvanceTests(TestCase):
         self.locker = _make_locker('expense-advance-total-test@example.com')
         self.req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='local_shop_purchase',
-            status='searching', destination_country='USA',
+            status='searching',
         )
         self.quotation = _make_quotation(
             self.req, quotation_type='expense_advance',
@@ -746,7 +746,7 @@ class QuotationTypeMatchesRequestTypeTests(TestCase):
     def _request(self, request_type):
         return PersonalShopRequest.objects.create(
             locker=_make_locker(f'{request_type}-{uuid.uuid4()}@example.com'),
-            request_type=request_type, destination_country='USA',
+            request_type=request_type,
         )
 
     def test_research_fee_valid_on_custom_request(self):
@@ -901,7 +901,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         # returned just the flat minimum. product_link is 5% (min ₹199);
         # 5% of 10000 = 500, above the minimum, so 500 should win.
         req = PersonalShopRequest.objects.create(
-            locker=self.locker, request_type='product_link', destination_country='USA',
+            locker=self.locker, request_type='product_link',
         )
         self.client.force_login(self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
@@ -911,7 +911,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
 
     def test_product_value_below_minimum_still_uses_minimum(self):
         req = PersonalShopRequest.objects.create(
-            locker=self.locker, request_type='product_link', destination_country='USA',
+            locker=self.locker, request_type='product_link',
         )
         self.client.force_login(self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
@@ -921,7 +921,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
 
     def test_invalid_product_value_falls_back_to_minimum_not_500(self):
         req = PersonalShopRequest.objects.create(
-            locker=self.locker, request_type='product_link', destination_country='USA',
+            locker=self.locker, request_type='product_link',
         )
         self.client.force_login(self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
@@ -934,7 +934,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         # but the later rate comparison in ServiceCharge.compute() raises on
         # a NaN operand — must be rejected before it gets that far.
         req = PersonalShopRequest.objects.create(
-            locker=self.locker, request_type='product_link', destination_country='USA',
+            locker=self.locker, request_type='product_link',
         )
         self.client.force_login(self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
@@ -946,7 +946,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         # Regression: Decimal('Infinity')/a huge exponent parses fine but
         # overflows during the rate multiplication — same fix as NaN above.
         req = PersonalShopRequest.objects.create(
-            locker=self.locker, request_type='product_link', destination_country='USA',
+            locker=self.locker, request_type='product_link',
         )
         self.client.force_login(self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
@@ -966,7 +966,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
 
     def test_allowed_quotation_types_for_boutique_purchase(self):
         req = PersonalShopRequest.objects.create(
-            locker=self.locker, request_type='boutique_purchase', destination_country='USA',
+            locker=self.locker, request_type='boutique_purchase',
         )
         self.client.force_login(self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
@@ -975,7 +975,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
 
     def test_allowed_quotation_types_for_local_shop_purchase(self):
         req = PersonalShopRequest.objects.create(
-            locker=self.locker, request_type='local_shop_purchase', destination_country='USA',
+            locker=self.locker, request_type='local_shop_purchase',
         )
         self.client.force_login(self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
@@ -984,7 +984,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
 
     def test_allowed_quotation_types_for_product_link_is_purchase_only(self):
         req = PersonalShopRequest.objects.create(
-            locker=self.locker, request_type='product_link', destination_country='USA',
+            locker=self.locker, request_type='product_link',
         )
         self.client.force_login(self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
@@ -1027,7 +1027,7 @@ class Spec10VerifyQuotationTypeConstraintTests(TestCase):
     def _request(self, request_type):
         return PersonalShopRequest.objects.create(
             locker=_make_locker(f'{request_type}-{uuid.uuid4()}@example.com'),
-            request_type=request_type, destination_country='USA',
+            request_type=request_type,
         )
 
     def test_default_quotation_type_is_purchase(self):
@@ -1110,7 +1110,7 @@ class Spec10VerifyIsRefundablePropertyTests(TestCase):
     def test_expense_advance_refundable_before_work_started(self):
         req = PersonalShopRequest.objects.create(
             locker=_make_locker('spec10-refundable-advance-pending@example.com'),
-            request_type='boutique_purchase', status='searching', destination_country='USA',
+            request_type='boutique_purchase', status='searching',
         )
         quotation = _make_quotation(req, quotation_type='expense_advance', status='pending')
         self.assertTrue(quotation.is_refundable)
@@ -1118,7 +1118,7 @@ class Spec10VerifyIsRefundablePropertyTests(TestCase):
     def test_expense_advance_not_refundable_once_work_started(self):
         req = PersonalShopRequest.objects.create(
             locker=_make_locker('spec10-refundable-advance-started@example.com'),
-            request_type='local_shop_purchase', status='paid', destination_country='USA',
+            request_type='local_shop_purchase', status='paid',
         )
         quotation = _make_quotation(req, quotation_type='expense_advance', status='approved')
         req.work_started_at = timezone.now()
@@ -1210,7 +1210,7 @@ class Spec10VerifyWorkStartedStampingTests(TestCase):
     def test_stamping_works_for_expense_advance_type_too(self):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='local_shop_purchase',
-            status='paid', destination_country='USA',
+            status='paid',
         )
         quotation = _make_quotation(req, quotation_type='expense_advance', status='approved')
         req.active_quotation = quotation
@@ -1246,7 +1246,7 @@ class Spec10VerifyTravelExpenseValidationTests(TestCase):
     def test_positive_value_is_valid(self):
         req = PersonalShopRequest.objects.create(
             locker=_make_locker('spec10-travel-positive@example.com'),
-            request_type='local_shop_purchase', status='searching', destination_country='USA',
+            request_type='local_shop_purchase', status='searching',
         )
         quotation = _make_quotation(
             req, quotation_type='expense_advance', travel_expense_amount=Decimal('850.50'),
@@ -1373,7 +1373,7 @@ class Spec10VerifyTotalAmountIncludesTravelExpenseTests(TestCase):
         locker = _make_locker('spec10-total-travel-advance@example.com')
         req = PersonalShopRequest.objects.create(
             locker=locker, request_type='local_shop_purchase',
-            status='searching', destination_country='USA',
+            status='searching',
         )
         quotation = _make_quotation(
             req, quotation_type='expense_advance',
@@ -1434,7 +1434,7 @@ class Spec10VerifyQuotationTemplateRefundabilityTests(TestCase):
         if quotation_type == 'expense_advance':
             req = PersonalShopRequest.objects.create(
                 locker=self.locker, request_type='local_shop_purchase',
-                status='quotation_ready', destination_country='USA',
+                status='quotation_ready',
             )
         else:
             req = _make_request(self.locker, status='quotation_ready')
@@ -1479,7 +1479,7 @@ class Spec10VerifyQuotationTemplateRefundabilityTests(TestCase):
     def test_travel_expense_line_shown_only_when_non_zero(self):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='local_shop_purchase',
-            status='quotation_ready', destination_country='USA',
+            status='quotation_ready',
         )
         quotation = _make_quotation(
             req, quotation_type='expense_advance', status='pending',
@@ -1495,7 +1495,7 @@ class Spec10VerifyQuotationTemplateRefundabilityTests(TestCase):
     def test_travel_expense_line_hidden_when_zero(self):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='local_shop_purchase',
-            status='quotation_ready', destination_country='USA',
+            status='quotation_ready',
         )
         quotation = _make_quotation(
             req, quotation_type='expense_advance', status='pending',

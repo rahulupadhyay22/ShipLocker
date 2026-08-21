@@ -258,3 +258,56 @@ class Invoice(models.Model):
 
     def __str__(self):
         return self.invoice_number
+
+
+class PersonalShopInvoice(models.Model):
+    """Invoice generated once a TrunkAssist quotation is paid.
+
+    Kept separate from Invoice (which is hard-wired to Shipment: OneToOne,
+    GST breakdown, shipment-specific charge field names) rather than bolted
+    onto it. TrunkAssist quotations carry no GST today — see
+    PersonalShopQuotation, which has never applied tax — so this record is
+    just a snapshot of the paid quotation's own amount fields.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    quotation = models.OneToOneField(
+        'personal_shop.PersonalShopQuotation', on_delete=models.PROTECT, related_name='invoice'
+    )
+    invoice_number = models.CharField(max_length=30, unique=True, db_index=True)
+    invoice_date = models.DateTimeField()
+
+    customer_name = models.CharField(max_length=255)
+    customer_email = models.EmailField(blank=True)
+
+    payment_reference = models.CharField(max_length=100, blank=True)
+    payment_method = models.CharField(max_length=50, blank=True)
+
+    domestic_shipping_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    service_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    research_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    travel_expense_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    payment_gateway_charge = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    pdf_document_url = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'TrunkAssist Invoice'
+        verbose_name_plural = 'TrunkAssist Invoices'
+        ordering = ['-invoice_date']
+
+    def __str__(self):
+        return self.invoice_number
+
+    @property
+    def signed_url(self):
+        if not self.pdf_document_url:
+            return ''
+        from apps.locker.utils import get_signed_shipment_doc_url
+        try:
+            return get_signed_shipment_doc_url(self.pdf_document_url)
+        except Exception:
+            return ''

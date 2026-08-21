@@ -183,6 +183,24 @@ def upload_shipment_document(file: UploadedFile, locker_id: str, shipment_displa
     return filename
 
 
+def upload_personal_shop_invoice(file: UploadedFile, locker_id: str, request_display_id: str) -> str:
+    """Upload a TrunkAssist quotation invoice PDF to private storage.
+
+    Example path: personal-shop/RB-12345/invoice_RB-12345-TA001_abc123.pdf
+    """
+    storage = SupabaseStorage()
+    ext = os.path.splitext(file.name)[1].lower()
+    filename = f"personal-shop/{locker_id}/invoice_{request_display_id}_{uuid.uuid4().hex[:6]}{ext}"
+
+    storage.upload_file(
+        bucket_name='invoices',
+        file_path=filename,
+        file_data=file.read(),
+        content_type=file.content_type,
+    )
+    return filename
+
+
 # =============================================================================
 # SIGNED URL FUNCTIONS - Generate temporary URLs for private file access
 # 

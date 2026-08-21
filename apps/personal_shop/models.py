@@ -78,9 +78,6 @@ class PersonalShopRequest(models.Model):
         related_name='assigned_personal_shop_requests',
         limit_choices_to={'is_staff': True},
     )
-    destination_country = models.CharField(max_length=100, blank=True)
-    budget_min = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    budget_max = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     product_url = models.URLField(max_length=1000, null=True, blank=True, db_index=True)
     shop_name = models.CharField(max_length=255, null=True, blank=True, db_index=True)
     boutique_name = models.CharField(max_length=255, null=True, blank=True, db_index=True)
@@ -88,6 +85,13 @@ class PersonalShopRequest(models.Model):
     parcel = models.ForeignKey(
         'locker.Parcel', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='personal_shop_request',
+    )
+    source_parcel = models.ForeignKey(
+        'locker.Parcel', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='referencing_personal_shop_requests',
+        help_text="Existing trunk parcel the user picked as the basis for a Boutique Purchase "
+                   "(e.g. 'buy from my trunk'), distinct from `parcel` (the new parcel created "
+                   "once this request is purchased and delivered).",
     )
     active_quotation = models.ForeignKey(
         'PersonalShopQuotation', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
@@ -202,7 +206,10 @@ class PersonalShopRequest(models.Model):
         primary = config.get('primary')
         if primary:
             field_name, _ = primary
-            return getattr(self, field_name) or '–'
+            value = getattr(self, field_name)
+            if not value and self.source_parcel_id:
+                return f"From My Trunk – {self.source_parcel.display_id}"
+            return value or '–'
         d = self.type_details or {}
         return d.get('item_description') or d.get('description') or '–'
 
@@ -215,7 +222,10 @@ class PersonalShopRequest(models.Model):
         primary = config.get('primary')
         if primary:
             field_name, label = primary
-            pairs.append((label, getattr(self, field_name) or '–'))
+            value = getattr(self, field_name)
+            if not value and self.source_parcel_id:
+                value = f"From My Trunk – {self.source_parcel.display_id} ({self.source_parcel.item_name or 'item'})"
+            pairs.append((label, value or '–'))
         for key, label in config.get('details', []):
             value = d.get(key)
             if not value:

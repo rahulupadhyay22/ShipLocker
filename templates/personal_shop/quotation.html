@@ -98,6 +98,9 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Approved &amp; paid &mdash; no further action needed.
     </div>
+    {% if invoice %}
+    <a href="{{ invoice.signed_url }}" target="_blank" class="btn btn-secondary ta-block-btn">↓ Download Invoice</a>
+    {% endif %}
     {% elif quotation.status == 'declined' %}
     <div class="ta-quote-status-note ta-quote-status-declined">Declined.</div>
     {% elif quotation.status == 'expired' %}

@@ -13,6 +13,7 @@ colors:
   surface-50: "#f5f6f2"
   surface-100: "#eaeee7"
   surface-200: "#dfe5da"
+  surface-300: "#c7cdd2"
   text-main: "#132326"
   text-secondary: "#52666b"
   text-muted: "#8a9a9e"
@@ -100,6 +101,7 @@ A restrained teal-and-gold palette: navy-teal for structure and trust, gold for 
 - **Surface 50** (`#f5f6f2`): Secondary surface, form input backgrounds, stat icon backgrounds.
 - **Surface 100** (`#eaeee7`): Card borders, dividers.
 - **Surface 200** (`#dfe5da`): Secondary button borders.
+- **Surface 300** (`#c7cdd2`): Sharper input/field borders on forms where the default `surface-200` reads as no border at all (e.g. TrunkAssist request forms).
 - **Text Main** (`#132326`): Primary body and heading text.
 - **Text Secondary** (`#52666b`): Labels, secondary copy.
 - **Text Muted** (`#8a9a9e`): Placeholder and de-emphasized text.

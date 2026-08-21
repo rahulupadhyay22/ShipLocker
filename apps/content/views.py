@@ -7,8 +7,8 @@ from .models import StaticPage, ServiceCharge
 
 # ponytail: 15min cache_page on rarely-changing public pages that render identically
 # regardless of auth state. Skipped on HomeView (auth-conditional redirect), and on
-# ShippingCalculatorView/ServiceChargesView (AuthAwareBaseMixin renders a different
-# base template for logged-in users).
+# ShippingCalculatorView/ServiceChargesView/ProhibitedItemsView/RefundPolicyView
+# (AuthAwareBaseMixin renders a different base template for logged-in users).
 STATIC_PAGE_CACHE_SECONDS = 60 * 15
 
 
@@ -52,8 +52,7 @@ class StaticPageView(DetailView):
         return StaticPage.objects.filter(is_active=True)
 
 
-@method_decorator(cache_page(STATIC_PAGE_CACHE_SECONDS), name='dispatch')
-class ProhibitedItemsView(TemplateView):
+class ProhibitedItemsView(AuthAwareBaseMixin, TemplateView):
     """Prohibited items page."""
     template_name = 'content/prohibited_items.html'
 
@@ -90,8 +89,7 @@ class ServiceChargesView(AuthAwareBaseMixin, ListView):
         return ServiceCharge.objects.filter(is_active=True)
 
 
-@method_decorator(cache_page(STATIC_PAGE_CACHE_SECONDS), name='dispatch')
-class RefundPolicyView(TemplateView):
+class RefundPolicyView(AuthAwareBaseMixin, TemplateView):
     """Refund policy page."""
     template_name = 'content/refund_policy.html'
 

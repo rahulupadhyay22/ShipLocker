@@ -24,6 +24,11 @@
             {% csrf_token %}
             <h3 class="ta-form-section-title">1. Shop Details <span class="ta-required">*</span></h3>
             <p class="ta-field-hint">We currently only support Local Shop Purchase in Hyderabad. More cities coming soon.</p>
+            <div class="form-group">
+                <label class="form-label" for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>
+                {{ form.city }}
+                {% if form.city.errors %}<p class="ta-field-error">{{ form.city.errors|join:", " }}</p>{% endif %}
+            </div>
             <div class="ta-field-row">
                 <div class="form-group">
                     <label class="form-label" for="{{ form.shop_name.id_for_label }}">{{ form.shop_name.label }}</label>
@@ -45,11 +50,6 @@
                 <label class="form-label" for="{{ form.maps_link.id_for_label }}">{{ form.maps_link.label }}</label>
                 {{ form.maps_link }}
                 {% if form.maps_link.errors %}<p class="ta-field-error">{{ form.maps_link.errors|join:", " }}</p>{% endif %}
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>
-                {{ form.city }}
-                {% if form.city.errors %}<p class="ta-field-error">{{ form.city.errors|join:", " }}</p>{% endif %}
             </div>
 
             <h3 class="ta-form-section-title">2. Product Details</h3>
