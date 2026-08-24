@@ -415,6 +415,7 @@
 <script>
     const ZONES_DATA = JSON.parse('{{ zones_json|escapejs }}');
     const CONSOLIDATION_FEE = parseFloat('{{ consolidation_fee_amount|default:"0" }}') || 0;
+    const CONSOLIDATION_FEE_STANDARD = parseFloat('{{ consolidation_fee_standard|default:"0" }}') || 0;
     const STORAGE_FEE_PENDING = parseFloat('{{ storage_fee_pending|default:"0" }}') || 0;
     const STORAGE_FEE_DAYS_PENDING = parseInt('{{ storage_fee_days_pending|default:"0" }}', 10) || 0;
 
@@ -469,7 +470,13 @@
         document.querySelectorAll('.js-sum-storage-breakdown').forEach(function (el) { el.textContent = storageBreakdownText; });
 
         document.querySelectorAll('.js-consolidation-fee-row').forEach(function (el) { el.hidden = count < 1; });
-        document.querySelectorAll('.js-sum-consolidation-fee').forEach(function (el) { el.textContent = fmtMoney(CONSOLIDATION_FEE); });
+        document.querySelectorAll('.js-sum-consolidation-fee').forEach(function (el) {
+            if (CONSOLIDATION_FEE === 0 && CONSOLIDATION_FEE_STANDARD > 0) {
+                el.textContent = 'FREE with Premium (saved ' + fmtMoney(CONSOLIDATION_FEE_STANDARD) + ')';
+            } else {
+                el.textContent = fmtMoney(CONSOLIDATION_FEE);
+            }
+        });
 
         const nextBtn = document.getElementById('step1NextBtn');
         if (nextBtn) nextBtn.disabled = count === 0;

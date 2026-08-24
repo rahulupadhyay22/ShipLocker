@@ -12,7 +12,12 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1 class="db-welcome-title">Welcome back, {{ user.get_short_name|title }}! 👋</h1>
+        <h1 class="db-welcome-title">
+            Welcome back, {{ user.get_short_name|title }}! 👋
+            <span class="status-badge {% if is_premium %}status-premium{% else %}status-pending{% endif %}">
+                {% if is_premium %}PREMIUM{% else %}FREE{% endif %}
+            </span>
+        </h1>
         <p class="db-welcome-sub">Here's what's happening with your Trunk today.</p>
     </div>
     {% if announcements %}
@@ -22,6 +27,23 @@
     </button>
     {% endif %}
 </div>
+
+{% if not is_premium %}
+<div class="modern-alert alert-info" style="align-items: center; margin-bottom: 1.5rem;">
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>
+    <div style="flex: 1;">
+        <strong>Go Premium — ₹2,999/year</strong>
+        <p style="margin-top: 0.25rem;">Save on service fees, shipping and storage, plus free consolidation.</p>
+    </div>
+    <button type="button" class="btn btn-primary premium-checkout-btn"
+        data-create-url="{% url 'payments:premium_create_order' %}"
+        data-verify-url="{% url 'payments:verify' %}"
+        data-error-target="premium-upsell-error">
+        Upgrade to Premium
+    </button>
+</div>
+<p id="premium-upsell-error" class="modern-alert alert-danger form-loading-error" role="alert" hidden></p>
+{% endif %}
 
 <!-- Announcements Section -->
 {% if announcements %}
@@ -300,4 +322,7 @@
         }
     });
 </script>
+{% if not is_premium %}
+{% include 'accounts/_premium_checkout_script.html' %}
+{% endif %}
 {% endblock %}

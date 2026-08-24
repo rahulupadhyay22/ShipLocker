@@ -53,6 +53,11 @@
             {% if quotation.quotation_type == 'purchase' %}
             <tr><td>Domestic Shipping</td><td></td><td>₹{{ quotation.domestic_shipping_amount }}</td></tr>
             <tr><td>TrunkAssist Service Fee</td><td></td><td>₹{{ quotation.service_fee_amount }}</td></tr>
+            {% if quotation.premium_discount_amount > 0 %}
+            <tr class="ta-quote-discount"><td>Premium Discount (&minus;25%)</td><td></td><td>&minus;₹{{ quotation.premium_discount_amount }}</td></tr>
+            {% elif not shop_request.locker.is_premium %}
+            <tr><td colspan="3" class="ta-quote-note">Premium saves 25% on this fee.</td></tr>
+            {% endif %}
             <tr class="ta-quote-subtotal"><td>Sub Total</td><td></td><td>₹{{ quotation.subtotal }}</td></tr>
             <tr><td>Payment Gateway Charges</td><td></td><td>₹{{ quotation.payment_gateway_charge }}</td></tr>
             {% endif %}

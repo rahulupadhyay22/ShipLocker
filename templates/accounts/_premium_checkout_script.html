@@ -1,0 +1,101 @@
+<!-- Shared Premium subscription checkout script — same pattern as
+     templates/personal_shop/quotation.html's pay-now-btn, adapted for:
+     (a) possibly more than one trigger button on the page (dashboard banner,
+         profile Upgrade/Renew buttons), matched by class instead of id.
+     (b) no dedicated confirmation page — reload the current page on success. -->
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+<script>
+    (function () {
+        const csrfToken = '{{ csrf_token }}';
+
+        async function parseJsonOrThrow(response) {
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                return response.json();
+            }
+            const errorText = await response.text();
+            throw new Error(errorText || 'Unexpected server response.');
+        }
+
+        async function verifyPayment(verifyUrl, payload) {
+            const response = await fetch(verifyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify(payload),
+            });
+            return parseJsonOrThrow(response);
+        }
+
+        document.querySelectorAll('.premium-checkout-btn').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                if (btn.dataset.loading === 'true') {
+                    return;
+                }
+                const createUrl = btn.dataset.createUrl;
+                const verifyUrl = btn.dataset.verifyUrl;
+
+                CamelTrunkLoading.clearError(btn);
+                CamelTrunkLoading.start(btn);
+
+                try {
+                    const createResponse = await fetch(createUrl, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken },
+                    });
+                    const orderData = await parseJsonOrThrow(createResponse);
+
+                    if (!createResponse.ok) {
+                        throw new Error(orderData.error || 'Could not start payment.');
+                    }
+
+                    if (!window.Razorpay) {
+                        throw new Error('Razorpay checkout failed to load.');
+                    }
+
+                    const options = {
+                        key: orderData.key_id,
+                        amount: orderData.amount,
+                        currency: orderData.currency,
+                        name: 'CamelTrunk',
+                        description: 'CamelTrunk Premium Membership',
+                        order_id: orderData.order_id,
+                        handler: async function (response) {
+                            try {
+                                const verifyResult = await verifyPayment(verifyUrl, {
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                });
+
+                                if (verifyResult.status === 'success') {
+                                    window.location.reload();
+                                    return;
+                                }
+                                CamelTrunkLoading.showError(btn, verifyResult.error || 'Payment verification failed.');
+                            } catch (error) {
+                                CamelTrunkLoading.showError(btn, error.message || 'Payment verification failed.');
+                            } finally {
+                                CamelTrunkLoading.stop(btn);
+                            }
+                        },
+                        theme: { color: '#f6a313' },
+                        modal: {
+                            ondismiss: function () {
+                                CamelTrunkLoading.stop(btn);
+                            }
+                        }
+                    };
+
+                    const rzp = new Razorpay(options);
+                    rzp.open();
+                } catch (error) {
+                    CamelTrunkLoading.showError(btn, error.message || 'Unable to start payment.');
+                    CamelTrunkLoading.stop(btn);
+                }
+            });
+        });
+    })();
+</script>

@@ -188,6 +188,7 @@ class TrunkAssistDashboardView(LoginRequiredMixin, View):
         return render(request, 'personal_shop/dashboard.html', {
             'type_cards': REQUEST_TYPE_CARDS,
             'recent_requests': recent,
+            'is_premium': request.user.locker.is_premium,
         })
 
 

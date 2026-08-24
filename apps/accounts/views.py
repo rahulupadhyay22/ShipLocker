@@ -290,6 +290,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         context.update({
             'locker': locker,
+            'is_premium': locker.is_premium,
             'announcements': announcements,
             'action_required_count': action_required_count,
             'urgent_items': action_required_parcels,
@@ -321,6 +322,7 @@ class ProfileView(LoginRequiredMixin, View):
         return render(request, self.template_name, {
             'user': request.user,
             'locker': request.user.locker,
+            'is_premium': request.user.locker.is_premium,
             'support_email': app_settings.support_email,
             'support_phone': app_settings.support_phone,
             'kyc_verified': request.user.kyc_documents.filter(status='approved').exists(),
