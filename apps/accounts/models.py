@@ -94,6 +94,10 @@ class Locker(models.Model):
         null=True, blank=True,
         help_text="Set when a paid-plan renewal fails; non-null and not yet expired means the account is in its 7-day grace period."
     )
+    premium_expires_at = models.DateField(
+        null=True, blank=True,
+        help_text="Date the current Premium subscription term ends. Null for Free-plan lockers."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

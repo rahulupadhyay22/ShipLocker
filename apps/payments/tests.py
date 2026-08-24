@@ -363,3 +363,201 @@ class BatchChargeDiscountAmountTests(TestCase):
         # property must not return a negative value if it somehow does.
         charge = _make_batch_charge(self.locker, amount=Decimal('120.00'), amount_standard=Decimal('100.00'))
         self.assertEqual(charge.discount_amount, Decimal('0.00'))
+
+
+# ---------------------------------------------------------------------------
+# Task 5: Premium subscription checkout & renewal lifecycle
+# ---------------------------------------------------------------------------
+
+import hmac
+import hashlib
+import json
+from unittest.mock import PropertyMock
+
+from django.urls import reverse
+
+from apps.payments.services import RazorpayService
+from apps.payments.views import _activate_premium_subscription
+from apps.locker.services import batch_billing
+
+
+def _enable_razorpay(order_id='order_premium_test'):
+    """Returns the three patch objects needed to make RazorpayService
+    behave as configured+enabled, with create_order returning a fixed
+    order id. Caller enters them as a context manager / decorator."""
+    return (
+        patch('apps.payments.services.RazorpayService.is_enabled', new_callable=PropertyMock, return_value=True),
+        patch('apps.payments.services.RazorpayService.key_id', new_callable=PropertyMock, return_value='rzp_test_key'),
+        patch('apps.payments.services.RazorpayService.create_order', return_value={'id': order_id}),
+    )
+
+
+class CreatePremiumSubscriptionOrderViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email='premium-checkout@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user)
+        self.client.force_login(self.user)
+        settings = AppSettings.get_settings()
+        settings.premium_annual_price = Decimal('2999.00')
+        settings.save()
+        self.url = reverse('payments:premium_create_order')
+
+    def test_creates_order_and_pending_payment(self):
+        p1, p2, p3 = _enable_razorpay('order_premium_1')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['order_id'], 'order_premium_1')
+        self.assertEqual(data['amount'], 299900)
+
+        payment = Payment.objects.get(user=self.user, payment_type='premium_subscription')
+        self.assertEqual(payment.status, 'pending')
+        self.assertEqual(payment.amount, Decimal('2999.00'))
+        self.assertEqual(payment.razorpay_order_id, 'order_premium_1')
+
+    def test_duplicate_post_within_window_returns_same_order(self):
+        p1, p2, p3 = _enable_razorpay('order_premium_2')
+        with p1, p2, p3:
+            first = self.client.post(self.url)
+            second = self.client.post(self.url)
+
+        self.assertEqual(first.json()['order_id'], second.json()['order_id'])
+        self.assertEqual(
+            Payment.objects.filter(user=self.user, payment_type='premium_subscription').count(), 1
+        )
+
+
+class ActivatePremiumSubscriptionTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email='premium-activate@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user)
+
+    def _payment(self):
+        return Payment.objects.create(
+            user=self.user, amount=Decimal('2999.00'), payment_type='premium_subscription',
+            payment_method='razorpay', status='captured', paid_at=timezone.now(),
+        )
+
+    def test_first_time_purchase_sets_plan_and_expiry(self):
+        today = timezone.localdate()
+        _activate_premium_subscription(self._payment())
+
+        self.locker.refresh_from_db()
+        self.assertEqual(self.locker.plan_type, 'paid')
+        self.assertEqual(self.locker.premium_expires_at, today + timedelta(days=365))
+
+    def test_early_renewal_extends_from_current_expiry_not_today(self):
+        today = timezone.localdate()
+        self.locker.plan_type = 'paid'
+        self.locker.premium_expires_at = today + timedelta(days=100)
+        self.locker.save()
+
+        _activate_premium_subscription(self._payment())
+
+        self.locker.refresh_from_db()
+        self.assertEqual(self.locker.premium_expires_at, today + timedelta(days=100 + 365))
+
+    def test_renewal_during_grace_period_resolves_grace_and_pending_batch(self):
+        today = timezone.localdate()
+        self.locker.plan_type = 'paid'
+        self.locker.premium_expires_at = today - timedelta(days=2)
+        self.locker.save()
+        batch_billing.enter_grace_period(self.locker, today)
+        self.locker.refresh_from_db()
+        self.assertIsNotNone(self.locker.payment_grace_until)
+
+        batch = Batch.objects.create(
+            locker=self.locker, plan_type_at_creation='paid', quota_year=today.year,
+            batch_status='pending', first_parcel_received_date=today,
+            free_storage_end_date=today + timedelta(days=30), current_parcel_count=1,
+        )
+
+        _activate_premium_subscription(self._payment())
+
+        self.locker.refresh_from_db()
+        batch.refresh_from_db()
+        self.assertIsNone(self.locker.payment_grace_until)
+        self.assertEqual(self.locker.plan_type, 'paid')
+        self.assertEqual(self.locker.premium_expires_at, today + timedelta(days=365))
+        self.assertEqual(batch.batch_status, 'active_free')
+
+
+class VerifyPaymentViewPremiumIdempotencyTests(TestCase):
+    """The most important test in this task: VerifyPaymentView.post must
+    not double-extend premium_expires_at if called twice for the same
+    already-captured payment (retried/double-fired verify request)."""
+
+    def setUp(self):
+        self.user = User.objects.create(email='premium-verify@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user)
+        self.client.force_login(self.user)
+        self.payment = Payment.objects.create(
+            user=self.user, amount=Decimal('2999.00'), payment_type='premium_subscription',
+            payment_method='razorpay', status='pending', razorpay_order_id='order_verify_1',
+        )
+        self.url = reverse('payments:verify')
+        self.body = {
+            'razorpay_order_id': 'order_verify_1',
+            'razorpay_payment_id': 'pay_verify_1',
+            'razorpay_signature': 'sig_verify_1',
+        }
+
+    def test_double_verify_extends_expiry_exactly_once(self):
+        today = timezone.localdate()
+        with patch('apps.payments.services.RazorpayService.verify_payment_signature', return_value=True):
+            first = self.client.post(self.url, data=json.dumps(self.body), content_type='application/json')
+            second = self.client.post(self.url, data=json.dumps(self.body), content_type='application/json')
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(first.json()['status'], 'success')
+        self.assertEqual(second.json()['status'], 'success')
+
+        self.locker.refresh_from_db()
+        self.assertEqual(self.locker.plan_type, 'paid')
+        self.assertEqual(self.locker.premium_expires_at, today + timedelta(days=365))
+
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'captured')
+
+
+class RazorpayWebhookPremiumDoubleDeliveryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email='premium-webhook@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user)
+        self.payment = Payment.objects.create(
+            user=self.user, amount=Decimal('2999.00'), payment_type='premium_subscription',
+            payment_method='razorpay', status='pending', razorpay_order_id='order_webhook_1',
+        )
+        settings = AppSettings.get_settings()
+        settings.razorpay_webhook_secret = 'test_webhook_secret'
+        settings.save()
+
+        self.url = reverse('payments:razorpay_webhook')
+        self.payload = json.dumps({
+            'event': 'payment.captured',
+            'payload': {'payment': {'entity': {'order_id': 'order_webhook_1', 'id': 'pay_webhook_1'}}},
+        }).encode('utf-8')
+        self.signature = hmac.new(
+            b'test_webhook_secret', self.payload, hashlib.sha256
+        ).hexdigest()
+
+    def test_same_webhook_delivered_twice_extends_expiry_once(self):
+        today = timezone.localdate()
+        first = self.client.post(
+            self.url, data=self.payload, content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE=self.signature,
+        )
+        second = self.client.post(
+            self.url, data=self.payload, content_type='application/json',
+            HTTP_X_RAZORPAY_SIGNATURE=self.signature,
+        )
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+
+        self.locker.refresh_from_db()
+        self.assertEqual(self.locker.plan_type, 'paid')
+        self.assertEqual(self.locker.premium_expires_at, today + timedelta(days=365))

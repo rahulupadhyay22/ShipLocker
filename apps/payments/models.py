@@ -55,6 +55,7 @@ class Payment(models.Model):
     PAYMENT_TYPE_CHOICES = [
         ('shipment', 'Shipment'),
         ('storage_batch', 'Storage Batch'),
+        ('premium_subscription', 'Premium Subscription'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

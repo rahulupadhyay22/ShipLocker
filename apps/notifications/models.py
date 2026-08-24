@@ -1,4 +1,5 @@
 import copy
+from decimal import Decimal
 
 from django.db import models
 from django.core.cache import cache
@@ -222,7 +223,11 @@ class AppSettings(models.Model):
         default=True,
         help_text="Use Razorpay test mode"
     )
-    
+    premium_annual_price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('2999.00'),
+        help_text="Annual price (INR) for CamelTrunk Premium self-serve checkout"
+    )
+
     # ===========================
     # SUPABASE STORAGE
     # ===========================
