@@ -393,11 +393,14 @@ def _admin_request(user):
 
 
 class _FakeQuotationForm:
-    """Stand-in for a bound ModelForm — save_related only touches .instance
-    and .save_m2m(), so a full form/formset round-trip isn't needed to
-    exercise the real total-amount computation in save_related."""
-    def __init__(self, instance):
+    """Stand-in for a bound ModelForm — save_related only touches .instance,
+    .changed_data, and .save_m2m(), so a full form/formset round-trip isn't
+    needed to exercise the real total-amount computation in save_related.
+    changed_data defaults to empty (field untouched this submission) — tests
+    that need to exercise the manual-override gating pass changed_data explicitly."""
+    def __init__(self, instance, changed_data=None):
         self.instance = instance
+        self.changed_data = changed_data if changed_data is not None else []
 
     def save_m2m(self):
         pass
@@ -569,7 +572,7 @@ class QuotationTotalAmountForPurchaseTests(TestCase):
         self.req = _make_request(self.locker, status='searching')  # custom_request
         self.quotation = _make_quotation(
             self.req, quotation_type='purchase',
-            domestic_shipping_amount=Decimal('50'), service_fee_amount=Decimal('100'),
+            domestic_shipping_amount=Decimal('50'), service_fee_standard_amount=Decimal('100'),
             payment_gateway_charge=Decimal('10'),
             research_fee_amount=Decimal('999'), travel_expense_amount=Decimal('999'),
         )
@@ -1390,7 +1393,7 @@ class Spec10VerifyTotalAmountIncludesTravelExpenseTests(TestCase):
         req = _make_request(locker, status='searching')  # custom_request
         quotation = _make_quotation(
             req, quotation_type='purchase',
-            domestic_shipping_amount=Decimal('50'), service_fee_amount=Decimal('100'),
+            domestic_shipping_amount=Decimal('50'), service_fee_standard_amount=Decimal('100'),
             payment_gateway_charge=Decimal('10'), travel_expense_amount=Decimal('75'),
         )
         PersonalShopQuotationLineItem.objects.create(
@@ -1406,7 +1409,7 @@ class Spec10VerifyTotalAmountIncludesTravelExpenseTests(TestCase):
         req = _make_request(locker, status='searching')
         quotation = _make_quotation(
             req, quotation_type='purchase',
-            domestic_shipping_amount=Decimal('50'), service_fee_amount=Decimal('100'),
+            domestic_shipping_amount=Decimal('50'), service_fee_standard_amount=Decimal('100'),
             payment_gateway_charge=Decimal('10'), travel_expense_amount=Decimal('0'),
         )
         PersonalShopQuotationLineItem.objects.create(
@@ -1600,7 +1603,7 @@ class Spec10VerifyResearchFeeThenPurchaseCycleTests(TestCase):
 
 
 class ServiceFeeHelpTextReflectsLiveServiceChargeTests(TestCase):
-    """Code-review fix: the service_fee_amount admin help text used to be a
+    """Code-review fix: the service_fee_standard_amount admin help text used to be a
     hardcoded rate-table string that would silently go stale the moment an
     admin edited a rate on the Service Charges page. It's now built live
     from ServiceCharge — this locks in that an edit actually shows up."""
@@ -1615,7 +1618,7 @@ class ServiceFeeHelpTextReflectsLiveServiceChargeTests(TestCase):
 
     def _help_text(self):
         form_class = self.admin_instance.get_form(self.factory_request, obj=None)
-        return form_class.base_fields['service_fee_amount'].help_text
+        return form_class.base_fields['service_fee_standard_amount'].help_text
 
     def test_help_text_reflects_current_product_link_rate(self):
         self.assertIn('product_link 5.00% (min ₹199.00)', self._help_text())
@@ -1669,3 +1672,228 @@ class PersonalShopImageStorageCleanupTests(TestCase):
         image.delete()  # must not raise
 
         self.assertFalse(PersonalShopImage.objects.filter(pk=image_pk).exists())
+
+
+# ---------------------------------------------------------------------------
+# Phase B — TrunkAssist quotation discount (spec 11).
+# ---------------------------------------------------------------------------
+
+
+def _quotation_form_data(quotation, **overrides):
+    """Full valid POST-style data dict for PersonalShopQuotationAdminForm,
+    seeded from the quotation's current field values. Used to build a REAL
+    bound ModelForm (not a bare mock) so form.changed_data reflects an actual
+    field diff — the thing save_related's manual-override gating depends on."""
+    data = {
+        'request': str(quotation.request_id),
+        'quotation_type': quotation.quotation_type,
+        'domestic_shipping_amount': str(quotation.domestic_shipping_amount),
+        'service_fee_amount': str(quotation.service_fee_amount),
+        'service_fee_standard_amount': str(quotation.service_fee_standard_amount),
+        'research_fee_amount': str(quotation.research_fee_amount),
+        'travel_expense_amount': str(quotation.travel_expense_amount),
+        'payment_gateway_charge': str(quotation.payment_gateway_charge),
+        'subtotal': str(quotation.subtotal),
+        'total_amount': str(quotation.total_amount),
+        'valid_until': quotation.valid_until.strftime('%Y-%m-%d %H:%M:%S'),
+        'status': quotation.status,
+    }
+    data.update(overrides)
+    return data
+
+
+class PremiumDiscountAmountNeverNegativeTests(TestCase):
+    """premium_discount_amount = max(0, standard - actual) — must never go
+    negative even in a degenerate state where the actual fee somehow exceeds
+    the standard fee (e.g. a research_fee quotation, which never touches
+    either field, so both sit at their shared default of 0)."""
+
+    def test_zero_on_untouched_research_fee_quotation(self):
+        locker = _make_locker('discount-never-negative-research@example.com')
+        req = _make_request(locker, status='reviewing')  # custom_request
+        quotation = _make_quotation(req, quotation_type='research_fee')
+        self.assertEqual(quotation.service_fee_standard_amount, Decimal('0'))
+        self.assertEqual(quotation.service_fee_amount, Decimal('0'))
+        self.assertEqual(quotation.premium_discount_amount, Decimal('0.00'))
+
+    def test_never_negative_even_if_actual_exceeds_standard(self):
+        # Degenerate/hand-edited state: service_fee_amount > service_fee_standard_amount.
+        # The max(0, ...) guard must clamp this rather than surface a negative "discount".
+        locker = _make_locker('discount-never-negative-degenerate@example.com')
+        req = _make_request(locker, status='reviewing')
+        quotation = _make_quotation(
+            req, quotation_type='purchase',
+            service_fee_standard_amount=Decimal('50'), service_fee_amount=Decimal('100'),
+        )
+        self.assertEqual(quotation.premium_discount_amount, Decimal('0.00'))
+
+
+class RefreshServiceFeeDiscountTests(TestCase):
+    """refresh_service_fee_discount() recomputes service_fee_amount/total_amount
+    from service_fee_standard_amount against the locker's CURRENT is_premium
+    state — but only while status == 'pending' and quotation_type == 'purchase'."""
+
+    def setUp(self):
+        self.locker = _make_locker('refresh-discount-test@example.com')
+        self.req = _make_request(self.locker, status='quotation_ready')
+
+    def _quotation(self, **extra):
+        return _make_quotation(
+            self.req, quotation_type='purchase',
+            service_fee_standard_amount=Decimal('100.00'), service_fee_amount=Decimal('100.00'),
+            **extra,
+        )
+
+    def test_noop_when_status_not_pending(self):
+        quotation = self._quotation(status='approved')
+        self.locker.plan_type = 'paid'
+        self.locker.save()
+
+        quotation.refresh_service_fee_discount()
+        quotation.refresh_from_db()
+        self.assertEqual(quotation.service_fee_amount, Decimal('100.00'))
+
+    def test_noop_when_quotation_type_not_purchase(self):
+        req = _make_request(self.locker, status='reviewing')  # custom_request
+        quotation = _make_quotation(
+            req, quotation_type='research_fee', status='pending',
+            service_fee_standard_amount=Decimal('100.00'), service_fee_amount=Decimal('100.00'),
+        )
+        self.locker.plan_type = 'paid'
+        self.locker.save()
+
+        quotation.refresh_service_fee_discount()
+        quotation.refresh_from_db()
+        self.assertEqual(quotation.service_fee_amount, Decimal('100.00'))
+
+    def test_recomputes_against_current_plan_free_to_premium_upgrade(self):
+        quotation = self._quotation(status='pending')
+        PersonalShopQuotationLineItem.objects.create(
+            quotation=quotation, name='Item', qty=1, unit_amount=Decimal('200'),
+        )
+        # Still free -> no discount, fee stays at the standard amount.
+        quotation.refresh_service_fee_discount()
+        quotation.refresh_from_db()
+        self.assertEqual(quotation.service_fee_amount, Decimal('100.00'))
+
+        # Upgrade to Premium -> 25% discount now applies.
+        self.locker.plan_type = 'paid'
+        self.locker.save()
+
+        quotation.refresh_service_fee_discount()
+        quotation.refresh_from_db()
+        self.assertEqual(quotation.service_fee_amount, Decimal('75.00'))
+        self.assertEqual(quotation.total_amount, Decimal('200') + Decimal('75.00'))
+
+    def test_approved_quotation_fee_unchanged_after_later_plan_upgrade(self):
+        quotation = self._quotation(status='approved')
+        original_fee = quotation.service_fee_amount
+
+        self.locker.plan_type = 'paid'
+        self.locker.save()
+
+        quotation.refresh_service_fee_discount()
+        quotation.refresh_from_db()
+        self.assertEqual(quotation.service_fee_amount, original_fee)
+
+
+class AdminSaveRelatedServiceFeeDiscountTests(TestCase):
+    """Admin save_related — a real bound PersonalShopQuotationAdminForm drives
+    form.changed_data, so these exercise the actual manual-override gating
+    logic rather than a bare mock's .instance-only stand-in."""
+
+    def setUp(self):
+        self.locker = _make_locker('admin-save-related-discount@example.com')
+        self.locker.plan_type = 'paid'  # Premium, so the 25% discount is live.
+        self.locker.save()
+        self.req = _make_request(self.locker, status='reviewing')  # custom_request
+        self.quotation = _make_quotation(
+            self.req, quotation_type='purchase', status='pending',
+            service_fee_standard_amount=Decimal('499.00'),
+        )
+        self.admin_instance = PersonalShopQuotationAdmin(PersonalShopQuotation, django_admin.site)
+        self.staff = User.objects.create(email='admin-save-related-staff@example.com', is_staff=True)
+        override_perm = Permission.objects.get(
+            codename='override_service_fee',
+            content_type=ContentType.objects.get_for_model(PersonalShopQuotation),
+        )
+        self.staff.user_permissions.add(override_perm)
+        self.staff_no_perm = User.objects.create(email='admin-save-related-staff-no-perm@example.com', is_staff=True)
+
+    def _bound_form(self, **overrides):
+        data = _quotation_form_data(self.quotation, **overrides)
+        form = PersonalShopQuotationAdminForm(data=data, instance=self.quotation)
+        self.assertTrue(form.is_valid(), form.errors)
+        # Mirrors ModelAdmin's real order: save_model (form.save(commit=False)
+        # + obj.save()) commits the form's own fields and wires up save_m2m()
+        # before save_related() runs.
+        form.save(commit=False)
+        form.instance.save()
+        return form
+
+    def test_save_related_derives_discounted_fee_for_premium_locker(self):
+        form = self._bound_form(service_fee_standard_amount='499.00')
+        self.admin_instance.save_related(_admin_request(self.staff), form, [], change=True)
+        self.quotation.refresh_from_db()
+        # 25% off 499 = 124.75 discount -> 374.25 final.
+        self.assertEqual(self.quotation.service_fee_amount, Decimal('374.25'))
+        self.assertEqual(self.quotation.total_amount, self.quotation.service_fee_amount)
+
+    def test_save_related_twice_with_no_changes_is_idempotent(self):
+        form1 = self._bound_form(service_fee_standard_amount='499.00')
+        self.admin_instance.save_related(_admin_request(self.staff), form1, [], change=True)
+        self.quotation.refresh_from_db()
+        first_fee = self.quotation.service_fee_amount
+        first_total = self.quotation.total_amount
+        first_override_flag = self.quotation.service_fee_manual_override
+
+        # Second save: identical data, nothing touched.
+        form2 = self._bound_form(service_fee_standard_amount=str(self.quotation.service_fee_standard_amount))
+        self.assertNotIn('service_fee_standard_amount', form2.changed_data)
+        self.admin_instance.save_related(_admin_request(self.staff), form2, [], change=True)
+        self.quotation.refresh_from_db()
+
+        self.assertEqual(self.quotation.service_fee_amount, first_fee)
+        self.assertEqual(self.quotation.total_amount, first_total)
+        self.assertEqual(self.quotation.service_fee_manual_override, first_override_flag)
+
+    def test_permission_gate_reverts_override_without_permission(self):
+        suggested = pricing.suggested_service_fee(self.req.request_type, Decimal('0'))
+        custom_value = suggested + Decimal('50')
+        form = self._bound_form(service_fee_standard_amount=str(custom_value))
+        self.admin_instance.save_related(_admin_request(self.staff_no_perm), form, [], change=True)
+        self.quotation.refresh_from_db()
+        self.assertEqual(self.quotation.service_fee_standard_amount, suggested)
+        self.assertFalse(self.quotation.service_fee_manual_override)
+
+    def test_permission_gate_accepts_override_with_permission(self):
+        suggested = pricing.suggested_service_fee(self.req.request_type, Decimal('0'))
+        custom_value = suggested + Decimal('50')
+        form = self._bound_form(service_fee_standard_amount=str(custom_value))
+        self.admin_instance.save_related(_admin_request(self.staff), form, [], change=True)
+        self.quotation.refresh_from_db()
+        self.assertEqual(self.quotation.service_fee_standard_amount, custom_value)
+        self.assertTrue(self.quotation.service_fee_manual_override)
+
+    def test_stale_catalog_change_does_not_mislabel_untouched_quotation(self):
+        from apps.content.models import ServiceCharge
+
+        suggested = pricing.suggested_service_fee(self.req.request_type, Decimal('0'))
+        form = self._bound_form(service_fee_standard_amount=str(suggested))
+        self.admin_instance.save_related(_admin_request(self.staff), form, [], change=True)
+        self.quotation.refresh_from_db()
+        self.assertFalse(self.quotation.service_fee_manual_override)
+
+        # Catalog price for this request_type moves — the previously-saved
+        # value no longer matches a freshly-derived "suggested" figure.
+        code = pricing.REQUEST_TYPE_TO_SERVICE_CHARGE_CODE[self.req.request_type]
+        ServiceCharge.objects.filter(code=code).update(amount=Decimal('9999.00'))
+
+        # Re-save with service_fee_standard_amount untouched.
+        form2 = self._bound_form(service_fee_standard_amount=str(self.quotation.service_fee_standard_amount))
+        self.assertNotIn('service_fee_standard_amount', form2.changed_data)
+        self.admin_instance.save_related(_admin_request(self.staff), form2, [], change=True)
+        self.quotation.refresh_from_db()
+
+        self.assertFalse(self.quotation.service_fee_manual_override)
+        self.assertEqual(self.quotation.service_fee_standard_amount, suggested)

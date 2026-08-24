@@ -257,6 +257,7 @@ class PersonalShopQuotationAdmin(ModelAdmin):
     list_filter = ['status', 'quotation_type']
     search_fields = ['request__display_id']
     autocomplete_fields = ['request']
+    readonly_fields = ['service_fee_amount']
     inlines = [PersonalShopQuotationLineItemInline]
 
     class Media:
@@ -293,16 +294,21 @@ class PersonalShopQuotationAdmin(ModelAdmin):
             except InvalidOperation:
                 product_value = None
         fee = pricing.suggested_service_fee(shop_request.request_type, product_value)
+        premium_preview = None
+        if fee is not None and shop_request.locker.is_premium:
+            final, _discount = shop_request.locker.apply_service_fee_discount(fee)
+            premium_preview = str(final)
         return JsonResponse({
             'fee': str(fee) if fee is not None else None,
             'request_type': shop_request.request_type,
             'allowed_quotation_types': allowed_quotation_types_for(shop_request.request_type),
+            'premium_preview': premium_preview,
         })
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
-        if 'service_fee_amount' in form.base_fields:
-            form.base_fields['service_fee_amount'].help_text = (
+        if 'service_fee_standard_amount' in form.base_fields:
+            form.base_fields['service_fee_standard_amount'].help_text = (
                 "Auto-suggested when you pick a request above — you can always override. "
                 f"Current rates: {self._current_rate_summary()}"
             )
@@ -335,6 +341,42 @@ class PersonalShopQuotationAdmin(ModelAdmin):
         obj = form.instance
         subtotal = sum((item.line_total for item in obj.line_items.all()), start=0)
         obj.subtotal = subtotal
+
+        if obj.quotation_type == 'purchase':
+            from . import pricing as ps_pricing
+
+            # Only re-evaluate manual-override status when the editable field was
+            # actually touched THIS submission (form.changed_data), not by
+            # re-deriving `suggested` fresh on every save — the latter mislabels an
+            # untouched old quotation as "manually overridden" the moment the
+            # ServiceCharge catalog price changes later, since `suggested` would no
+            # longer match a value nobody edited.
+            if 'service_fee_standard_amount' in form.changed_data:
+                suggested = ps_pricing.suggested_service_fee(obj.request.request_type, subtotal)
+                is_override = suggested is not None and obj.service_fee_standard_amount != suggested
+                if is_override and not request.user.has_perm('personal_shop.override_service_fee'):
+                    # Staff without the permission can't set a custom fee — revert
+                    # to the catalog suggestion rather than hard-blocking the save
+                    # (same UX shape as mark_searching's permission-gated branch).
+                    if suggested is not None:
+                        obj.service_fee_standard_amount = suggested
+                    is_override = False
+                    self.message_user(
+                        request,
+                        "Custom service fee reverted to the standard suggested amount — overriding it "
+                        "requires the personal_shop.override_service_fee permission.",
+                        level='warning',
+                    )
+                obj.service_fee_manual_override = is_override
+            # else: field untouched this submission — service_fee_manual_override
+            # stays exactly what it already was; nothing to re-derive.
+
+            locker = getattr(obj.request, 'locker', None)
+            if locker is not None:
+                obj.service_fee_amount, _discount = locker.apply_service_fee_discount(
+                    obj.service_fee_standard_amount
+                )
+
         # Total is computed per quotation_type, not a flat sum of every field —
         # research_fee/expense_advance are standalone upfront fees charged before
         # any shipping/purchase happens, so shipping/gateway/product costs don't
@@ -355,7 +397,13 @@ class PersonalShopQuotationAdmin(ModelAdmin):
         if obj.status == 'expired' and obj.valid_until > timezone.now():
             obj.status = 'pending'
 
-        obj.save(update_fields=['subtotal', 'total_amount', 'status'])
+        obj.save(update_fields=[
+            'subtotal', 'total_amount', 'status', 'service_fee_amount', 'service_fee_manual_override',
+            # service_fee_standard_amount must be saved too — the permission-gate
+            # revert branch above mutates it in memory (back to the catalog
+            # suggestion) and that change would otherwise be silently dropped.
+            'service_fee_standard_amount',
+        ])
 
         if obj.status == 'pending':
             with transaction.atomic():

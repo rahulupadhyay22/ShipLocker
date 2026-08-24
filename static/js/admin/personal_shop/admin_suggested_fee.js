@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    var feeField = document.getElementById('id_service_fee_amount');
+    var feeField = document.getElementById('id_service_fee_standard_amount');
     var researchFeeField = document.getElementById('id_research_fee_amount');
     var totalField = document.getElementById('id_total_amount');
     var subtotalField = document.getElementById('id_subtotal');
@@ -95,12 +95,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Which fields are relevant per quotation_type — mirrors the total_amount
     // formula exactly: a field hidden here is a field that formula ignores.
     var FIELDS_BY_TYPE = {
-        purchase: ['id_domestic_shipping_amount', 'id_service_fee_amount', 'id_payment_gateway_charge', 'id_subtotal'],
+        purchase: ['id_domestic_shipping_amount', 'id_service_fee_standard_amount', 'id_payment_gateway_charge', 'id_subtotal'],
         research_fee: ['id_research_fee_amount'],
         expense_advance: ['id_travel_expense_amount'],
     };
     var ALL_TOGGLABLE_FIELD_IDS = [
-        'id_domestic_shipping_amount', 'id_service_fee_amount', 'id_research_fee_amount',
+        'id_domestic_shipping_amount', 'id_service_fee_standard_amount', 'id_research_fee_amount',
         'id_travel_expense_amount', 'id_payment_gateway_charge', 'id_subtotal',
     ];
 
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // standalone upfront fees, nothing else factored in; purchase adds the
     // line-items subtotal on top of shipping/service-fee/gateway-charge.
     var AMOUNT_FIELD_IDS = [
-        'id_domestic_shipping_amount', 'id_service_fee_amount',
+        'id_domestic_shipping_amount', 'id_service_fee_standard_amount',
         'id_research_fee_amount', 'id_travel_expense_amount', 'id_payment_gateway_charge',
     ];
 
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             total = subtotal
                 + fieldValue('id_domestic_shipping_amount')
-                + fieldValue('id_service_fee_amount')
+                + fieldValue('id_service_fee_standard_amount')
                 + fieldValue('id_payment_gateway_charge');
         }
         totalField.value = total.toFixed(2);

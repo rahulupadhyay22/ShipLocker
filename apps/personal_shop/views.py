@@ -379,6 +379,8 @@ class PersonalShopQuotationView(LoginRequiredMixin, LockerOwnershipMixin, Single
             obj.status = 'quotation_expired'
             obj.save()
 
+        quotation.refresh_service_fee_discount()
+
         remaining = quotation.valid_until - timezone.now()
         if remaining.total_seconds() > 0:
             hours, rem = divmod(int(remaining.total_seconds()), 3600)
@@ -433,6 +435,8 @@ class CreatePersonalShopPaymentOrderView(LoginRequiredMixin, LockerOwnershipMixi
             obj.save()
             return JsonResponse({'error': 'Quotation expired'}, status=400)
 
+        quotation.refresh_service_fee_discount()
+
         service = RazorpayService()
         if not service.is_enabled:
             return JsonResponse({'error': 'Payments not configured'}, status=503)
@@ -485,6 +489,11 @@ class CreatePersonalShopPaymentOrderView(LoginRequiredMixin, LockerOwnershipMixi
 
             obj.status = 'payment_pending'
             obj.save()
+
+        security.info(
+            f"Secure action: CreatePersonalShopPaymentOrderView by {request.user.email} "
+            f"request={obj.display_id} amount={amount} premium_discount={quotation.premium_discount_amount}"
+        )
 
         return JsonResponse({
             'order_id': order['id'],

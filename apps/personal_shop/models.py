@@ -306,6 +306,8 @@ class PersonalShopQuotation(models.Model):
     )
     domestic_shipping_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     service_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    service_fee_standard_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    service_fee_manual_override = models.BooleanField(default=False)
     research_fee_amount = models.DecimalField(
         max_digits=10, decimal_places=2, default=0,
         validators=[MinValueValidator(Decimal('0'))],
@@ -332,6 +334,9 @@ class PersonalShopQuotation(models.Model):
                 condition=models.Q(status='pending'),
                 name='uniq_pending_quotation_per_request',
             ),
+        ]
+        permissions = [
+            ('override_service_fee', 'Can override the auto-suggested TrunkAssist service fee'),
         ]
 
     def __init__(self, *args, **kwargs):
@@ -375,6 +380,31 @@ class PersonalShopQuotation(models.Model):
     @property
     def is_expired(self):
         return self.status == 'pending' and timezone.now() > self.valid_until
+
+    @property
+    def premium_discount_amount(self):
+        return max(Decimal('0.00'), self.service_fee_standard_amount - self.service_fee_amount)
+
+    def refresh_service_fee_discount(self):
+        """Recompute service_fee_amount/total_amount from service_fee_standard_amount
+        against the request's *current* locker plan. No-op once status != 'pending'
+        (locked historical charge) or quotation_type != 'purchase' (fee unused).
+        request.locker is a required, on_delete=CASCADE FK (never null/dangling —
+        unlike Shipment.user.locker, which is a lazily-created reverse OneToOne),
+        so no getattr guard is structurally necessary here; one is added anyway
+        for visual parity with the identical Phase C pattern."""
+        if self.status != 'pending' or self.quotation_type != 'purchase':
+            return
+        locker = getattr(self.request, 'locker', None)
+        if locker is None:
+            return
+        new_fee, _discount = locker.apply_service_fee_discount(self.service_fee_standard_amount)
+        if new_fee == self.service_fee_amount:
+            return
+        self.service_fee_amount = new_fee
+        subtotal = sum((item.line_total for item in self.line_items.all()), start=Decimal('0'))
+        self.total_amount = subtotal + self.domestic_shipping_amount + self.service_fee_amount + self.payment_gateway_charge
+        self.save(update_fields=['service_fee_amount', 'total_amount'])
 
     @property
     def is_refundable(self):
