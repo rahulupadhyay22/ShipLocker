@@ -1,5 +1,6 @@
 import secrets
 import uuid
+from decimal import Decimal, ROUND_HALF_UP
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.conf import settings
@@ -80,6 +81,8 @@ class Locker(models.Model):
     """Virtual locker assigned to each user."""
 
     PLAN_CHOICES = [('free', 'Free'), ('paid', 'Paid')]
+    PREMIUM_SERVICE_FEE_DISCOUNT_RATE = Decimal('0.25')
+    PREMIUM_SHIPPING_DISCOUNT_RATE = Decimal('0.05')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='locker')
@@ -127,6 +130,29 @@ class Locker(models.Model):
         except Exception:
             pass
         return "+91 9876543210"
+
+    @property
+    def is_premium(self):
+        """Return True if locker has paid plan."""
+        return self.plan_type == 'paid'
+
+    def apply_service_fee_discount(self, standard_amount):
+        """Apply 25% discount to service fee if premium; returns (discounted_amount, discount_amount)."""
+        if not self.is_premium or standard_amount is None:
+            return standard_amount, Decimal('0.00')
+        discount = (standard_amount * self.PREMIUM_SERVICE_FEE_DISCOUNT_RATE).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return (standard_amount - discount), discount
+
+    def apply_shipping_discount(self, standard_amount):
+        """Apply 5% discount to shipping if premium; returns (discounted_amount, discount_amount)."""
+        if not self.is_premium or standard_amount is None:
+            return standard_amount, Decimal('0.00')
+        discount = (standard_amount * self.PREMIUM_SHIPPING_DISCOUNT_RATE).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return (standard_amount - discount), discount
+
+    def premium_free_service(self):
+        """Return True if locker has paid plan (eligible for free service features)."""
+        return self.is_premium
 
 
 class KYCDocument(models.Model):

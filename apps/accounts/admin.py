@@ -52,11 +52,25 @@ class LockerAdmin(ModelAdmin):
     search_fields = ['locker_id', 'user__email']
     readonly_fields = ['locker_id', 'created_at']
     raw_id_fields = ['user']
-    
+
     def parcel_count(self, obj):
         count = obj.parcels.count()
         return format_html('<strong>{}</strong>', count)
     parcel_count.short_description = 'Parcels'
+
+    def save_model(self, request, obj, form, change):
+        old_plan_type = None
+        if change:
+            old_plan_type = Locker.objects.get(pk=obj.pk).plan_type
+        super().save_model(request, obj, form, change)
+        if change and old_plan_type is not None and old_plan_type != obj.plan_type:
+            from apps.locker.services.batch_billing import apply_upgrade, apply_downgrade, get_open_batch
+            from django.utils import timezone
+            today = timezone.localdate()
+            if obj.plan_type == 'paid':
+                apply_upgrade(obj, today, active_batch=get_open_batch(obj))
+            else:
+                apply_downgrade(obj, today)
 
 
 KYC_STATUS_COLORS = {
