@@ -153,20 +153,26 @@ class RazorpayService:
         return is_valid
 
 
-def _get_consolidation_fee_amount() -> Decimal:
-    """Resolve the consolidation fee from active service charges.
-
-    Looks up the active ServiceCharge with code='consolidation_fee' (a stable
-    key, not a name-text match — renaming the row in admin no longer breaks
-    this lookup). Not configured -> 0 (fee simply isn't shown/charged).
-    """
+def _lookup_consolidation_fee_standard() -> Decimal:
+    """Resolve the standard (undiscounted) consolidation fee from active
+    service charges. Looks up the active ServiceCharge with
+    code='consolidation_fee' (a stable key, not a name-text match — renaming
+    the row in admin no longer breaks this lookup). Not configured -> 0 (fee
+    simply isn't shown/charged)."""
     from apps.content.models import ServiceCharge
 
     charge = ServiceCharge.objects.filter(is_active=True, code='consolidation_fee').first()
-    if charge:
-        return Decimal(str(charge.compute()))
+    return Decimal(str(charge.compute())) if charge else Decimal('0.00')
 
-    return Decimal('0.00')
+
+def _get_consolidation_fee_amount(locker) -> Decimal:
+    """Required `locker` param — a forgotten call site fails loudly (TypeError)
+    rather than silently overcharging a Premium user. Pass a possibly-None
+    locker via getattr(user, 'locker', None); free/premium is FREE, not %-off."""
+    standard = _lookup_consolidation_fee_standard()
+    if locker is not None and locker.premium_free_service():
+        return Decimal('0.00')
+    return standard
 
 
 def _financial_year_label(invoice_date):

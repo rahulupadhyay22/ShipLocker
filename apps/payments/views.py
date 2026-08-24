@@ -66,6 +66,7 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         shipment = get_object_or_404(
             Shipment, pk=shipment_pk, user=request.user
         )
+        shipment.refresh_shipping_discount()
 
         if not shipment.shipping_cost and shipment.payment_status != 'paid':
             return JsonResponse({'error': 'Shipping cost not set'}, status=400)
