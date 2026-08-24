@@ -81,7 +81,12 @@ class MidBatchTopUpNoThresholdCrossTests(TestCase):
     same batch, count = 15, rate unchanged (still ₹100/day)."""
 
     def test_top_up_within_same_rate_tier(self):
-        locker = _make_locker('t2@example.com', 'paid')
+        # Free (not paid) plan deliberately: this test is about rate-tier
+        # math on the parcel-count crossing, not the Premium storage
+        # discount (Task 4) — 'paid' would apply a 20% discount and break
+        # the ₹100.00 assertion below for reasons unrelated to this test's
+        # purpose.
+        locker = _make_locker('t2@example.com', 'free')
         today = date(2026, 1, 1)
         batch = bb.create_batch(locker, today)
         for _ in range(9):
@@ -105,7 +110,9 @@ class MidBatchTopUpThresholdCrossTests(TestCase):
     jumps to ₹150/day same day, no new batch."""
 
     def test_top_up_crosses_rate_tier_same_day(self):
-        locker = _make_locker('t3@example.com', 'paid')
+        # Free (not paid) plan deliberately — see comment in
+        # MidBatchTopUpNoThresholdCrossTests above.
+        locker = _make_locker('t3@example.com', 'free')
         today = date(2026, 1, 1)
         batch = bb.create_batch(locker, today)
         for _ in range(19):
@@ -393,6 +400,47 @@ class AbandonmentClockResetOnClosureTests(TestCase):
 
         self.assertIsNone(batch.first_unpaid_charge_date)
         self.assertFalse(bb.check_abandonment(batch, near_threshold + timedelta(days=10)))
+
+
+class StorageDiscountBillingTests(TestCase):
+    """Task 4 (Phase D): Premium lockers get 20% off the daily BatchCharge
+    once the free-storage period is used up; Free lockers get no discount;
+    the free-period gating logic itself is completely unchanged."""
+
+    def test_premium_locker_gets_discounted_amount_full_amount_standard(self):
+        locker = _make_locker('premium-storage@example.com', 'paid')
+        today = date(2026, 1, 1)
+        batch = bb.create_batch(locker, today)
+        expiry = batch.free_storage_end_date
+
+        charge = bb.run_daily_billing(batch, expiry)
+        self.assertIsNotNone(charge)
+        self.assertEqual(charge.amount_standard, Decimal('100.00'))
+        self.assertEqual(charge.amount, Decimal('80.00'))  # 20% off ₹100
+
+    def test_free_locker_gets_no_discount(self):
+        locker = _make_locker('free-storage@example.com', 'free')
+        UserQuota.objects.create(user=locker.user, annual_quota=0, passes_remaining=0, passes_used=0, quota_year=2026)
+        today = date(2026, 1, 1)
+        batch = bb.create_batch(locker, today)
+        self.assertEqual(batch.batch_status, 'active_chargeable')  # quota exhausted, chargeable immediately
+
+        charge = bb.run_daily_billing(batch, today)
+        self.assertIsNotNone(charge)
+        self.assertEqual(charge.amount_standard, Decimal('100.00'))
+        self.assertEqual(charge.amount, Decimal('100.00'))  # no discount
+
+    def test_still_within_free_period_no_charge_created_at_all(self):
+        """Unchanged behavior proof: a batch still inside its free period
+        must not get a BatchCharge, discounted or otherwise."""
+        locker = _make_locker('premium-freeperiod@example.com', 'paid')
+        today = date(2026, 1, 1)
+        batch = bb.create_batch(locker, today)
+        self.assertEqual(batch.batch_status, 'active_free')
+
+        charge = bb.run_daily_billing(batch, today + timedelta(days=5))
+        self.assertIsNone(charge)
+        self.assertEqual(BatchCharge.objects.filter(batch=batch).count(), 0)
 
 
 # ---------------------------------------------------------------------------

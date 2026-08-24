@@ -83,6 +83,7 @@ class Locker(models.Model):
     PLAN_CHOICES = [('free', 'Free'), ('paid', 'Paid')]
     PREMIUM_SERVICE_FEE_DISCOUNT_RATE = Decimal('0.25')
     PREMIUM_SHIPPING_DISCOUNT_RATE = Decimal('0.05')
+    PREMIUM_STORAGE_DISCOUNT_RATE = Decimal('0.20')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='locker')
@@ -148,6 +149,13 @@ class Locker(models.Model):
         if not self.is_premium or standard_amount is None:
             return standard_amount, Decimal('0.00')
         discount = (standard_amount * self.PREMIUM_SHIPPING_DISCOUNT_RATE).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return (standard_amount - discount), discount
+
+    def apply_storage_discount(self, standard_amount):
+        """Apply 20% discount to daily storage charge if premium; returns (discounted_amount, discount_amount)."""
+        if not self.is_premium or standard_amount is None:
+            return standard_amount, Decimal('0.00')
+        discount = (standard_amount * self.PREMIUM_STORAGE_DISCOUNT_RATE).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         return (standard_amount - discount), discount
 
     def premium_free_service(self):

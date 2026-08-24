@@ -108,6 +108,34 @@ class LockerDiscountTests(TestCase):
         self.assertIsNone(discounted)
         self.assertEqual(discount, Decimal('0.00'))
 
+    def test_apply_storage_discount_free_plan_no_discount(self):
+        """Free plan should return amount unchanged with zero discount."""
+        amount = Decimal('100.00')
+        discounted, discount = self.free_locker.apply_storage_discount(amount)
+        self.assertEqual(discounted, Decimal('100.00'))
+        self.assertEqual(discount, Decimal('0.00'))
+
+    def test_apply_storage_discount_paid_plan_20_percent(self):
+        """Paid plan should return 80% of amount with 20% discount."""
+        paid_locker = Locker.objects.create(
+            user=User.objects.create(email='paid8@example.com', is_active=True),
+            plan_type='paid'
+        )
+        amount = Decimal('100.00')
+        discounted, discount = paid_locker.apply_storage_discount(amount)
+        self.assertEqual(discounted, Decimal('80.00'))
+        self.assertEqual(discount, Decimal('20.00'))
+
+    def test_apply_storage_discount_none_amount(self):
+        """None amount should return None and zero discount."""
+        paid_locker = Locker.objects.create(
+            user=User.objects.create(email='paid9@example.com', is_active=True),
+            plan_type='paid'
+        )
+        discounted, discount = paid_locker.apply_storage_discount(None)
+        self.assertIsNone(discounted)
+        self.assertEqual(discount, Decimal('0.00'))
+
     def test_premium_free_service_returns_plan_status(self):
         """premium_free_service should return True for paid, False for free."""
         self.assertFalse(self.free_locker.premium_free_service())

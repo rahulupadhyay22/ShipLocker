@@ -322,3 +322,44 @@ class PersonalShopRequestPaidSignalTests(TestCase):
             self.request.save()  # must not raise
 
         self.assertEqual(PersonalShopInvoice.objects.filter(quotation=self.quotation).count(), 0)
+
+
+from datetime import date
+
+from apps.locker.models import Batch
+from apps.payments.models import BatchCharge
+
+
+def _make_batch_charge(locker, amount, amount_standard, charge_date=None):
+    batch = Batch.objects.create(
+        locker=locker, plan_type_at_creation=locker.plan_type, quota_year=2026,
+        batch_status='active_chargeable', first_parcel_received_date=date(2026, 1, 1),
+        free_storage_end_date=None, current_parcel_count=1,
+    )
+    return BatchCharge.objects.create(
+        batch=batch, charge_date=charge_date or date(2026, 1, 1),
+        parcel_count_snapshot=1, amount=amount, amount_standard=amount_standard,
+    )
+
+
+class BatchChargeDiscountAmountTests(TestCase):
+    """BatchCharge.discount_amount: 0 for pre-existing rows (amount_standard
+    is NULL), computed correctly when both fields are set, never negative."""
+
+    def setUp(self):
+        self.user = User.objects.create(email='batchcharge-discount@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user, plan_type='paid')
+
+    def test_amount_standard_none_returns_zero(self):
+        charge = _make_batch_charge(self.locker, amount=Decimal('100.00'), amount_standard=None)
+        self.assertEqual(charge.discount_amount, Decimal('0.00'))
+
+    def test_computes_discount_when_both_set(self):
+        charge = _make_batch_charge(self.locker, amount=Decimal('80.00'), amount_standard=Decimal('100.00'))
+        self.assertEqual(charge.discount_amount, Decimal('20.00'))
+
+    def test_never_negative(self):
+        # amount > amount_standard should never happen in practice, but the
+        # property must not return a negative value if it somehow does.
+        charge = _make_batch_charge(self.locker, amount=Decimal('120.00'), amount_standard=Decimal('100.00'))
+        self.assertEqual(charge.discount_amount, Decimal('0.00'))

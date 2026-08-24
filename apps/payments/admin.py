@@ -104,7 +104,7 @@ class PaymentAdmin(ModelAdmin):
 @admin.register(BatchCharge)
 class BatchChargeAdmin(ModelAdmin):
     list_display = [
-        'batch', 'formatted_amount', 'charge_date',
+        'batch', 'formatted_amount', 'amount_standard', 'charge_date',
         'status_badge', 'payment', 'created_at'
     ]
     list_filter = ['status', 'charge_date']
