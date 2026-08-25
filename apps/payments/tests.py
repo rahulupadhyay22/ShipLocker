@@ -561,3 +561,128 @@ class RazorpayWebhookPremiumDoubleDeliveryTests(TestCase):
         self.locker.refresh_from_db()
         self.assertEqual(self.locker.plan_type, 'paid')
         self.assertEqual(self.locker.premium_expires_at, today + timedelta(days=365))
+
+
+import threading
+
+from django.test import Client, TransactionTestCase, skipUnlessDBFeature
+
+
+@skipUnlessDBFeature('has_select_for_update')
+class RazorpayWebhookConcurrentCaptureTests(TransactionTestCase):
+    """Genuine concurrency test for the RazorpayWebhookView.post fix (lock ->
+    check -> mutate, mirroring VerifyPaymentView), NOT just sequential
+    double-delivery (RazorpayWebhookPremiumDoubleDeliveryTests above already
+    covers that and is not what's broken here).
+
+    This repo's test database is a real hosted Postgres (Supabase, reached
+    via DATABASE_POOLER_URL / PgBouncer transaction pooling) — confirmed
+    empirically by running `manage.py test --keepdb`, which connects
+    successfully and runs migrations against it. Row-level locks taken with
+    select_for_update() are therefore real locks enforced by Postgres, not a
+    SQLite no-op. This test relies on that: it uses two real threads (each
+    gets its own DB connection, as Django connections are thread-local) and
+    TransactionTestCase (so writes actually commit and are visible across
+    connections, unlike plain TestCase's per-test rollback).
+
+    Mechanism: _mark_batch_charges_paid is patched so the first caller to
+    reach it (i.e. the first thread to win the SELECT ... FOR UPDATE lock and
+    enter the atomic block) blocks there on an Event, holding its transaction
+    -- and therefore the row lock -- open. Only once that thread is confirmed
+    to be holding the lock is the second thread started; its own
+    select_for_update() then must genuinely block at the database level until
+    the first thread's transaction commits. This is what would fail (both
+    threads reading status='pending' and both calling
+    _activate_premium_subscription, double-extending premium_expires_at) on
+    the unfixed code -- the unfixed code did the status check with a plain
+    unlocked .get() before ever entering transaction.atomic(), so there was no
+    lock to block thread two.
+
+    Environment caveat: being a TransactionTestCase, this class flushes every
+    table on teardown instead of rolling back (Django orders TransactionTestCase
+    classes after plain TestCase classes within one run, so this is harmless
+    within a single `manage.py test` invocation). But this repo's Postgres
+    test database can only be created with `--keepdb` (creating it fresh fails
+    on a template1 collation mismatch unrelated to this feature), so the flush
+    from this class persists into the *next* invocation's test database and
+    wipes data-migration-seeded rows other tests depend on (notably
+    apps/content/migrations/0010_seed_service_charge_codes.py's ServiceCharge
+    rows, which apps.personal_shop's SuggestedServiceFeePricingTests reads).
+    If a fresh `--keepdb` run shows unrelated pricing-lookup tests returning
+    None, re-apply that migration's seed_charges(apps, None) against the kept
+    test_postgres database before re-running."""
+
+    def setUp(self):
+        self.user = User.objects.create(email='premium-webhook-race@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user)
+        self.payment = Payment.objects.create(
+            user=self.user, amount=Decimal('2999.00'), payment_type='premium_subscription',
+            payment_method='razorpay', status='pending', razorpay_order_id='order_webhook_race',
+        )
+        settings = AppSettings.get_settings()
+        settings.razorpay_webhook_secret = 'test_webhook_secret_race'
+        settings.save()
+
+        self.url = reverse('payments:razorpay_webhook')
+        self.payload = json.dumps({
+            'event': 'payment.captured',
+            'payload': {'payment': {'entity': {'order_id': 'order_webhook_race', 'id': 'pay_webhook_race'}}},
+        }).encode('utf-8')
+        self.signature = hmac.new(
+            b'test_webhook_secret_race', self.payload, hashlib.sha256
+        ).hexdigest()
+
+    def test_concurrent_webhook_deliveries_extend_expiry_only_once(self):
+        from apps.payments.views import _mark_batch_charges_paid as real_mark_batch_charges_paid
+
+        today = timezone.localdate()
+        locked_event = threading.Event()
+        release_event = threading.Event()
+
+        def paced_mark_batch_charges_paid(payment):
+            # Signal that we're inside the atomic block holding the row lock,
+            # then wait so the second thread's select_for_update() has time
+            # to hit the database and genuinely block on that lock.
+            locked_event.set()
+            release_event.wait(timeout=5)
+            return real_mark_batch_charges_paid(payment)
+
+        results = {}
+
+        def deliver(name):
+            client = Client()
+            response = client.post(
+                self.url, data=self.payload, content_type='application/json',
+                HTTP_X_RAZORPAY_SIGNATURE=self.signature,
+            )
+            results[name] = response.status_code
+
+        with patch('apps.payments.views._mark_batch_charges_paid', side_effect=paced_mark_batch_charges_paid) as mock_mark:
+            t1 = threading.Thread(target=deliver, args=('t1',))
+            t1.start()
+
+            # Wait until t1 is inside the locked transaction before starting t2.
+            self.assertTrue(locked_event.wait(timeout=5), "t1 never reached the locked section")
+            t2 = threading.Thread(target=deliver, args=('t2',))
+            t2.start()
+
+            # Give t2 a moment to actually issue its SELECT ... FOR UPDATE and
+            # block on it at the database level, then let t1 finish + commit.
+            import time
+            time.sleep(0.5)
+            release_event.set()
+
+            t1.join(timeout=10)
+            t2.join(timeout=10)
+
+        self.assertEqual(results.get('t1'), 200)
+        self.assertEqual(results.get('t2'), 200)
+        # Only the winner of the lock should have run the capture/dispatch path.
+        self.assertEqual(mock_mark.call_count, 1)
+
+        self.locker.refresh_from_db()
+        self.assertEqual(self.locker.plan_type, 'paid')
+        self.assertEqual(self.locker.premium_expires_at, today + timedelta(days=365))
+
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'captured')

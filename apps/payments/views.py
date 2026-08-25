@@ -361,9 +361,11 @@ class RazorpayWebhookView(View):
 
             if order_id:
                 try:
-                    payment = Payment.objects.get(razorpay_order_id=order_id)
-                    if payment.status != 'captured':
-                        with transaction.atomic():
+                    with transaction.atomic():
+                        payment = Payment.objects.select_for_update().get(razorpay_order_id=order_id)
+
+                        captured_now = payment.status != 'captured'
+                        if captured_now:
                             payment.razorpay_payment_id = payment_id
                             payment.status = 'captured'
                             payment.paid_at = timezone.now()
@@ -380,6 +382,7 @@ class RazorpayWebhookView(View):
                                 logger.info(f"Storage batch payment captured via webhook: payment={payment.pk}")
                             elif payment.payment_type == 'premium_subscription':
                                 _activate_premium_subscription(payment)
+                    if captured_now:
                         logger.info(f"Webhook: Payment captured for order {order_id}")
                 except Payment.DoesNotExist:
                     logger.warning(f"Webhook: Payment not found for order {order_id}")
