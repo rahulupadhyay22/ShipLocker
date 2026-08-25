@@ -187,3 +187,64 @@ def delete_storage_file(bucket_name: str, file_path: str):
         SupabaseStorage().delete_file(bucket_name, file_path)
     except Exception as e:
         logger.warning(f'Storage cleanup failed for {bucket_name}/{file_path}: {e}')
+
+
+def calculate_premium_savings(locker):
+    """Recompute lifetime Premium savings from scratch via live aggregate
+    queries — NOT called by any view (spec 11a moved display reads to the
+    denormalized Locker.premium_savings_display, updated incrementally at
+    each payment-finalize point via Locker.record_premium_savings()). Kept
+    as the audit/backfill source of truth: this is what
+    apps/accounts/migrations/0007_backfill_premium_savings_amount.py's
+    formula mirrors, and what a drift-recompute would re-run.
+
+    Premium lockers: real money already saved, summed from the three
+    discount fields across paid/approved history — never pending/unpaid
+    records, same "locked historical charge" rule as everywhere else in
+    spec 11. Free lockers: a hypothetical, built by re-applying today's
+    discount rates to the 'standard' (undiscounted) totals — NOT 'actual'.
+    A currently-Free locker can still have Premium-priced history (they
+    downgraded), where actual < standard already; using actual there would
+    discount an already-discounted figure a second time.
+
+    Three Sum() aggregates scoped to this locker's FK-indexed history —
+    not a per-row Python loop — see spec 11a for the perf reasoning on
+    why this runs inline per-request rather than through a cache.
+    """
+    from decimal import Decimal, ROUND_HALF_UP
+    from django.db.models import Sum
+    from .models import Locker
+    from apps.personal_shop.models import PersonalShopQuotation
+    from apps.shipments.models import Shipment
+    from apps.payments.models import BatchCharge
+
+    zero = Decimal('0.00')
+
+    quotation_totals = PersonalShopQuotation.objects.filter(
+        request__locker=locker, quotation_type='purchase', status='approved',
+    ).aggregate(standard=Sum('service_fee_standard_amount'), actual=Sum('service_fee_amount'))
+    shipment_totals = Shipment.objects.filter(
+        user__locker=locker, payment_status='paid',
+    ).aggregate(standard=Sum('shipping_cost_standard'), actual=Sum('shipping_cost'))
+    batch_totals = BatchCharge.objects.filter(
+        batch__locker=locker, status='paid',
+    ).aggregate(standard=Sum('amount_standard'), actual=Sum('amount'))
+
+    def discount(totals):
+        return max(zero, (totals['standard'] or zero) - (totals['actual'] or zero))
+
+    if locker.is_premium:
+        amount = discount(quotation_totals) + discount(shipment_totals) + discount(batch_totals)
+        label = f"You've saved ₹{amount} with Premium so far" if amount > 0 else ''
+    else:
+        quote_standard = quotation_totals['standard'] or zero
+        ship_standard = shipment_totals['standard'] or zero
+        batch_standard = batch_totals['standard'] or zero
+        amount = (
+            quote_standard * Locker.PREMIUM_SERVICE_FEE_DISCOUNT_RATE
+            + ship_standard * Locker.PREMIUM_SHIPPING_DISCOUNT_RATE
+            + batch_standard * Locker.PREMIUM_STORAGE_DISCOUNT_RATE
+        ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        label = f"You could have saved ₹{amount} with Premium so far — upgrade now" if amount > 0 else ''
+
+    return {'is_premium': locker.is_premium, 'amount': amount, 'label': label}

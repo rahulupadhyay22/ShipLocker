@@ -48,11 +48,39 @@ def _mark_batch_charges_paid(payment):
     if not charge_ids:
         return
 
+    # Snapshot amount_standard per locker *before* the bulk .update() below —
+    # a queryset .update() bypasses save() (and any per-row loop here would
+    # be exactly the per-row cost this denormalization is meant to avoid),
+    # so this is the one place premium_savings_amount is grouped and
+    # incremented in bulk rather than per-charge.
+    from apps.accounts.models import Locker
+    charges = list(
+        BatchCharge.objects.filter(status='pending', id__in=charge_ids)
+        .values_list('batch__locker_id', 'amount_standard')
+    )
+
     BatchCharge.objects.filter(status='pending', id__in=charge_ids).update(
         status='paid',
         payment=payment,
         paid_at=timezone.now(),
     )
+
+    standard_by_locker = {}
+    for locker_id, amount_standard in charges:
+        standard_by_locker[locker_id] = standard_by_locker.get(locker_id, Decimal('0.00')) + (amount_standard or Decimal('0.00'))
+    for locker_id, standard_total in standard_by_locker.items():
+        Locker(pk=locker_id).record_premium_savings(standard_total, Locker.PREMIUM_STORAGE_DISCOUNT_RATE)
+
+
+def _record_shipment_premium_savings(shipment):
+    """Called right after a shipment's payment_status flips to 'paid' — the
+    exact finalize point for its shipping_cost, same as
+    _mark_batch_charges_paid does for BatchCharge and
+    PersonalShopRequest.mark_paid() does for its active_quotation."""
+    from apps.accounts.models import Locker
+    locker = getattr(shipment.user, 'locker', None)
+    if locker is not None:
+        locker.record_premium_savings(shipment.shipping_cost_standard, Locker.PREMIUM_SHIPPING_DISCOUNT_RATE)
 
 
 def _activate_premium_subscription(payment):
@@ -306,6 +334,7 @@ class VerifyPaymentView(LoginRequiredMixin, View):
                 payment.shipment.paid_at = timezone.now()
                 payment.shipment.advance_after_payment()
                 payment.shipment.save()
+                _record_shipment_premium_savings(payment.shipment)
             elif payment.personal_shop_request:
                 payment.personal_shop_request.mark_paid()
             elif payment.payment_type == 'storage_batch':
@@ -376,6 +405,7 @@ class RazorpayWebhookView(View):
                                 payment.shipment.paid_at = timezone.now()
                                 payment.shipment.advance_after_payment()
                                 payment.shipment.save()
+                                _record_shipment_premium_savings(payment.shipment)
                             elif payment.personal_shop_request:
                                 payment.personal_shop_request.mark_paid()
                             elif payment.payment_type == 'storage_batch':

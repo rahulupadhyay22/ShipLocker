@@ -281,6 +281,47 @@
 
 .ta-quote-note svg { flex-shrink: 0; margin-top: 0.15rem; color: var(--text-muted); }
 
+.ta-quote-discount td { color: var(--success-text); font-weight: 600; }
+
+.ta-quote-savings-banner {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin: 1rem 1.1rem 0;
+    padding: 1rem 1.1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+}
+
+.ta-quote-savings-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    color: #fff;
+}
+
+.ta-quote-savings-copy { flex: 1; min-width: 220px; }
+.ta-quote-savings-copy strong { display: block; font-size: 0.95rem; }
+.ta-quote-savings-copy p { margin-top: 0.2rem; font-size: 0.83rem; color: var(--text-secondary); }
+
+.ta-quote-savings-premium {
+    background: var(--success-bg);
+    border-color: var(--success-text);
+}
+.ta-quote-savings-premium .ta-quote-savings-icon { background: var(--success-text); }
+
+.ta-quote-savings-upsell {
+    background: var(--accent-light);
+    border-color: var(--accent-hover);
+}
+.ta-quote-savings-upsell .ta-quote-savings-icon { background: var(--accent-hover); }
+
 .ta-confirmation-card {
     max-width: 560px;
     padding: 2.5rem;

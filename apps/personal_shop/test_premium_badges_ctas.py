@@ -89,7 +89,10 @@ class QuotationPremiumDiscountRowTests(TestCase):
         self.client.force_login(locker.user)
         response = self.client.get(reverse('personal_shop:quotation_detail', args=[req.pk]))
         self.assertNotContains(response, 'Premium Discount')
-        self.assertContains(response, 'Premium saves 25% on this fee.')
+        # Replaces the old inline "Premium saves 25% on this fee." row —
+        # now a savings banner ("Save ₹X with Premium") with a checkout CTA.
+        self.assertContains(response, 'ta-quote-savings-upsell')
+        self.assertContains(response, 'Save ₹75.00 with Premium')
 
     def test_premium_locker_with_zero_discount_sees_no_upsell_note(self):
         # Edge case: an already-approved (locked, non-'pending') quotation
@@ -108,4 +111,4 @@ class QuotationPremiumDiscountRowTests(TestCase):
         self.client.force_login(locker.user)
         response = self.client.get(reverse('personal_shop:quotation_detail', args=[req.pk]))
         self.assertNotContains(response, 'Premium Discount')
-        self.assertNotContains(response, 'Premium saves 25% on this fee.')
+        self.assertNotContains(response, 'ta-quote-savings-banner')

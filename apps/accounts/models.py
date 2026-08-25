@@ -98,6 +98,16 @@ class Locker(models.Model):
         null=True, blank=True,
         help_text="Date the current Premium subscription term ends. Null for Free-plan lockers."
     )
+    premium_savings_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text=(
+            "Denormalized running total (spec 11a) — real Premium discount already "
+            "applied if this locker is Premium, or the hypothetical if it's Free. "
+            "Incremented at the exact moment a quotation/shipment/batch charge is "
+            "finalized as paid (see record_premium_savings()); never recomputed "
+            "live via aggregate queries on page load."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -165,6 +175,49 @@ class Locker(models.Model):
     def premium_free_service(self):
         """Return True if locker has paid plan (eligible for free service features)."""
         return self.is_premium
+
+    def record_premium_savings(self, standard_amount, rate):
+        """Increment premium_savings_amount by standard_amount * rate — called
+        at the exact moment a quotation/shipment/batch charge is finalized as
+        paid (see apps/personal_shop/models.py::mark_paid,
+        apps/payments/views.py's shipment/_mark_batch_charges_paid blocks).
+
+        Always standard_amount * rate, regardless of whether this locker is
+        currently Premium: when Premium, that discount was actually applied
+        (standard - actual == standard * rate by construction of
+        apply_*_discount), so this is real money saved; when Free, it's the
+        hypothetical. Same formula either way — only the *label* shown at
+        display time (premium_savings_display) depends on current plan_type.
+
+        Uses an atomic F()-expression UPDATE, not read-modify-write on self,
+        so concurrent payments for the same locker (e.g. a shipment payment
+        and a storage-batch payment landing in the same second) can't clobber
+        each other. Works even when self isn't a fully-loaded instance —
+        only self.pk is used — so callers can pass a bare Locker(pk=locker_id).
+        """
+        if not standard_amount:
+            return
+        increment = (standard_amount * rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        if increment <= 0:
+            return
+        Locker.objects.filter(pk=self.pk).update(
+            premium_savings_amount=models.F('premium_savings_amount') + increment
+        )
+
+    @property
+    def premium_savings_display(self):
+        """Zero-query read of the denormalized premium_savings_amount, shaped
+        for templates/accounts/_premium_savings_banner.html — same dict shape
+        apps.accounts.services.calculate_premium_savings() used to compute
+        live via aggregate queries on every page load (spec 11a)."""
+        amount = self.premium_savings_amount or Decimal('0.00')
+        if amount <= 0:
+            return {'is_premium': self.is_premium, 'amount': Decimal('0.00'), 'label': ''}
+        if self.is_premium:
+            label = f"You've saved ₹{amount} with Premium so far"
+        else:
+            label = f"You could have saved ₹{amount} with Premium so far — upgrade now"
+        return {'is_premium': self.is_premium, 'amount': amount, 'label': label}
 
 
 class KYCDocument(models.Model):

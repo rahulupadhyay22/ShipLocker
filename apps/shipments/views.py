@@ -224,6 +224,8 @@ class ShipmentDetailView(LoginRequiredMixin, DetailView):
         context['service_locked'] = _is_service_locked(shipment)
         locker = getattr(shipment.user, 'locker', None)
         context['is_premium'] = bool(locker and locker.is_premium)
+        if locker is not None:
+            context['premium_savings'] = locker.premium_savings_display
         # Use the prefetched .all() (cached) rather than .filter(), which would
         # issue a fresh query and defeat the prefetch_related('documents') above.
         prefetched_docs = list(shipment.documents.all())

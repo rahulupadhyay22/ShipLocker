@@ -396,6 +396,7 @@ class PersonalShopQuotationView(LoginRequiredMixin, LockerOwnershipMixin, Single
             'line_items': quotation.line_items.all(),
             'expires_in': expires_in,
             'invoice': getattr(quotation, 'invoice', None),
+            'premium_savings': obj.locker.premium_savings_display,
         })
 
 

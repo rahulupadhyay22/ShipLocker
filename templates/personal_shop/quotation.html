@@ -21,6 +21,8 @@
     <a href="{% url 'personal_shop:request_detail' pk=shop_request.pk %}" class="btn btn-secondary">Back to Request</a>
 </div>
 
+{% include 'accounts/_premium_savings_banner.html' %}
+
 <div class="alert alert-info">
     We have found the product you requested. Please review the quote and approve to proceed.
 </div>
@@ -52,11 +54,9 @@
             {% endfor %}
             {% if quotation.quotation_type == 'purchase' %}
             <tr><td>Domestic Shipping</td><td></td><td>₹{{ quotation.domestic_shipping_amount }}</td></tr>
-            <tr><td>TrunkAssist Service Fee</td><td></td><td>₹{{ quotation.service_fee_amount }}</td></tr>
+            <tr><td>TrunkAssist Service Fee</td><td></td><td>₹{{ quotation.service_fee_standard_amount }}</td></tr>
             {% if quotation.premium_discount_amount > 0 %}
             <tr class="ta-quote-discount"><td>Premium Discount (&minus;25%)</td><td></td><td>&minus;₹{{ quotation.premium_discount_amount }}</td></tr>
-            {% elif not shop_request.locker.is_premium %}
-            <tr><td colspan="3" class="ta-quote-note">Premium saves 25% on this fee.</td></tr>
             {% endif %}
             <tr class="ta-quote-subtotal"><td>Sub Total</td><td></td><td>₹{{ quotation.subtotal }}</td></tr>
             <tr><td>Payment Gateway Charges</td><td></td><td>₹{{ quotation.payment_gateway_charge }}</td></tr>
@@ -71,6 +71,35 @@
         </tbody>
     </table>
     </div>
+
+    {% if quotation.quotation_type == 'purchase' %}
+        {% if quotation.premium_discount_amount > 0 %}
+        <div class="ta-quote-savings-banner ta-quote-savings-premium">
+            <span class="ta-quote-savings-icon">✓</span>
+            <div class="ta-quote-savings-copy">
+                <strong>You saved ₹{{ quotation.premium_discount_amount }} with Premium</strong>
+                <p>25% off TrunkAssist service fees, applied automatically on every quotation.</p>
+            </div>
+        </div>
+        {% elif not shop_request.locker.is_premium and quotation.potential_premium_savings > 0 %}
+        <div class="ta-quote-savings-banner ta-quote-savings-upsell">
+            <span class="ta-quote-savings-icon">★</span>
+            <div class="ta-quote-savings-copy">
+                <strong>Save ₹{{ quotation.potential_premium_savings }} with Premium</strong>
+                <p>Upgrade for ₹2,999/year — 25% off this fee, plus discounts on shipping, free consolidation and storage.</p>
+            </div>
+            {% if quotation.status == 'pending' %}
+            <button type="button" class="btn btn-primary btn-sm premium-checkout-btn"
+                data-create-url="{% url 'payments:premium_create_order' %}"
+                data-verify-url="{% url 'payments:verify' %}"
+                data-error-target="quote-premium-upsell-error">
+                Upgrade to Premium
+            </button>
+            {% endif %}
+        </div>
+        <p id="quote-premium-upsell-error" class="modern-alert alert-danger form-loading-error" role="alert" hidden></p>
+        {% endif %}
+    {% endif %}
 
     <p class="ta-quote-note">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -115,6 +144,9 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if quotation.status == 'pending' and quotation.quotation_type == 'purchase' and not shop_request.locker.is_premium and quotation.potential_premium_savings > 0 %}
+{% include 'accounts/_premium_checkout_script.html' %}
+{% endif %}
 {% if quotation.status == 'pending' %}
 <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
 <script>
