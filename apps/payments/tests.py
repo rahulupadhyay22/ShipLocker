@@ -612,6 +612,35 @@ class RazorpayWebhookConcurrentCaptureTests(TransactionTestCase):
     None, re-apply that migration's seed_charges(apps, None) against the kept
     test_postgres database before re-running."""
 
+    @classmethod
+    def tearDownClass(cls):
+        # TransactionTestCase truncates every table (not just the ones this
+        # class writes to) once its last test method finishes — including
+        # apps.content.ServiceCharge rows seeded by data migration
+        # apps/content/migrations/0010_seed_service_charge_codes.py, which
+        # apps.personal_shop's pricing tests depend on. Restore that seed
+        # data here (same codes/amounts, get_or_create so this is a no-op
+        # if the rows already exist) so this class doesn't leave the
+        # suite's shared fixtures broken for whatever test runs next.
+        super().tearDownClass()
+        from apps.content.models import ServiceCharge
+
+        for code, amount, charge_type, rate in [
+            ('trunkassist_product_link', '199.00', 'percentage', '5.00'),
+            ('trunkassist_image_search', '299.00', 'percentage', '6.00'),
+            ('trunkassist_cart_screenshot', '299.00', 'percentage', '6.00'),
+            ('trunkassist_boutique_purchase', '399.00', 'percentage', '7.00'),
+            ('trunkassist_local_shop_purchase', '499.00', 'flat', None),
+            ('trunkassist_custom_request', '499.00', 'flat', None),
+        ]:
+            ServiceCharge.objects.get_or_create(
+                code=code,
+                defaults={
+                    'name': code, 'charge_type': charge_type, 'percentage_rate': rate,
+                    'amount': amount, 'currency': 'INR', 'is_active': True,
+                },
+            )
+
     def setUp(self):
         self.user = User.objects.create(email='premium-webhook-race@example.com', is_active=True)
         self.locker = Locker.objects.create(user=self.user)
