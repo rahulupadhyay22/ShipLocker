@@ -208,6 +208,8 @@
                     description: 'TrunkAssist quotation for {{ shop_request.display_id }}',
                     order_id: orderData.order_id,
                     handler: async function (response) {
+                        const container = payNowBtn.closest('.card') || payNowBtn.parentElement;
+                        CamelTrunkLoading.showSection(container);
                         try {
                             const verifyResult = await verifyPayment(verifyUrl, {
                                 razorpay_order_id: response.razorpay_order_id,
@@ -223,6 +225,7 @@
                         } catch (error) {
                             CamelTrunkLoading.showError(payNowBtn, error.message || 'Payment verification failed.');
                         } finally {
+                            CamelTrunkLoading.hideSection(container);
                             CamelTrunkLoading.stop(payNowBtn);
                         }
                     },

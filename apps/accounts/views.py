@@ -14,7 +14,14 @@ import logging
 from indiabox.mixins import ObjectOwnershipRequiredMixin, SecureActionMixin
 from .models import User, Locker, SavedAddress
 from .forms import SavedAddressForm
-from .services import SupabaseAuth
+from .services import (
+    SupabaseAuth,
+    _monthly_category_totals,
+    build_sparkline_geometry,
+    calculate_premium_savings_breakdown,
+    calculate_premium_savings_trend,
+    windowed_savings_pct,
+)
 
 logger = logging.getLogger('security')
 
@@ -371,6 +378,36 @@ class ProfileView(LoginRequiredMixin, View):
 
         messages.success(request, 'Profile updated successfully.')
         return redirect('accounts:profile')
+
+
+class SubscriptionSavingsView(LoginRequiredMixin, View):
+    """Account > Subscription: itemized Premium savings breakdown, run as a
+    live aggregate query (calculate_premium_savings_breakdown) rather than
+    the denormalized Locker.premium_savings_amount — see that function's
+    docstring for why (occasional-visit page, not the per-render banner)."""
+    template_name = 'accounts/subscription.html'
+
+    def get(self, request):
+        from django.http import Http404
+        from apps.notifications.models import AppSettings
+
+        locker = getattr(request.user, 'locker', None)
+        if locker is None:
+            raise Http404
+        breakdown = calculate_premium_savings_breakdown(locker)
+        monthly = _monthly_category_totals(locker)
+        trend = calculate_premium_savings_trend(locker, monthly=monthly)
+        chart = build_sparkline_geometry(trend) or {}
+        return render(request, self.template_name, {
+            'locker': locker,
+            'breakdown': breakdown,
+            'trend': trend,
+            'trend_points': chart.get('points_str'),
+            'trend_dots': chart.get('dots'),
+            'trend_growth_pct': windowed_savings_pct(locker, monthly=monthly),
+            'premium_annual_price': AppSettings.get_settings().premium_annual_price,
+            **Locker.premium_rate_percentages(),
+        })
 
 
 class _XhrAddressFormMixin:

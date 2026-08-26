@@ -324,6 +324,133 @@
             </div>
         </section>
 
+        <section class="pricing-section" id="pricing">
+            <div class="section-head" data-reveal>
+                <h2 class="section-kicker">CamelTrunk Premium</h2>
+                <p>One membership. More savings. More convenience. Get more from CamelTrunk with Premium membership for just &#8377;{{ premium_annual_price }}/year.</p>
+            </div>
+
+            <div class="pricing-table-wrap" data-reveal>
+                <table class="pricing-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Benefit</th>
+                            <th scope="col">Free</th>
+                            <th scope="col" class="pricing-col-premium">
+                                Premium
+                                <span class="pricing-table-badge">Best Value</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="pricing-row-price">
+                            <th scope="row">Account / Membership Fee</th>
+                            <td>&#8377;0</td>
+                            <td class="pricing-col-premium">&#8377;{{ premium_annual_price }}/year</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Trunk Assist Service Fee</th>
+                            <td>Standard service charge</td>
+                            <td class="pricing-col-premium">{{ trunkassist_rate }}% OFF CamelTrunk service charge</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">International Shipping</th>
+                            <td>Standard pricing</td>
+                            <td class="pricing-col-premium">{{ shipping_rate }}% OFF eligible shipping charge</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Free Storage Days</th>
+                            <td>{{ free_storage_days }} days per batch</td>
+                            <td class="pricing-col-premium">{{ premium_storage_days }} days per batch</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Batches Allowed / Year</th>
+                            <td>{{ free_passes_per_year }} batches/year</td>
+                            <td class="pricing-col-premium">Unlimited batch</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Storage Charges (after free period)</th>
+                            <td>Standard rate</td>
+                            <td class="pricing-col-premium">{{ storage_rate }}% OFF on standard storage charges</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Consolidation</th>
+                            <td>{% if consolidation_fee_standard %}&#8377;{{ consolidation_fee_standard }} per shipment{% else %}Standard rate{% endif %}</td>
+                            <td class="pricing-col-premium">FREE</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Basic Packing</th>
+                            <td>Standard rate</td>
+                            <td class="pricing-col-premium">FREE</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Trunk Assist Access</th>
+                            <td>&#10003;</td>
+                            <td class="pricing-col-premium">&#10003;</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Product Search &amp; Verification</th>
+                            <td>&#10003;</td>
+                            <td class="pricing-col-premium">&#10003;</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Image / Cart Product Search</th>
+                            <td>&#10003;</td>
+                            <td class="pricing-col-premium">&#10003;</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Boutique Purchase Assistance</th>
+                            <td>&#10003;</td>
+                            <td class="pricing-col-premium">&#10003;</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Local Shop Purchase Assistance</th>
+                            <td>&#10003;</td>
+                            <td class="pricing-col-premium">&#10003;</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Custom Research / Sourcing</th>
+                            <td>&#10003;</td>
+                            <td class="pricing-col-premium">&#10003;</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Trunk Assist Processing</th>
+                            <td>Standard queue</td>
+                            <td class="pricing-col-premium">Priority processing</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Customer Support</th>
+                            <td>Standard</td>
+                            <td class="pricing-col-premium">Priority support</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Member Offers</th>
+                            <td>&mdash;</td>
+                            <td class="pricing-col-premium">&#10003;</td>
+                        </tr>
+                        <tr class="pricing-row-cta">
+                            <th scope="row"></th>
+                            <td>
+                                <a href="{% url 'accounts:login' %}" class="cta-button pricing-table-cta pricing-table-cta-free">Continue with Free</a>
+                            </td>
+                            <td class="pricing-col-premium">
+                                <a href="{% url 'accounts:login' %}" class="cta-button pricing-table-cta pricing-table-cta-premium">Get Premium
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                        <path d="M5 12h13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                                        <path d="M12 5l6 7-6 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="pricing-plan-microcopy" data-reveal>4 discounts stack on every order &mdash; the more you ship, the more the membership pays for itself.</p>
+
+            <p class="pricing-disclaimer" data-reveal>Trunk Assist service fees, product costs, shipping, storage, travel/transport and other applicable charges are separate unless specifically stated otherwise. Normal requests are quoted before the applicable service fee is collected; custom research and physical shopping may require payment/advance before work begins.</p>
+        </section>
+
     </main>
 
     {% include 'partials/site_footer.html' %}

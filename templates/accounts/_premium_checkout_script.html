@@ -63,6 +63,8 @@
                         description: 'CamelTrunk Premium Membership',
                         order_id: orderData.order_id,
                         handler: async function (response) {
+                            const container = btn.closest('.card') || btn.parentElement;
+                            CamelTrunkLoading.showSection(container);
                             try {
                                 const verifyResult = await verifyPayment(verifyUrl, {
                                     razorpay_order_id: response.razorpay_order_id,
@@ -78,6 +80,7 @@
                             } catch (error) {
                                 CamelTrunkLoading.showError(btn, error.message || 'Payment verification failed.');
                             } finally {
+                                CamelTrunkLoading.hideSection(container);
                                 CamelTrunkLoading.stop(btn);
                             }
                         },

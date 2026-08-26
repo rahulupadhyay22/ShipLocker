@@ -76,11 +76,22 @@ def _record_shipment_premium_savings(shipment):
     """Called right after a shipment's payment_status flips to 'paid' — the
     exact finalize point for its shipping_cost, same as
     _mark_batch_charges_paid does for BatchCharge and
-    PersonalShopRequest.mark_paid() does for its active_quotation."""
+    PersonalShopRequest.mark_paid() does for its active_quotation.
+
+    Also records consolidation savings here, not as a separate call site —
+    a shipment's shipping and consolidation charges finalize as paid at the
+    exact same moment (this same shipment.save()), so there's no reason to
+    split them. Consolidation is 100% off for Premium (waived entirely by
+    apps.payments.services._get_consolidation_fee_amount), not a percentage
+    rate, hence Decimal('1.00') rather than one of the PREMIUM_*_DISCOUNT_RATE
+    constants — matches calculate_premium_savings_breakdown()'s treatment of
+    consolidation as "the one category that isn't a percentage discount"."""
+    from decimal import Decimal
     from apps.accounts.models import Locker
     locker = getattr(shipment.user, 'locker', None)
     if locker is not None:
         locker.record_premium_savings(shipment.shipping_cost_standard, Locker.PREMIUM_SHIPPING_DISCOUNT_RATE)
+        locker.record_premium_savings(shipment.consolidation_fee_standard, Decimal('1.00'))
 
 
 def _activate_premium_subscription(payment):

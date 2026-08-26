@@ -176,6 +176,18 @@ class Locker(models.Model):
         """Return True if locker has paid plan (eligible for free service features)."""
         return self.is_premium
 
+    @classmethod
+    def premium_rate_percentages(cls):
+        """{'trunkassist_rate', 'shipping_rate', 'storage_rate'} as whole
+        percentages, for display templates — the single place HomeView and
+        SubscriptionSavingsView both source these from, instead of each
+        repeating the same three int(RATE * 100) lines."""
+        return {
+            'trunkassist_rate': int(cls.PREMIUM_SERVICE_FEE_DISCOUNT_RATE * 100),
+            'shipping_rate': int(cls.PREMIUM_SHIPPING_DISCOUNT_RATE * 100),
+            'storage_rate': int(cls.PREMIUM_STORAGE_DISCOUNT_RATE * 100),
+        }
+
     def record_premium_savings(self, standard_amount, rate):
         """Increment premium_savings_amount by standard_amount * rate — called
         at the exact moment a quotation/shipment/batch charge is finalized as

@@ -112,6 +112,10 @@
         </div>
         <p id="premium-account-type-error" class="modern-alert alert-danger form-loading-error" role="alert" hidden></p>
         <div class="profile-summary-row">
+            <span></span>
+            <a href="{% url 'accounts:subscription' %}">View full savings breakdown &rarr;</a>
+        </div>
+        <div class="profile-summary-row">
             <span class="profile-summary-label">Trunk ID</span>
             <span>
                 <span class="profile-summary-value">{{ locker.locker_id }}</span>
@@ -613,12 +617,22 @@
         }
 
         async function loadFormInto(url) {
-            const response = await fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                credentials: 'same-origin',
-            });
-            if (!response.ok) throw new Error('Could not load the address form.');
-            openPanelWithHtml(await response.text());
+            formSlot.innerHTML = '';
+            panel.style.display = '';
+            panel.style.minHeight = '160px';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            CamelTrunkLoading.showSection(panel);
+            try {
+                const response = await fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                });
+                if (!response.ok) throw new Error('Could not load the address form.');
+                openPanelWithHtml(await response.text());
+            } finally {
+                CamelTrunkLoading.hideSection(panel);
+                panel.style.minHeight = '';
+            }
         }
 
         // Open the "Add Address" panel instead of navigating away.

@@ -1139,7 +1139,7 @@ body.home-page img {
 
 .home-page .newsletter-form {
     display: flex;
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.14);
     background: #fff;
@@ -1878,5 +1878,197 @@ body.home-page img {
 
     .home-page .logo-marquee-inner {
         animation: none;
+    }
+}
+
+/* Free vs Premium pricing section */
+.home-page .pricing-section {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 0 30px 90px;
+}
+
+.home-page .pricing-section .section-head p {
+    margin: 10px auto 0;
+    max-width: 46ch;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.home-page .pricing-plan-microcopy {
+    margin: 14px 0 0;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.home-page .pricing-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card-strip);
+}
+
+.home-page .pricing-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface-0);
+}
+
+.home-page .pricing-table th,
+.home-page .pricing-table td {
+    padding: 16px 20px;
+    text-align: left;
+    font-size: 0.92rem;
+    border-bottom: 1px solid var(--surface-100);
+    white-space: nowrap;
+}
+
+.home-page .pricing-table thead th {
+    font-family: 'Fraunces', serif;
+    font-size: 1.05rem;
+    color: var(--text-main);
+    background: var(--surface-50);
+}
+
+.home-page .pricing-table tbody th {
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: normal;
+}
+
+.home-page .pricing-table tbody td {
+    color: var(--text-secondary);
+}
+
+.home-page .pricing-table tr:last-child th,
+.home-page .pricing-table tr:last-child td {
+    border-bottom: none;
+}
+
+.home-page .pricing-table .pricing-col-premium {
+    background: var(--accent-light);
+    color: var(--accent-hover);
+    font-weight: 700;
+}
+
+.home-page .pricing-table .pricing-row-price th,
+.home-page .pricing-table .pricing-row-price td {
+    font-size: 1.05rem;
+}
+
+.home-page .pricing-disclaimer {
+    max-width: 62ch;
+    margin: 26px auto 0;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.home-page .pricing-table-badge {
+    display: inline-flex;
+    margin-left: 8px;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill, 999px);
+    background: var(--accent);
+    color: var(--primary);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+}
+
+.home-page .pricing-row-cta th,
+.home-page .pricing-row-cta td {
+    padding-top: 22px;
+    padding-bottom: 22px;
+    text-align: center;
+    white-space: normal;
+}
+
+.home-page .pricing-table-cta {
+    width: 100%;
+    max-width: 220px;
+    height: auto;
+    min-height: 44px;
+    padding: 10px 16px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+}
+
+.home-page .pricing-table-cta svg {
+    width: 16px;
+    height: 16px;
+}
+
+.home-page .pricing-table-cta-free {
+    background: var(--surface-0);
+    color: var(--text-main);
+    border: 1px solid var(--surface-200);
+    box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .home-page .pricing-table-cta-free:hover {
+        background: var(--surface-50);
+        transform: none;
+        box-shadow: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .home-page .pricing-table th,
+    .home-page .pricing-table td {
+        padding: 12px 14px;
+        font-size: 0.86rem;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 560px) {
+    .home-page .pricing-section {
+        padding: 0 14px 60px;
+    }
+
+    .home-page .pricing-table {
+        table-layout: fixed;
+    }
+
+    .home-page .pricing-table th,
+    .home-page .pricing-table td {
+        box-sizing: border-box;
+        overflow-wrap: break-word;
+    }
+
+    .home-page .pricing-table th:first-child {
+        width: 38%;
+    }
+
+    .home-page .pricing-table th,
+    .home-page .pricing-table td {
+        padding: 8px 8px;
+        font-size: 0.78rem;
+    }
+
+    .home-page .pricing-table thead th {
+        font-size: 0.86rem;
+    }
+
+    .home-page .pricing-table-badge {
+        display: block;
+        margin: 4px 0 0;
+        width: fit-content;
+    }
+
+    .home-page .pricing-row-cta th,
+    .home-page .pricing-row-cta td {
+        padding-top: 14px;
+        padding-bottom: 14px;
+    }
+
+    .home-page .pricing-table-cta {
+        max-width: none;
+        padding: 8px 8px;
+        font-size: 0.78rem;
     }
 }

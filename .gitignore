@@ -16,6 +16,7 @@ __pycache__/
 *.mo
 *.db
 *.sqlite3
+*.sqlite3-journal
 media/
 staticfiles/
 
@@ -91,5 +92,6 @@ scratchpad/
 .claude/scheduled_tasks.lock
 .impeccable/
 .superpowers/
+.codebase-memory/
 *.txt
 !requirements*.txt

@@ -1897,3 +1897,86 @@ class AdminSaveRelatedServiceFeeDiscountTests(TestCase):
 
         self.assertFalse(self.quotation.service_fee_manual_override)
         self.assertEqual(self.quotation.service_fee_standard_amount, suggested)
+
+
+class AdminPremiumPreviewConsistencyTests(TestCase):
+    """Regression for the admin JS total-preview bug: static/js/admin/
+    personal_shop/admin_suggested_fee.js used to sum the undiscounted
+    service_fee_standard_amount into its live total, while save_related()
+    saves total_amount using the Premium-discounted service_fee_amount —
+    the on-screen total didn't match what got saved. The fix makes the JS
+    branch on suggested_fee_view's premium_preview (non-null only for a
+    Premium locker) and apply the same 25% rate before summing. These tests
+    pin the two ends of that contract in Python: the endpoint's
+    premium_preview value, and that it equals what save_related() actually
+    persists for the same standard amount."""
+
+    SERVICE_FEE_DISCOUNT_RATE = Decimal('0.25')  # mirrors Locker.PREMIUM_SERVICE_FEE_DISCOUNT_RATE
+
+    def setUp(self):
+        self.staff = User.objects.create(
+            email='premium-preview-staff@example.com', is_staff=True, is_superuser=True,
+        )
+
+    def test_premium_locker_preview_applies_25_percent_discount(self):
+        """Test 4: suggested_fee_view's premium_preview is the 25%-off
+        figure the JS must show for a Premium locker's request."""
+        locker = _make_locker('premium-preview-paid@example.com')
+        locker.plan_type = 'paid'
+        locker.save()
+        req = _make_request(locker, status='reviewing')  # custom_request -> flat 499 fee
+
+        self.client.force_login(self.staff)
+        url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
+        response = self.client.get(url)
+
+        data = response.json()
+        self.assertEqual(data['fee'], '499.00')
+        expected = (Decimal('499.00') * (1 - self.SERVICE_FEE_DISCOUNT_RATE)).quantize(Decimal('0.01'))
+        self.assertEqual(data['premium_preview'], str(expected))
+
+    def test_free_locker_preview_stays_at_standard_fee(self):
+        """Test 5: a Free locker's request gets no premium_preview at all —
+        the JS's isPremiumLocker flag stays false and the live total keeps
+        summing the plain standard fee, matching save_related() for Free."""
+        locker = _make_locker('premium-preview-free@example.com')
+        req = _make_request(locker, status='reviewing')
+
+        self.client.force_login(self.staff)
+        url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
+        response = self.client.get(url)
+
+        data = response.json()
+        self.assertEqual(data['fee'], '499.00')
+        self.assertIsNone(data['premium_preview'])
+
+    def test_backend_saved_total_matches_admin_live_preview_formula(self):
+        """Test 6: save_related()'s persisted total_amount for a Premium
+        locker's purchase quotation equals subtotal + shipping + gateway +
+        the 25%-discounted fee — exactly the formula the JS live preview
+        now applies (recalcTotal() in admin_suggested_fee.js), given the
+        same standard fee input."""
+        locker = _make_locker('premium-preview-total@example.com')
+        locker.plan_type = 'paid'
+        locker.save()
+        req = _make_request(locker, status='reviewing')
+        quotation = _make_quotation(
+            req, quotation_type='purchase', status='pending',
+            service_fee_standard_amount=Decimal('499.00'),
+        )
+        admin_instance = PersonalShopQuotationAdmin(PersonalShopQuotation, django_admin.site)
+        data = _quotation_form_data(quotation, service_fee_standard_amount='499.00')
+        form = PersonalShopQuotationAdminForm(data=data, instance=quotation)
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save(commit=False)
+        form.instance.save()
+
+        admin_instance.save_related(_admin_request(self.staff), form, [], change=True)
+        quotation.refresh_from_db()
+
+        js_preview_service_fee = (Decimal('499.00') * (1 - self.SERVICE_FEE_DISCOUNT_RATE)).quantize(Decimal('0.01'))
+        js_preview_total = (
+            quotation.subtotal + quotation.domestic_shipping_amount
+            + js_preview_service_fee + quotation.payment_gateway_charge
+        )
+        self.assertEqual(quotation.total_amount, js_preview_total)
