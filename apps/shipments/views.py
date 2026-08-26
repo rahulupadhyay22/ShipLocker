@@ -72,6 +72,8 @@ def _payment_summary(shipment):
         'storage_fee_total': storage_total,
         'shipping_amount': shipping_amount,
         'consolidation_fee': consolidation_fee,
+        'shipping_discount_amount': shipment.shipping_discount_amount,
+        'consolidation_fee_discount_amount': shipment.consolidation_fee_discount_amount,
         'shipment_total_amount': unpaid_charges + storage_total,
         'shipment_amount_due': pending_total + (unpaid_charges if shipment.payment_status != 'paid' else Decimal('0.00')),
     }
@@ -90,6 +92,8 @@ def _get_service_options(shipment):
     if not zone:
         return []
 
+    locker = getattr(shipment.user, 'locker', None)
+
     options = []
     for code, label in Shipment.SERVICE_TYPE_CHOICES:
         rate = zone.rates.filter(
@@ -98,10 +102,15 @@ def _get_service_options(shipment):
             max_weight__gt=shipment.total_weight_kg,
         ).first()
         if rate:
+            standard = Decimal(str(rate.calculate_price(shipment.total_weight_kg))).quantize(Decimal('0.01'))
+            final, _discount = (
+                locker.apply_shipping_discount(standard) if locker else (standard, Decimal('0.00'))
+            )
             options.append({
                 'code': code,
                 'label': label,
-                'price': Decimal(str(rate.calculate_price(shipment.total_weight_kg))).quantize(Decimal('0.01')),
+                'price': final,
+                'standard_price': standard,
                 'delivery_days_min': rate.delivery_days_min,
                 'delivery_days_max': rate.delivery_days_max,
             })
@@ -208,10 +217,15 @@ class ShipmentDetailView(LoginRequiredMixin, DetailView):
 
         context = super().get_context_data(**kwargs)
         shipment = self.object
+        shipment.refresh_shipping_discount()
 
         context['warehouse_address'] = AppSettings.get_settings().warehouse_address
         context['service_options'] = _get_service_options(shipment)
         context['service_locked'] = _is_service_locked(shipment)
+        locker = getattr(shipment.user, 'locker', None)
+        context['is_premium'] = bool(locker and locker.is_premium)
+        if locker is not None:
+            context['premium_savings'] = locker.premium_savings_display
         # Use the prefetched .all() (cached) rather than .filter(), which would
         # issue a fresh query and defeat the prefetch_related('documents') above.
         prefetched_docs = list(shipment.documents.all())
@@ -302,7 +316,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
         # parcel, so there's no per-parcel "overdue days" figure anymore —
         # instead we show the locker's whole outstanding storage balance
         # once below, independent of which parcels happen to be checked.
-        from apps.payments.services import _get_consolidation_fee_amount
+        from apps.payments.services import _get_consolidation_fee_amount, _lookup_consolidation_fee_standard
         from apps.payments.views import _get_pending_batch_charges_for_locker
         from apps.content.services import build_zones_json
         from django.db.models import Sum
@@ -321,7 +335,8 @@ class CreateShipmentView(LoginRequiredMixin, View):
             'has_kyc': has_kyc,
             'zones': zones,
             'zones_json': build_zones_json(),
-            'consolidation_fee_amount': _get_consolidation_fee_amount(),
+            'consolidation_fee_amount': _get_consolidation_fee_amount(locker),
+            'consolidation_fee_standard': _lookup_consolidation_fee_standard(),
             'storage_fee_pending': storage_fee_pending,
             'storage_fee_days_pending': storage_fee_days_pending,
             'default_address': default_address,
@@ -394,8 +409,9 @@ class CreateShipmentView(LoginRequiredMixin, View):
         # Locked in now, at creation, so it doesn't drift if the admin later
         # edits the 'Consolidation' ServiceCharge amount (e.g. after payment).
         # Applies to every shipment regardless of parcel count, not just 2+.
-        from apps.payments.services import _get_consolidation_fee_amount
-        consolidation_fee = _get_consolidation_fee_amount()
+        from apps.payments.services import _get_consolidation_fee_amount, _lookup_consolidation_fee_standard
+        consolidation_fee = _get_consolidation_fee_amount(locker)
+        consolidation_fee_standard = _lookup_consolidation_fee_standard()
 
         with transaction.atomic():
             # Create shipment with declaration_pending status
@@ -413,6 +429,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
                 recipient_phone=recipient_phone,
                 recipient_email=recipient_email,
                 consolidation_fee=consolidation_fee,
+                consolidation_fee_standard=consolidation_fee_standard,
             )
 
             # Optionally save as default address for quick reuse
@@ -559,12 +576,17 @@ class SelectShippingServiceView(LoginRequiredMixin, UserOwnershipMixin, SingleOb
         price = Decimal(str(rate.calculate_price(shipment.total_weight_kg))).quantize(
             Decimal('0.01'), rounding=ROUND_HALF_UP
         )
+        locker = getattr(request.user, 'locker', None)
+        final_price, _discount = (
+            locker.apply_shipping_discount(price) if locker else (price, Decimal('0.00'))
+        )
         shipment.service_type = service_type
-        shipment.shipping_cost = price
-        shipment.save(update_fields=['service_type', 'shipping_cost', 'updated_at'])
+        shipment.shipping_cost = final_price
+        shipment.shipping_cost_standard = price
+        shipment.save(update_fields=['service_type', 'shipping_cost', 'shipping_cost_standard', 'updated_at'])
 
         logger.info(
             f"Service tier selected: user={request.user.email} shipment={shipment.pk} "
-            f"service_type={service_type} shipping_cost={price}"
+            f"service_type={service_type} shipping_cost={final_price} discount={_discount}"
         )
         return self._succeed(request, shipment, f'{valid_types[service_type]} service selected. Total updated.')

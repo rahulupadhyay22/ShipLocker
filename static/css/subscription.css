@@ -1,0 +1,445 @@
+/* Subscription Savings page (templates/accounts/subscription.html) —
+   bespoke layout matching static/images/subscription.png. Colors/radii/
+   shadows pull from main.css tokens; nothing here redefines a token. */
+
+.sub-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.sub-title-row .page-title {
+    margin: 0;
+}
+
+.sub-card-title-tight {
+    margin-bottom: 0.75rem;
+}
+
+.sub-section-header {
+    margin-bottom: 0.75rem;
+}
+
+.sub-section-header h3 {
+    margin: 0 0 0.15rem;
+}
+
+.sub-section-header .page-subtitle {
+    margin: 0;
+}
+
+.sub-empty-alert {
+    margin-bottom: 1.5rem;
+}
+
+.sub-billing-btn {
+    width: 100%;
+}
+
+.sub-billing-error {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+}
+
+.sub-upgrade-card {
+    background: var(--surface-50);
+    border-style: dashed;
+    text-align: center;
+}
+
+.sub-upgrade-card h3 {
+    margin-bottom: 0.5rem;
+}
+
+.sub-upgrade-card p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.sub-header-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-pill, 999px);
+    background: var(--accent-light);
+    color: var(--accent-hover);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    margin-left: 0.75rem;
+}
+
+.sub-top-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    align-items: stretch;
+}
+
+.sub-card {
+    background: var(--surface-0);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+}
+
+/* Hero: total saved + sparkline */
+.sub-hero {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.sub-hero-main {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    flex: 1 1 260px;
+}
+
+.sub-hero-icon {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--success-bg);
+    color: var(--success-text);
+}
+
+.sub-hero-icon svg { width: 26px; height: 26px; }
+
+.sub-hero-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.sub-hero-amount {
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 0.6rem;
+}
+
+.sub-pill {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-pill, 999px);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.sub-pill-success { background: var(--success-bg); color: var(--success-text); }
+.sub-pill-accent { background: var(--accent-light); color: var(--accent-hover); }
+
+.sub-hero-chart {
+    flex: 1 1 220px;
+    min-width: 200px;
+}
+
+.sub-hero-chart-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-align: right;
+    margin-bottom: 0.4rem;
+}
+
+.sub-hero-chart svg { width: 100%; height: 70px; display: block; }
+
+.sub-hero-chart-badge {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.4rem;
+}
+
+/* Locked-feature placeholder — same dashed/muted treatment as this
+   page's "Upgrade to Premium" CTA card, reused so a gated feature always
+   looks the same way across the page rather than inventing new styling. */
+.sub-hero-chart-locked {
+    height: 70px;
+    border: 1px dashed var(--surface-200);
+    border-radius: var(--radius-sm);
+    background: var(--surface-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    text-align: center;
+}
+
+.sub-hero-chart-locked svg { flex-shrink: 0; width: 18px; height: 18px; color: var(--text-muted); }
+.sub-hero-chart-locked span { font-size: 0.8rem; color: var(--text-secondary); }
+
+/* Savings overview (right column) */
+.sub-overview-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--surface-100);
+    font-size: 0.9rem;
+}
+
+.sub-overview-row:last-of-type { border-bottom: none; }
+
+.sub-overview-value { font-weight: 700; }
+
+.sub-overview-total {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--accent-light);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+}
+
+.sub-overview-total-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--surface-0);
+    color: var(--accent-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sub-overview-total-icon svg { width: 18px; height: 18px; }
+
+.sub-overview-total-label { font-size: 0.75rem; color: var(--text-secondary); }
+.sub-overview-total-value { font-weight: 700; color: var(--accent-hover); }
+
+/* Category breakdown grid */
+.sub-category-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.sub-category-card {
+    background: var(--surface-0);
+    border: 1px solid var(--surface-100);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.sub-category-top {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.sub-category-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sub-category-icon svg { width: 22px; height: 22px; }
+
+.sub-category-icon.tint-gold { background: var(--accent-light); color: var(--accent-hover); }
+.sub-category-icon.tint-teal { background: var(--primary-light); color: var(--primary); }
+.sub-category-icon.tint-amber { background: var(--warning-bg); color: var(--warning-text); }
+.sub-category-icon.tint-green { background: var(--success-bg); color: var(--success-text); }
+
+.sub-category-title { font-weight: 700; font-size: 0.9rem; }
+.sub-category-amount { font-size: 1.4rem; font-weight: 700; margin-top: 0.15rem; }
+
+.sub-category-pct-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.sub-category-price-row {
+    border-top: 1px solid var(--surface-100);
+    padding-top: 0.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.sub-price-strike {
+    color: var(--text-muted);
+    text-decoration: line-through;
+}
+
+.sub-price-arrow { color: var(--text-muted); }
+
+.sub-price-final {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.sub-category-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.sub-category-footer.is-static { color: var(--text-muted); font-weight: 500; }
+
+/* Benefits + billing bottom row */
+.sub-bottom-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    align-items: stretch;
+}
+
+.sub-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.sub-card-title svg { width: 18px; height: 18px; color: var(--accent-hover); }
+
+.sub-benefits-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem 1.5rem;
+    margin: 1rem 0;
+}
+
+.sub-benefit-row {
+    display: flex;
+    gap: 0.65rem;
+    align-items: flex-start;
+}
+
+.sub-benefit-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sub-benefit-icon svg { width: 17px; height: 17px; }
+
+.sub-benefit-title { font-weight: 700; font-size: 0.85rem; }
+.sub-benefit-sub { font-size: 0.78rem; color: var(--text-secondary); }
+
+.sub-benefits-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--accent-light);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent-hover);
+}
+
+.sub-billing-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.sub-billing-row .label { color: var(--text-secondary); }
+.sub-billing-row .value { font-weight: 700; }
+
+.sub-billing-note {
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    background: var(--success-bg);
+    color: var(--success-text);
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+/* Bottom promo banner */
+.sub-promo-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: var(--primary-light);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+}
+
+.sub-promo-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sub-promo-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--success-bg);
+    color: var(--success-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sub-promo-icon svg { width: 22px; height: 22px; }
+
+.sub-promo-title { font-weight: 700; }
+.sub-promo-sub { font-size: 0.85rem; color: var(--text-secondary); }
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .sub-category-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 900px) {
+    .sub-top-grid,
+    .sub-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sub-hero-chart { text-align: left; }
+    .sub-hero-chart-label { text-align: left; }
+    .sub-hero-chart-badge { justify-content: flex-start; }
+}
+
+@media (max-width: 640px) {
+    .sub-card { padding: 1.1rem; }
+    .sub-category-grid { grid-template-columns: 1fr; }
+    .sub-benefits-list { grid-template-columns: 1fr; }
+    .sub-hero-amount { font-size: 1.9rem; }
+    .sub-promo-banner { flex-direction: column; align-items: flex-start; }
+    .sub-header-badge { margin-left: 0; margin-top: 0.4rem; }
+}

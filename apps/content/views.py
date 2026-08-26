@@ -11,6 +11,14 @@ from .models import StaticPage, ServiceCharge
 # (AuthAwareBaseMixin renders a different base template for logged-in users).
 STATIC_PAGE_CACHE_SECONDS = 60 * 15
 
+# Mirrors apps/locker/services/batch_billing.py::create_batch's free-storage
+# window (20 days free-plan / 30 days paid-plan) — kept as a separate literal
+# here rather than imported, because spec 11-pricing.md's Definition of done
+# requires batch_billing.py's diff to contain only the Premium storage-
+# discount insertion; a display-only constant has no business living there.
+FREE_PLAN_DISPLAY_STORAGE_DAYS = 20
+PREMIUM_PLAN_DISPLAY_STORAGE_DAYS = 30
+
 
 class AuthAwareBaseMixin:
     """Renders inside the app shell (base.html) for logged-in users, the
@@ -38,6 +46,27 @@ class HomeView(TemplateView):
     @method_decorator(cache_page(STATIC_PAGE_CACHE_SECONDS))
     def _cached_get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        from apps.accounts.models import Locker
+        from apps.locker.models import UserQuota
+        from apps.notifications.models import AppSettings
+        from apps.payments.services import _lookup_consolidation_fee_standard
+
+        context = super().get_context_data(**kwargs)
+        context['premium_annual_price'] = AppSettings.get_settings().premium_annual_price
+        context.update(Locker.premium_rate_percentages())
+        context['consolidation_fee_standard'] = _lookup_consolidation_fee_standard()
+
+        context['free_storage_days'] = FREE_PLAN_DISPLAY_STORAGE_DAYS
+        context['premium_storage_days'] = PREMIUM_PLAN_DISPLAY_STORAGE_DAYS
+        # Read from the field default rather than a third named constant —
+        # unlike the two storage-day constants above, UserQuota isn't
+        # constrained against touching apps/locker/services/batch_billing.py,
+        # so there's no reason not to source this one directly from the model.
+        context['free_passes_per_year'] = UserQuota._meta.get_field('annual_quota').default
+
+        return context
 
 
 @method_decorator(cache_page(STATIC_PAGE_CACHE_SECONDS), name='dispatch')

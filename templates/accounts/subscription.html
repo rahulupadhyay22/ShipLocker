@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Subscription Savings - CamelTrunk{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/subscription.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <span class="sub-title-row">
+            <h1 class="page-title">Subscription Savings</h1>
+            {% if breakdown.is_premium %}
+            <span class="sub-header-badge">Premium Member</span>
+            {% endif %}
+        </span>
+        <p class="page-subtitle">
+            {% if breakdown.is_premium %}
+            Your itemized Premium savings so far.
+            {% else %}
+            What Premium would have saved you so far.
+            {% endif %}
+        </p>
+    </div>
+    <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">&larr; Back to Profile</a>
+</div>
+
+<div class="sub-top-grid">
+    <div class="sub-card sub-hero">
+        <div class="sub-hero-main">
+            <div class="sub-hero-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <div class="sub-hero-label">
+                    {% if breakdown.is_premium %}Total Saved with Premium{% else %}Total You Could Save with Premium{% endif %}
+                </div>
+                <div class="sub-hero-amount">&#8377;{{ breakdown.total|floatformat:2 }}</div>
+                {% if breakdown.total > 0 %}
+                {% if breakdown.is_premium %}
+                <span class="sub-pill sub-pill-success">You're saving with Premium!</span>
+                {% else %}
+                <span class="sub-pill sub-pill-accent">Upgrade to unlock this</span>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        <div class="sub-hero-chart">
+            {% if trend %}
+            <div class="sub-hero-chart-label">vs. without Premium</div>
+            <svg viewBox="0 0 240 70" preserveAspectRatio="none">
+                <polyline fill="none" stroke="var(--success-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="{{ trend_points }}"></polyline>
+                {% for p in trend_dots %}
+                <circle cx="{{ p.x }}" cy="{{ p.y }}" r="3" fill="var(--success-text)"></circle>
+                {% endfor %}
+            </svg>
+            {% if trend_growth_pct %}
+            <div class="sub-hero-chart-badge">
+                <span class="sub-pill sub-pill-success">{{ trend_growth_pct }}% less than without Premium</span>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="sub-hero-chart-locked">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-12V7a4 4 0 00-8 0v4h8z"/></svg>
+                <span>
+                    {% if breakdown.is_premium %}
+                    Keep using Premium to start tracking your savings over time.
+                    {% else %}
+                    Upgrade to start tracking your savings over time.
+                    {% endif %}
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="sub-card">
+        <div class="sub-card-title sub-card-title-tight">Savings Overview</div>
+        <div class="sub-overview-row">
+            <span>Member Since</span>
+            <span class="sub-overview-value">{{ locker.created_at|date:"M Y" }}</span>
+        </div>
+        <div class="sub-overview-row">
+            <span>Shipments</span>
+            <span class="sub-overview-value">{{ breakdown.shipments_count }}</span>
+        </div>
+        <div class="sub-overview-row">
+            <span>Categories Used</span>
+            <span class="sub-overview-value">{{ breakdown.categories_used }} / 4</span>
+        </div>
+        <div class="sub-overview-total">
+            <div class="sub-overview-total-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <div class="sub-overview-total-label">
+                    {% if breakdown.is_premium %}You've unlocked{% else %}You could unlock{% endif %}
+                </div>
+                <div class="sub-overview-total-value">&#8377;{{ breakdown.total|floatformat:2 }} in total savings</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page-header sub-section-header">
+    <div>
+        <h3>Breakdown by category</h3>
+        <p class="page-subtitle">See how Premium is helping you save on every shipment.</p>
+    </div>
+</div>
+
+<div class="sub-category-grid">
+    {% include 'accounts/_subscription_category_card.html' with c=breakdown.category_detail.trunkassist icon_key='trunkassist' tint='tint-gold' title='TrunkAssist fees' url_name='personal_shop:request_list' item_label='Request' empty_text='No requests yet' %}
+    {% include 'accounts/_subscription_category_card.html' with c=breakdown.category_detail.shipping icon_key='shipping' tint='tint-teal' title='Shipping' url_name='shipments:list' item_label='Shipment' empty_text='No shipments yet' %}
+    {% include 'accounts/_subscription_category_card.html' with c=breakdown.category_detail.storage icon_key='storage' tint='tint-amber' title='Storage' url_name='locker:my_locker' item_label='Charge' empty_text='No storage charges yet' %}
+    {% include 'accounts/_subscription_category_card.html' with c=breakdown.category_detail.consolidation icon_key='consolidation' tint='tint-green' title='Consolidation' url_name='shipments:list' item_label='Shipment' empty_text='No consolidations yet' %}
+</div>
+
+{% if breakdown.total <= 0 %}
+<div class="modern-alert alert-info sub-empty-alert">
+    Your savings will appear here as you use TrunkAssist, shipping, storage, and consolidation.
+</div>
+{% endif %}
+
+<div class="sub-bottom-grid">
+    <div class="sub-card">
+        <div class="sub-card-title">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 16L3 6l5.5 4L12 4l3.5 6L21 6l-2 10H5zm0 0h14v2H5v-2z"/></svg>
+            {% if breakdown.is_premium %}Premium Benefits You're Enjoying{% else %}Premium Benefits You'll Get{% endif %}
+        </div>
+        <div class="sub-benefits-list">
+            <div class="sub-benefit-row">
+                <div class="sub-benefit-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7h-3V6a3 3 0 00-3-3h-4a3 3 0 00-3 3v1H4a1 1 0 00-1 1v10a2 2 0 002 2h14a2 2 0 002-2V8a1 1 0 00-1-1z"/></svg></div>
+                <div>
+                    <div class="sub-benefit-title">{{ trunkassist_rate }}% off TrunkAssist fees</div>
+                    <div class="sub-benefit-sub">On every purchase request we place for you</div>
+                </div>
+            </div>
+            <div class="sub-benefit-row">
+                <div class="sub-benefit-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V7a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1h1m8 0h4m-4 0a2 2 0 11-4 0m4 0a2 2 0 01-4 0m8 0a2 2 0 11-4 0m4 0a2 2 0 01-4 0"/></svg></div>
+                <div>
+                    <div class="sub-benefit-title">Free consolidation</div>
+                    <div class="sub-benefit-sub">No consolidation charges on any shipment</div>
+                </div>
+            </div>
+            <div class="sub-benefit-row">
+                <div class="sub-benefit-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+                <div>
+                    <div class="sub-benefit-title">{{ shipping_rate }}% off shipping</div>
+                    <div class="sub-benefit-sub">Discounted rates on every shipment abroad</div>
+                </div>
+            </div>
+            <div class="sub-benefit-row">
+                <div class="sub-benefit-icon"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
+                <div>
+                    <div class="sub-benefit-title">{{ storage_rate }}% off storage</div>
+                    <div class="sub-benefit-sub">Lower daily storage charges on your Trunk</div>
+                </div>
+            </div>
+        </div>
+        <div class="sub-benefits-footer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v8m-4-4h8m5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            More savings. More benefits. That's Premium!
+        </div>
+    </div>
+
+    {% if breakdown.is_premium %}
+    <div class="sub-card">
+        <div class="sub-card-title">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Next Billing
+        </div>
+        <div class="sub-billing-row"><span class="label">Plan</span><span class="value">Premium (Annual)</span></div>
+        <div class="sub-billing-row"><span class="label">Renews On</span><span class="value">{{ locker.premium_expires_at|date:"d M Y" }}</span></div>
+        {% if premium_annual_price %}
+        <div class="sub-billing-row"><span class="label">Amount</span><span class="value">&#8377;{{ premium_annual_price|floatformat:2 }}</span></div>
+        {% endif %}
+        <div class="sub-billing-note">Prepaid annual plan &mdash; renew before it expires to keep your benefits.</div>
+        <button type="button" class="btn btn-primary premium-checkout-btn sub-billing-btn"
+            data-create-url="{% url 'payments:premium_create_order' %}"
+            data-verify-url="{% url 'payments:verify' %}"
+            data-error-target="subscription-billing-error">
+            Renew Now
+        </button>
+        <p id="subscription-billing-error" class="modern-alert alert-danger form-loading-error sub-billing-error" role="alert" hidden></p>
+    </div>
+    {% else %}
+    <div class="sub-card sub-upgrade-card">
+        <h3>Upgrade to Premium</h3>
+        <p>Start saving &#8377;{{ breakdown.total|floatformat:2 }} (and counting).</p>
+        <button type="button" class="btn btn-primary premium-checkout-btn"
+            data-create-url="{% url 'payments:premium_create_order' %}"
+            data-verify-url="{% url 'payments:verify' %}"
+            data-error-target="subscription-upgrade-error">
+            Upgrade to Premium
+        </button>
+        <p id="subscription-upgrade-error" class="modern-alert alert-danger form-loading-error" role="alert" hidden></p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="sub-promo-banner">
+    <div class="sub-promo-left">
+        <div class="sub-promo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div>
+            <div class="sub-promo-title">Keep saving more with Premium!</div>
+            <div class="sub-promo-sub">Shop from any Indian store and enjoy maximum savings on every shipment.</div>
+        </div>
+    </div>
+    <a href="{% url 'personal_shop:dashboard' %}" class="btn btn-primary">Shop Now &rarr;</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% include 'accounts/_premium_checkout_script.html' %}
+{% endblock %}

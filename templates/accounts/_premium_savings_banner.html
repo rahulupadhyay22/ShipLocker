@@ -1,0 +1,19 @@
+<!-- Shared lifetime Premium-savings banner — dashboard, profile, quotation,
+     and shipment-detail pages all include this with `premium_savings` (the
+     dict from apps.accounts.services.calculate_premium_savings) in context.
+     Reuses the same .modern-alert pattern as the dashboard's existing
+     Premium upsell banner rather than inventing new styling. -->
+{% if premium_savings and premium_savings.label %}
+<div class="modern-alert {% if premium_savings.is_premium %}alert-success{% else %}alert-info{% endif %}" style="align-items: center; margin-bottom: 1.5rem;">
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0;">
+        {% if premium_savings.is_premium %}
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        {% else %}
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/>
+        {% endif %}
+    </svg>
+    <div style="flex: 1;">
+        <strong>{{ premium_savings.label }}</strong>
+    </div>
+</div>
+{% endif %}

@@ -10,6 +10,7 @@ urlpatterns = [
     path('verify-otp/', views.VerifyOTPView.as_view(), name='verify_otp'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('subscription/', views.SubscriptionSavingsView.as_view(), name='subscription'),
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('addresses/add/', views.SavedAddressCreateView.as_view(), name='address_add'),
     path('addresses/<uuid:pk>/edit/', views.SavedAddressUpdateView.as_view(), name='address_edit'),

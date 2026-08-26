@@ -28,6 +28,8 @@
 </div>
 {% endif %}
 
+{% include 'accounts/_premium_savings_banner.html' %}
+
 <!-- Profile summary header -->
 <div class="profile-header-card">
     <div class="profile-identity">
@@ -38,6 +40,9 @@
                 {% if kyc_verified %}
                 <span class="status-badge status-approved">Verified</span>
                 {% endif %}
+                <span class="status-badge {% if is_premium %}status-premium{% else %}status-pending{% endif %}">
+                    {% if is_premium %}PREMIUM{% else %}FREE{% endif %}
+                </span>
             </div>
             <div class="profile-contact-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -80,6 +85,35 @@
             <span class="status-badge {% if kyc_verified %}status-approved{% else %}status-pending{% endif %}">
                 {% if kyc_verified %}Verified{% else %}Pending{% endif %}
             </span>
+        </div>
+        <div class="profile-summary-row">
+            <span class="profile-summary-label">Account Type</span>
+            {% if is_premium %}
+            <span>
+                <span class="profile-summary-value">Renews on {{ locker.premium_expires_at }}</span>
+                <button type="button" class="btn btn-secondary btn-sm premium-checkout-btn"
+                    data-create-url="{% url 'payments:premium_create_order' %}"
+                    data-verify-url="{% url 'payments:verify' %}"
+                    data-error-target="premium-account-type-error">
+                    Renew now
+                </button>
+            </span>
+            {% else %}
+            <span>
+                <span class="profile-summary-value">Free &mdash; ₹2,999/year for Premium</span>
+                <button type="button" class="btn btn-primary btn-sm premium-checkout-btn"
+                    data-create-url="{% url 'payments:premium_create_order' %}"
+                    data-verify-url="{% url 'payments:verify' %}"
+                    data-error-target="premium-account-type-error">
+                    Upgrade to Premium
+                </button>
+            </span>
+            {% endif %}
+        </div>
+        <p id="premium-account-type-error" class="modern-alert alert-danger form-loading-error" role="alert" hidden></p>
+        <div class="profile-summary-row">
+            <span></span>
+            <a href="{% url 'accounts:subscription' %}">View full savings breakdown &rarr;</a>
         </div>
         <div class="profile-summary-row">
             <span class="profile-summary-label">Trunk ID</span>
@@ -583,12 +617,22 @@
         }
 
         async function loadFormInto(url) {
-            const response = await fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                credentials: 'same-origin',
-            });
-            if (!response.ok) throw new Error('Could not load the address form.');
-            openPanelWithHtml(await response.text());
+            formSlot.innerHTML = '';
+            panel.style.display = '';
+            panel.style.minHeight = '160px';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            CamelTrunkLoading.showSection(panel);
+            try {
+                const response = await fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                });
+                if (!response.ok) throw new Error('Could not load the address form.');
+                openPanelWithHtml(await response.text());
+            } finally {
+                CamelTrunkLoading.hideSection(panel);
+                panel.style.minHeight = '';
+            }
         }
 
         // Open the "Add Address" panel instead of navigating away.
@@ -753,4 +797,5 @@
         });
     })();
 </script>
+{% include 'accounts/_premium_checkout_script.html' %}
 {% endblock %}

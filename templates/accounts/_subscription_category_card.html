@@ -1,0 +1,41 @@
+{% comment %}
+Renders one Subscription-page category card. Included once per category from
+subscription.html with: c (breakdown.category_detail.<key>), icon_key, tint,
+title, url_name, item_label (singular, pluralized via {{ c.count|pluralize }}),
+empty_text.
+{% endcomment %}
+<div class="sub-category-card">
+    <div class="sub-category-top">
+        <div class="sub-category-icon {{ tint }}">
+            {% if icon_key == 'trunkassist' %}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7h-3V6a3 3 0 00-3-3h-4a3 3 0 00-3 3v1H4a1 1 0 00-1 1v10a2 2 0 002 2h14a2 2 0 002-2V8a1 1 0 00-1-1zM9 6a1 1 0 011-1h4a1 1 0 011 1v1H9V6z"/></svg>
+            {% elif icon_key == 'shipping' %}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            {% elif icon_key == 'storage' %}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            {% elif icon_key == 'consolidation' %}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V7a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1h1m8 0h4m-4 0a2 2 0 11-4 0m4 0a2 2 0 01-4 0m8 0a2 2 0 11-4 0m4 0a2 2 0 01-4 0m4 0h1a1 1 0 001-1v-3.5a1 1 0 00-.29-.7l-2.5-2.5a1 1 0 00-.71-.3H16v6"/></svg>
+            {% endif %}
+        </div>
+        <div>
+            <div class="sub-category-title">{{ title }}</div>
+            <div class="sub-category-amount">&#8377;{{ c.discount|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="sub-category-pct-row">
+        Total Saved
+        {% if c.pct is not None %}<span class="sub-pill sub-pill-success">{{ c.pct }}%</span>{% else %}&mdash;{% endif %}
+    </div>
+    {% if c.discount > 0 %}
+    <div class="sub-category-price-row">
+        <span class="sub-price-strike">&#8377;{{ c.standard|floatformat:2 }}</span>
+        <span class="sub-price-arrow">&rarr;</span>
+        <span class="sub-price-final">&#8377;{{ c.effective|floatformat:2 }}</span>
+    </div>
+    {% endif %}
+    {% if c.count %}
+    <a href="{% url url_name %}" class="sub-category-footer">{{ c.count }} {{ item_label }}{{ c.count|pluralize }} <span>&rsaquo;</span></a>
+    {% else %}
+    <div class="sub-category-footer is-static">{{ empty_text }}</div>
+    {% endif %}
+</div>

@@ -1,5 +1,6 @@
 import secrets
 import uuid
+from decimal import Decimal, ROUND_HALF_UP
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.conf import settings
@@ -80,6 +81,9 @@ class Locker(models.Model):
     """Virtual locker assigned to each user."""
 
     PLAN_CHOICES = [('free', 'Free'), ('paid', 'Paid')]
+    PREMIUM_SERVICE_FEE_DISCOUNT_RATE = Decimal('0.25')
+    PREMIUM_SHIPPING_DISCOUNT_RATE = Decimal('0.05')
+    PREMIUM_STORAGE_DISCOUNT_RATE = Decimal('0.20')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='locker')
@@ -89,6 +93,20 @@ class Locker(models.Model):
     payment_grace_until = models.DateTimeField(
         null=True, blank=True,
         help_text="Set when a paid-plan renewal fails; non-null and not yet expired means the account is in its 7-day grace period."
+    )
+    premium_expires_at = models.DateField(
+        null=True, blank=True,
+        help_text="Date the current Premium subscription term ends. Null for Free-plan lockers."
+    )
+    premium_savings_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text=(
+            "Denormalized running total (spec 11a) — real Premium discount already "
+            "applied if this locker is Premium, or the hypothetical if it's Free. "
+            "Incremented at the exact moment a quotation/shipment/batch charge is "
+            "finalized as paid (see record_premium_savings()); never recomputed "
+            "live via aggregate queries on page load."
+        ),
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -127,6 +145,91 @@ class Locker(models.Model):
         except Exception:
             pass
         return "+91 9876543210"
+
+    @property
+    def is_premium(self):
+        """Return True if locker has paid plan."""
+        return self.plan_type == 'paid'
+
+    def apply_service_fee_discount(self, standard_amount):
+        """Apply 25% discount to service fee if premium; returns (discounted_amount, discount_amount)."""
+        if not self.is_premium or standard_amount is None:
+            return standard_amount, Decimal('0.00')
+        discount = (standard_amount * self.PREMIUM_SERVICE_FEE_DISCOUNT_RATE).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return (standard_amount - discount), discount
+
+    def apply_shipping_discount(self, standard_amount):
+        """Apply 5% discount to shipping if premium; returns (discounted_amount, discount_amount)."""
+        if not self.is_premium or standard_amount is None:
+            return standard_amount, Decimal('0.00')
+        discount = (standard_amount * self.PREMIUM_SHIPPING_DISCOUNT_RATE).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return (standard_amount - discount), discount
+
+    def apply_storage_discount(self, standard_amount):
+        """Apply 20% discount to daily storage charge if premium; returns (discounted_amount, discount_amount)."""
+        if not self.is_premium or standard_amount is None:
+            return standard_amount, Decimal('0.00')
+        discount = (standard_amount * self.PREMIUM_STORAGE_DISCOUNT_RATE).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return (standard_amount - discount), discount
+
+    def premium_free_service(self):
+        """Return True if locker has paid plan (eligible for free service features)."""
+        return self.is_premium
+
+    @classmethod
+    def premium_rate_percentages(cls):
+        """{'trunkassist_rate', 'shipping_rate', 'storage_rate'} as whole
+        percentages, for display templates — the single place HomeView and
+        SubscriptionSavingsView both source these from, instead of each
+        repeating the same three int(RATE * 100) lines."""
+        return {
+            'trunkassist_rate': int(cls.PREMIUM_SERVICE_FEE_DISCOUNT_RATE * 100),
+            'shipping_rate': int(cls.PREMIUM_SHIPPING_DISCOUNT_RATE * 100),
+            'storage_rate': int(cls.PREMIUM_STORAGE_DISCOUNT_RATE * 100),
+        }
+
+    def record_premium_savings(self, standard_amount, rate):
+        """Increment premium_savings_amount by standard_amount * rate — called
+        at the exact moment a quotation/shipment/batch charge is finalized as
+        paid (see apps/personal_shop/models.py::mark_paid,
+        apps/payments/views.py's shipment/_mark_batch_charges_paid blocks).
+
+        Always standard_amount * rate, regardless of whether this locker is
+        currently Premium: when Premium, that discount was actually applied
+        (standard - actual == standard * rate by construction of
+        apply_*_discount), so this is real money saved; when Free, it's the
+        hypothetical. Same formula either way — only the *label* shown at
+        display time (premium_savings_display) depends on current plan_type.
+
+        Uses an atomic F()-expression UPDATE, not read-modify-write on self,
+        so concurrent payments for the same locker (e.g. a shipment payment
+        and a storage-batch payment landing in the same second) can't clobber
+        each other. Works even when self isn't a fully-loaded instance —
+        only self.pk is used — so callers can pass a bare Locker(pk=locker_id).
+        """
+        if not standard_amount:
+            return
+        increment = (standard_amount * rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        if increment <= 0:
+            return
+        Locker.objects.filter(pk=self.pk).update(
+            premium_savings_amount=models.F('premium_savings_amount') + increment
+        )
+
+    @property
+    def premium_savings_display(self):
+        """Zero-query read of the denormalized premium_savings_amount, shaped
+        for templates/accounts/_premium_savings_banner.html — same dict shape
+        apps.accounts.services.calculate_premium_savings() used to compute
+        live via aggregate queries on every page load (spec 11a)."""
+        amount = self.premium_savings_amount or Decimal('0.00')
+        if amount <= 0:
+            return {'is_premium': self.is_premium, 'amount': Decimal('0.00'), 'label': ''}
+        if self.is_premium:
+            label = f"You've saved ₹{amount} with Premium so far"
+        else:
+            label = f"You could have saved ₹{amount} with Premium so far — upgrade now"
+        return {'is_premium': self.is_premium, 'amount': amount, 'label': label}
 
 
 class KYCDocument(models.Model):

@@ -104,10 +104,43 @@
         }
     });
 
+    function showSectionLoading(container) {
+        if (!container || container.querySelector(':scope > .section-loading-overlay')) {
+            return;
+        }
+        if (getComputedStyle(container).position === 'static') {
+            container.dataset.loadingPositionReset = 'true';
+            container.style.position = 'relative';
+        }
+        var overlay = document.createElement('div');
+        overlay.className = 'section-loading-overlay';
+        overlay.setAttribute('aria-hidden', 'true');
+        var spinner = document.createElement('span');
+        spinner.className = 'section-spinner';
+        overlay.appendChild(spinner);
+        container.appendChild(overlay);
+    }
+
+    function hideSectionLoading(container) {
+        if (!container) {
+            return;
+        }
+        var overlay = container.querySelector(':scope > .section-loading-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+        if (container.dataset.loadingPositionReset) {
+            container.style.position = '';
+            delete container.dataset.loadingPositionReset;
+        }
+    }
+
     window.CamelTrunkLoading = {
         start: startButtonLoading,
         stop: stopButtonLoading,
         showError: showError,
         clearError: clearError,
+        showSection: showSectionLoading,
+        hideSection: hideSectionLoading,
     };
 })();

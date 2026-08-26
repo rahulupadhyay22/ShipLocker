@@ -60,6 +60,12 @@
         <div class="card-icon-badge badge-gold"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
         <div><strong>Warehouse Storage</strong><p>Products are stored safely in your CamelTrunk.</p></div>
     </div>
+    {% if not is_premium %}
+    <div class="ta-why-item">
+        <div class="card-icon-badge badge-gold"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></div>
+        <div><strong>Premium saves 25% on service fees</strong><p><a href="{% url 'accounts:profile' %}">Upgrade to Premium</a> to save on every TrunkAssist request.</p></div>
+    </div>
+    {% endif %}
 </div>
 
 <h2 class="ta-section-title" id="ta-how-it-works">How TrunkAssist Works</h2>

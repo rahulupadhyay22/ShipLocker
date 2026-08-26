@@ -15,6 +15,11 @@ urlpatterns = [
         name='verify',
     ),
     path(
+        'premium/create-order/',
+        views.CreatePremiumSubscriptionOrderView.as_view(),
+        name='premium_create_order',
+    ),
+    path(
         'webhook/razorpay/',
         views.RazorpayWebhookView.as_view(),
         name='razorpay_webhook',

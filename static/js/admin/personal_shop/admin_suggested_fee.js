@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    var feeField = document.getElementById('id_service_fee_amount');
+    var feeField = document.getElementById('id_service_fee_standard_amount');
     var researchFeeField = document.getElementById('id_research_fee_amount');
     var totalField = document.getElementById('id_total_amount');
     var subtotalField = document.getElementById('id_subtotal');
@@ -23,6 +23,20 @@ document.addEventListener('DOMContentLoaded', function () {
     var feeAutoFilled = true;
     if (feeField) {
         feeField.addEventListener('input', function () { feeAutoFilled = false; });
+    }
+
+    // Whether the discount applies at all (isPremiumLocker), and the discount
+    // rate itself, are both learned from the suggested-fee endpoint's
+    // fee/premium_preview pair — never a second hardcoded copy of
+    // Locker.PREMIUM_SERVICE_FEE_DISCOUNT_RATE. premium_preview is only
+    // non-null for a Premium locker's request.
+    var isPremiumLocker = false;
+    var serviceFeeDiscountRate = 0;
+    function notePremiumStatus(data) {
+        isPremiumLocker = data.premium_preview !== null && data.premium_preview !== undefined;
+        if (isPremiumLocker && data.fee !== null && data.fee !== undefined) {
+            serviceFeeDiscountRate = 1 - (parseFloat(data.premium_preview) / parseFloat(data.fee));
+        }
     }
 
     function suggestedFeeBaseUrl() {
@@ -95,12 +109,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Which fields are relevant per quotation_type — mirrors the total_amount
     // formula exactly: a field hidden here is a field that formula ignores.
     var FIELDS_BY_TYPE = {
-        purchase: ['id_domestic_shipping_amount', 'id_service_fee_amount', 'id_payment_gateway_charge', 'id_subtotal'],
+        purchase: ['id_domestic_shipping_amount', 'id_service_fee_standard_amount', 'id_payment_gateway_charge', 'id_subtotal'],
         research_fee: ['id_research_fee_amount'],
         expense_advance: ['id_travel_expense_amount'],
     };
     var ALL_TOGGLABLE_FIELD_IDS = [
-        'id_domestic_shipping_amount', 'id_service_fee_amount', 'id_research_fee_amount',
+        'id_domestic_shipping_amount', 'id_service_fee_standard_amount', 'id_research_fee_amount',
         'id_travel_expense_amount', 'id_payment_gateway_charge', 'id_subtotal',
     ];
 
@@ -149,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // standalone upfront fees, nothing else factored in; purchase adds the
     // line-items subtotal on top of shipping/service-fee/gateway-charge.
     var AMOUNT_FIELD_IDS = [
-        'id_domestic_shipping_amount', 'id_service_fee_amount',
+        'id_domestic_shipping_amount', 'id_service_fee_standard_amount',
         'id_research_fee_amount', 'id_travel_expense_amount', 'id_payment_gateway_charge',
     ];
 
@@ -165,9 +179,13 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (type === 'expense_advance') {
             total = fieldValue('id_travel_expense_amount');
         } else {
+            var serviceFee = fieldValue('id_service_fee_standard_amount');
+            if (isPremiumLocker) {
+                serviceFee = Math.round(serviceFee * (1 - serviceFeeDiscountRate) * 100) / 100;
+            }
             total = subtotal
                 + fieldValue('id_domestic_shipping_amount')
-                + fieldValue('id_service_fee_amount')
+                + serviceFee
                 + fieldValue('id_payment_gateway_charge');
         }
         totalField.value = total.toFixed(2);
@@ -195,7 +213,8 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(url)
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                if (data.fee === null) return;
+                notePremiumStatus(data);
+                if (data.fee === null) { recalcTotal(); return; }
                 field.value = data.fee;
                 if (field === feeField) feeAutoFilled = true;
                 recalcTotal();
@@ -275,6 +294,7 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(suggestedFeeBaseUrl() + 'suggested-fee/' + requestId + '/?product_value=' + computeLineItemsSubtotal())
             .then(function (r) { return r.json(); })
             .then(function (data) {
+                notePremiumStatus(data);
                 var wasReset = updateQuotationTypeOptions(data.allowed_quotation_types || ['purchase'], true);
                 if (wasReset) return;
                 var type = currentQuotationType();
@@ -301,7 +321,9 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(suggestedFeeBaseUrl() + 'suggested-fee/' + initialRequestField.value + '/')
             .then(function (r) { return r.json(); })
             .then(function (data) {
+                notePremiumStatus(data);
                 updateQuotationTypeOptions(data.allowed_quotation_types || ['purchase'], false);
+                recalcTotal();
             });
     }
 });

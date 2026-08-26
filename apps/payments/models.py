@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from django.db import models, transaction
 from apps.accounts.models import User
 from apps.shipments.models import Shipment
@@ -54,6 +55,7 @@ class Payment(models.Model):
     PAYMENT_TYPE_CHOICES = [
         ('shipment', 'Shipment'),
         ('storage_batch', 'Storage Batch'),
+        ('premium_subscription', 'Premium Subscription'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -181,6 +183,7 @@ class BatchCharge(models.Model):
     charge_date = models.DateField()
     parcel_count_snapshot = models.PositiveIntegerField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount_standard = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=3, default='INR')
 
     status = models.CharField(
@@ -204,6 +207,12 @@ class BatchCharge(models.Model):
 
     def __str__(self):
         return f"{self.batch.locker.locker_id} — {self.charge_date} — ₹{self.amount} ({self.get_status_display()})"
+
+    @property
+    def discount_amount(self):
+        if self.amount_standard is None:
+            return Decimal('0.00')
+        return max(Decimal('0.00'), self.amount_standard - self.amount)
 
 
 class Invoice(models.Model):

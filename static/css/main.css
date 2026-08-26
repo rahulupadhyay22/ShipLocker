@@ -765,6 +765,28 @@ a {
     }
 }
 
+.section-loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--surface-0);
+    opacity: 0.85;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    border-radius: inherit;
+}
+
+.section-spinner {
+    display: inline-block;
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--primary);
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: btn-spin 0.6s linear infinite;
+}
+
 .form-loading-error {
     opacity: 0;
     transform: translateY(-4px);
@@ -853,6 +875,11 @@ a {
     color: var(--warning-text);
 }
 
+.status-premium {
+    background: var(--accent-light);
+    color: var(--accent-hover);
+}
+
 /* Alerts */
 .alert,
 .modern-alert {
@@ -863,6 +890,10 @@ a {
     gap: 1rem;
     font-size: 0.95rem;
     border: 1px solid transparent;
+}
+
+.modern-alert[hidden] {
+    display: none;
 }
 
 .alert-info {

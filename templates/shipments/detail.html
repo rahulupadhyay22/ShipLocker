@@ -27,6 +27,8 @@
     </div>
 </div>
 
+{% include 'accounts/_premium_savings_banner.html' %}
+
 <!-- Status Card -->
 <div class="card sd-status-card">
     <span
@@ -138,7 +140,12 @@
                                 {% if shipment.service_type == opt.code %}checked{% endif %} required>
                             <span class="rc-content">
                                 <strong>{{ opt.label }}</strong>
-                                <span class="sd-service-price">{{ shipment.currency }} {{ opt.price }} &middot; {{ opt.delivery_days_min }}&ndash;{{ opt.delivery_days_max }} days</span>
+                                <span class="sd-service-price">
+                                    {% if opt.standard_price != opt.price %}
+                                    <s class="sd-service-price-strike">{{ shipment.currency }} {{ opt.standard_price }}</s>
+                                    {% endif %}
+                                    {{ shipment.currency }} {{ opt.price }} &middot; {{ opt.delivery_days_min }}&ndash;{{ opt.delivery_days_max }} days
+                                </span>
                             </span>
                         </label>
                         {% endfor %}
@@ -155,16 +162,24 @@
                 {% if shipment.total_weight_kg is None %}
                 <span class="sd-info-value sd-info-value-pending" id="sd-shipping-amount">Shown once volumetric weight is added</span>
                 {% else %}
-                <span class="sd-info-value" id="sd-shipping-amount">{{ shipment.currency }} {{ shipping_amount|default:"0.00" }}</span>
+                <span class="sd-info-value" id="sd-shipping-amount">
+                    {{ shipment.currency }} {{ shipping_amount|default:"0.00" }}
+                    {% if shipping_discount_amount > 0 %}<span class="sd-empty-text">(5% Premium savings applied)</span>{% endif %}
+                </span>
                 {% endif %}
             </div>
             <div class="sd-info-item" id="sd-storage-fee-row" {% if not storage_fee_total > 0 %}hidden{% endif %}>
                 <span class="sd-info-label">Storage Fee</span>
                 <span class="sd-info-value">{{ shipment.currency }} {{ storage_fee_total }}</span>
             </div>
-            <div class="sd-info-item" id="sd-consolidation-fee-row" {% if not consolidation_fee > 0 %}hidden{% endif %}>
+            <div class="sd-info-item" id="sd-consolidation-fee-row"
+                {% if not consolidation_fee > 0 and not shipment.consolidation_fee_standard > 0 %}hidden{% endif %}>
                 <span class="sd-info-label">Consolidation Fee</span>
+                {% if not consolidation_fee > 0 and shipment.consolidation_fee_standard > 0 %}
+                <span class="sd-info-value">Consolidation &mdash; FREE with Premium (saved {{ shipment.currency }} {{ shipment.consolidation_fee_standard }})</span>
+                {% else %}
                 <span class="sd-info-value">{{ shipment.currency }} {{ consolidation_fee }}</span>
+                {% endif %}
             </div>
             <div class="sd-info-item sd-info-total">
                 <span class="sd-info-label">Total {% if shipment.payment_status == 'paid' %}Paid{% else %}Due{% endif %}</span>
@@ -469,6 +484,8 @@
                     description: 'Shipping payment for {{ shipment.display_id }}',
                     order_id: orderData.order_id,
                     handler: async function (response) {
+                        const container = payNowBtn.closest('.card') || payNowBtn.parentElement;
+                        CamelTrunkLoading.showSection(container);
                         try {
                             const verifyResult = await verifyPayment(verifyUrl, {
                                 razorpay_order_id: response.razorpay_order_id,
@@ -484,6 +501,7 @@
                         } catch (error) {
                             CamelTrunkLoading.showError(payNowBtn, error.message || 'Payment verification failed.');
                         } finally {
+                            CamelTrunkLoading.hideSection(container);
                             CamelTrunkLoading.stop(payNowBtn);
                         }
                     },

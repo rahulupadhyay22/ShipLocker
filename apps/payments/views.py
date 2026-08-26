@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import timedelta
 from decimal import Decimal
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseBadRequest, Http404
 from django.shortcuts import get_object_or_404
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
@@ -48,11 +48,71 @@ def _mark_batch_charges_paid(payment):
     if not charge_ids:
         return
 
+    # Snapshot amount_standard per locker *before* the bulk .update() below —
+    # a queryset .update() bypasses save() (and any per-row loop here would
+    # be exactly the per-row cost this denormalization is meant to avoid),
+    # so this is the one place premium_savings_amount is grouped and
+    # incremented in bulk rather than per-charge.
+    from apps.accounts.models import Locker
+    charges = list(
+        BatchCharge.objects.filter(status='pending', id__in=charge_ids)
+        .values_list('batch__locker_id', 'amount_standard')
+    )
+
     BatchCharge.objects.filter(status='pending', id__in=charge_ids).update(
         status='paid',
         payment=payment,
         paid_at=timezone.now(),
     )
+
+    standard_by_locker = {}
+    for locker_id, amount_standard in charges:
+        standard_by_locker[locker_id] = standard_by_locker.get(locker_id, Decimal('0.00')) + (amount_standard or Decimal('0.00'))
+    for locker_id, standard_total in standard_by_locker.items():
+        Locker(pk=locker_id).record_premium_savings(standard_total, Locker.PREMIUM_STORAGE_DISCOUNT_RATE)
+
+
+def _record_shipment_premium_savings(shipment):
+    """Called right after a shipment's payment_status flips to 'paid' — the
+    exact finalize point for its shipping_cost, same as
+    _mark_batch_charges_paid does for BatchCharge and
+    PersonalShopRequest.mark_paid() does for its active_quotation.
+
+    Also records consolidation savings here, not as a separate call site —
+    a shipment's shipping and consolidation charges finalize as paid at the
+    exact same moment (this same shipment.save()), so there's no reason to
+    split them. Consolidation is 100% off for Premium (waived entirely by
+    apps.payments.services._get_consolidation_fee_amount), not a percentage
+    rate, hence Decimal('1.00') rather than one of the PREMIUM_*_DISCOUNT_RATE
+    constants — matches calculate_premium_savings_breakdown()'s treatment of
+    consolidation as "the one category that isn't a percentage discount"."""
+    from decimal import Decimal
+    from apps.accounts.models import Locker
+    locker = getattr(shipment.user, 'locker', None)
+    if locker is not None:
+        locker.record_premium_savings(shipment.shipping_cost_standard, Locker.PREMIUM_SHIPPING_DISCOUNT_RATE)
+        locker.record_premium_savings(shipment.consolidation_fee_standard, Decimal('1.00'))
+
+
+def _activate_premium_subscription(payment):
+    """Called once a premium_subscription Payment is captured, from both
+    VerifyPaymentView and RazorpayWebhookView — kept in one place, same
+    reason _mark_batch_charges_paid above is shared between the two."""
+    from apps.locker.services.batch_billing import apply_upgrade, resolve_grace_period, get_open_batch
+
+    locker = payment.user.locker
+    today = timezone.localdate()
+    was_free = locker.plan_type != 'paid'
+    in_grace = locker.payment_grace_until is not None
+    base_date = locker.premium_expires_at if (locker.premium_expires_at and locker.premium_expires_at > today) else today
+    locker.plan_type = 'paid'
+    locker.premium_expires_at = base_date + timedelta(days=365)
+    locker.save(update_fields=['plan_type', 'premium_expires_at'])
+    if in_grace:
+        resolve_grace_period(locker, today, payment_succeeded=True)
+    elif was_free:
+        apply_upgrade(locker, today, active_batch=get_open_batch(locker))
+    logger.info(f"Premium subscription activated/renewed: locker={locker.locker_id} expires={locker.premium_expires_at}")
 
 
 class CreatePaymentOrderView(LoginRequiredMixin, View):
@@ -66,6 +126,7 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         shipment = get_object_or_404(
             Shipment, pk=shipment_pk, user=request.user
         )
+        shipment.refresh_shipping_discount()
 
         if not shipment.shipping_cost and shipment.payment_status != 'paid':
             return JsonResponse({'error': 'Shipping cost not set'}, status=400)
@@ -166,6 +227,63 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         })
 
 
+class CreatePremiumSubscriptionOrderView(LoginRequiredMixin, View):
+    """Create a Razorpay order for a self-serve CamelTrunk Premium annual
+    subscription. Operates on request.user directly (no URL-supplied
+    object), so LoginRequiredMixin alone is correct — no ownership mixin
+    needed since there's no pk being looked up."""
+
+    def post(self, request):
+        locker = getattr(request.user, 'locker', None)
+        if locker is None:
+            return JsonResponse({'error': 'No locker found'}, status=404)
+
+        service = RazorpayService()
+        if not service.is_enabled:
+            return JsonResponse({'error': 'Payments not configured'}, status=503)
+
+        from apps.notifications.models import AppSettings
+        price = AppSettings.get_settings().premium_annual_price
+        amount_paise = int(price * 100)
+
+        with transaction.atomic():
+            existing = Payment.objects.select_for_update().filter(
+                user=request.user, payment_type='premium_subscription', status='pending',
+                created_at__gte=timezone.now() - timedelta(minutes=30),
+            ).order_by('-created_at').first()
+            if existing and existing.razorpay_order_id:
+                return JsonResponse({
+                    'order_id': existing.razorpay_order_id,
+                    'amount': int(existing.amount * 100),
+                    'currency': existing.currency,
+                    'key_id': service.key_id,
+                    'payment_pk': str(existing.pk),
+                })
+
+            payment = Payment.objects.create(
+                user=request.user, amount=price, currency='INR',
+                payment_type='premium_subscription', payment_method='razorpay', status='pending',
+                description='CamelTrunk Premium — annual subscription',
+            )
+            order = service.create_order(
+                amount_paise=amount_paise, currency='INR', receipt=payment.display_id,
+                notes={'user_id': str(request.user.id), 'purpose': 'premium_subscription'},
+            )
+            if not order:
+                payment.status = 'failed'
+                payment.failure_reason = 'Order creation failed'
+                payment.save()
+                return JsonResponse({'error': 'Payment order creation failed'}, status=502)
+
+            payment.razorpay_order_id = order['id']
+            payment.save()
+
+        return JsonResponse({
+            'order_id': order['id'], 'amount': amount_paise, 'currency': 'INR',
+            'key_id': service.key_id, 'payment_pk': str(payment.pk),
+        })
+
+
 class VerifyPaymentView(LoginRequiredMixin, View):
     """Verify Razorpay payment signature and mark payment as captured."""
 
@@ -203,6 +321,16 @@ class VerifyPaymentView(LoginRequiredMixin, View):
             return JsonResponse({'error': 'Payment verification failed'}, status=400)
 
         with transaction.atomic():
+            try:
+                payment = Payment.objects.select_for_update().get(
+                    razorpay_order_id=razorpay_order_id, user=request.user
+                )
+            except Payment.DoesNotExist:
+                raise Http404
+
+            if payment.status == 'captured':
+                return JsonResponse({'status': 'success', 'payment_id': str(payment.pk)})
+
             payment.razorpay_payment_id = razorpay_payment_id
             payment.razorpay_signature = razorpay_signature
             payment.status = 'captured'
@@ -217,10 +345,13 @@ class VerifyPaymentView(LoginRequiredMixin, View):
                 payment.shipment.paid_at = timezone.now()
                 payment.shipment.advance_after_payment()
                 payment.shipment.save()
+                _record_shipment_premium_savings(payment.shipment)
             elif payment.personal_shop_request:
                 payment.personal_shop_request.mark_paid()
             elif payment.payment_type == 'storage_batch':
                 logger.info(f"Storage batch payment captured: payment={payment.pk} amount={payment.amount}")
+            elif payment.payment_type == 'premium_subscription':
+                _activate_premium_subscription(payment)
 
         logger.info(
             f"Payment VERIFIED: user={request.user.email} "
@@ -270,9 +401,11 @@ class RazorpayWebhookView(View):
 
             if order_id:
                 try:
-                    payment = Payment.objects.get(razorpay_order_id=order_id)
-                    if payment.status != 'captured':
-                        with transaction.atomic():
+                    with transaction.atomic():
+                        payment = Payment.objects.select_for_update().get(razorpay_order_id=order_id)
+
+                        captured_now = payment.status != 'captured'
+                        if captured_now:
                             payment.razorpay_payment_id = payment_id
                             payment.status = 'captured'
                             payment.paid_at = timezone.now()
@@ -283,10 +416,14 @@ class RazorpayWebhookView(View):
                                 payment.shipment.paid_at = timezone.now()
                                 payment.shipment.advance_after_payment()
                                 payment.shipment.save()
+                                _record_shipment_premium_savings(payment.shipment)
                             elif payment.personal_shop_request:
                                 payment.personal_shop_request.mark_paid()
                             elif payment.payment_type == 'storage_batch':
                                 logger.info(f"Storage batch payment captured via webhook: payment={payment.pk}")
+                            elif payment.payment_type == 'premium_subscription':
+                                _activate_premium_subscription(payment)
+                    if captured_now:
                         logger.info(f"Webhook: Payment captured for order {order_id}")
                 except Payment.DoesNotExist:
                     logger.warning(f"Webhook: Payment not found for order {order_id}")

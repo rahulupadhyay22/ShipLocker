@@ -542,6 +542,8 @@
                     description: 'Shipment payment',
                     order_id: orderData.order_id,
                     handler: async function (response) {
+                        const container = button.closest('.card') || button.parentElement;
+                        CamelTrunkLoading.showSection(container);
                         try {
                             const verifyResult = await verifyListPayment(verifyUrl, {
                                 razorpay_order_id: response.razorpay_order_id,
@@ -557,6 +559,7 @@
                         } catch (error) {
                             CamelTrunkLoading.showError(button, error.message || 'Payment verification failed.');
                         } finally {
+                            CamelTrunkLoading.hideSection(container);
                             CamelTrunkLoading.stop(button);
                         }
                     },

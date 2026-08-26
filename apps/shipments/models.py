@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from django.db import models, transaction
 from apps.accounts.models import User
 from apps.locker.models import Parcel
@@ -138,9 +139,17 @@ class Shipment(models.Model):
 
     # Pricing
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    shipping_cost_standard = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="Undiscounted shipping rate before any Premium discount — kept for display/comparison."
+    )
     consolidation_fee = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
         help_text="Locked in at shipment creation, regardless of parcel count."
+    )
+    consolidation_fee_standard = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="Undiscounted consolidation fee before any Premium waiver — kept for display/comparison."
     )
     currency = models.CharField(max_length=3, default='INR')
     
@@ -206,6 +215,35 @@ class Shipment(models.Model):
             self.status = 'packing'
             return True
         return False
+
+    @property
+    def shipping_discount_amount(self):
+        if self.shipping_cost_standard is None or self.shipping_cost is None:
+            return Decimal('0.00')
+        return self.shipping_cost_standard - self.shipping_cost
+
+    @property
+    def consolidation_fee_discount_amount(self):
+        if self.consolidation_fee_standard is None or self.consolidation_fee is None:
+            return Decimal('0.00')
+        return self.consolidation_fee_standard - self.consolidation_fee
+
+    def refresh_shipping_discount(self):
+        """Recompute shipping_cost from shipping_cost_standard against the
+        user's current locker plan — called on the detail page so an
+        upgrade/downgrade after tier selection is reflected without the
+        customer re-selecting a tier. No-ops once paid (price is locked in)
+        or if no tier has been selected yet."""
+        if self.payment_status == 'paid' or self.shipping_cost_standard is None:
+            return
+        locker = getattr(self.user, 'locker', None)
+        new_cost, _discount = (
+            locker.apply_shipping_discount(self.shipping_cost_standard) if locker is not None
+            else (self.shipping_cost_standard, Decimal('0.00'))
+        )
+        if new_cost != self.shipping_cost:
+            self.shipping_cost = new_cost
+            self.save(update_fields=['shipping_cost', 'updated_at'])
 
     @property
     def item_count(self):

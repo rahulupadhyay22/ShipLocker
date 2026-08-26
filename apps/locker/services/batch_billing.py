@@ -238,13 +238,15 @@ def run_daily_billing(batch, today):
             batch.first_unpaid_charge_date = today
             batch.save(update_fields=['first_unpaid_charge_date', 'updated_at'])
 
+        final_rate, _discount = batch.locker.apply_storage_discount(rate)
         try:
             with transaction.atomic():
                 charge = BatchCharge.objects.create(
                     batch=batch,
                     charge_date=today,
                     parcel_count_snapshot=batch.current_parcel_count,
-                    amount=rate,
+                    amount=final_rate,
+                    amount_standard=rate,
                 )
         except IntegrityError:
             logger.info(f"Daily charge skipped (already billed today): batch={batch.id} date={today}")
@@ -264,6 +266,7 @@ def _bill_retroactive(batch, from_date, to_date):
     from apps.payments.models import BatchCharge
 
     rate = lookup_daily_rate(batch.current_parcel_count)
+    final_rate, _discount = batch.locker.apply_storage_discount(rate)
     created = []
     d = from_date
     while d <= to_date:
@@ -271,7 +274,8 @@ def _bill_retroactive(batch, from_date, to_date):
             with transaction.atomic():
                 charge = BatchCharge.objects.create(
                     batch=batch, charge_date=d,
-                    parcel_count_snapshot=batch.current_parcel_count, amount=rate,
+                    parcel_count_snapshot=batch.current_parcel_count, amount=final_rate,
+                    amount_standard=rate,
                 )
                 created.append(charge)
         except IntegrityError:

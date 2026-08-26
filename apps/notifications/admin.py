@@ -96,6 +96,7 @@ class AppSettingsAdmin(ModelAdmin):
                 'razorpay_key_id',
                 'razorpay_key_secret',
                 'razorpay_webhook_secret',
+                'premium_annual_price',
             ),
             'description': 'Razorpay payment integration. Get credentials from dashboard.razorpay.com',
             'classes': ('collapse',),
