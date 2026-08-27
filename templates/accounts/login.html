@@ -28,26 +28,29 @@
         </div>
     </div>
 
+    <div class="form-group form-check">
+        <label class="form-check-label">
+            <input type="checkbox" name="privacy_consent" required>
+            I agree to the <a href="{% url 'content:terms' %}" target="_blank">Terms</a> and
+            <a href="{% url 'content:privacy' %}" target="_blank">Privacy Policy</a>
+        </label>
+    </div>
+
     <button type="submit" class="btn btn-primary auth-submit">Send OTP</button>
+
+    <div class="auth-divider">or continue with</div>
+
+    <div class="auth-social-row">
+        <button type="submit" formaction="{% url 'accounts:google_login' %}" formnovalidate
+            class="btn btn-secondary auth-social-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.9-.1-1.5-.2-2.2H12v4.2h6.5c-.1 1-.9 2.6-2.5 3.7l4 3.1c2.4-2.2 3.5-5.4 3.5-8.8z"/><path fill="#34A853" d="M12 24c3.2 0 5.9-1 7.9-2.9l-4-3.1c-1.1.7-2.4 1.2-3.9 1.2-3 0-5.6-2-6.5-4.8l-4.1 3.2C3.4 21.5 7.4 24 12 24z"/><path fill="#FBBC05" d="M5.5 14.4a7 7 0 0 1 0-4.8l-4.1-3.2a11.9 11.9 0 0 0 0 11.2z"/><path fill="#EA4335" d="M12 4.8c1.7 0 3.3.6 4.5 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.4 0 3.4 2.5 1.4 6.4l4.1 3.2c.9-2.8 3.5-4.8 6.5-4.8z"/></svg>
+            Login with Google
+        </button>
+    </div>
 </form>
-
-<div class="auth-divider">or continue with</div>
-
-<div class="auth-social-row">
-    <a href="{% url 'accounts:google_login' %}" class="btn btn-secondary auth-social-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.9-.1-1.5-.2-2.2H12v4.2h6.5c-.1 1-.9 2.6-2.5 3.7l4 3.1c2.4-2.2 3.5-5.4 3.5-8.8z"/><path fill="#34A853" d="M12 24c3.2 0 5.9-1 7.9-2.9l-4-3.1c-1.1.7-2.4 1.2-3.9 1.2-3 0-5.6-2-6.5-4.8l-4.1 3.2C3.4 21.5 7.4 24 12 24z"/><path fill="#FBBC05" d="M5.5 14.4a7 7 0 0 1 0-4.8l-4.1-3.2a11.9 11.9 0 0 0 0 11.2z"/><path fill="#EA4335" d="M12 4.8c1.7 0 3.3.6 4.5 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.4 0 3.4 2.5 1.4 6.4l4.1 3.2c.9-2.8 3.5-4.8 6.5-4.8z"/></svg>
-        Login with Google
-    </a>
-</div>
 
 <p class="auth-footnote">
     Don't have an account? <a href="{% url 'accounts:login' %}" class="auth-link">Sign Up</a>
-</p>
-
-<p class="auth-footnote">
-    By continuing, you agree to our
-    <a href="{% url 'content:terms' %}">Terms</a> and
-    <a href="{% url 'content:privacy' %}">Privacy Policy</a>
 </p>
 
 <div class="auth-seal">

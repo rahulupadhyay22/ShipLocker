@@ -40,7 +40,15 @@ class SyncPremiumRenewalsCommandTests(TestCase):
         with patch('apps.accounts.management.commands.sync_premium_renewals.send_notification') as mock_notify:
             call_command('sync_premium_renewals')
 
-        mock_notify.assert_called_once_with(locker_due.user, 'premium_renewal_reminder', components=[])
+        mock_notify.assert_called_once()
+        call_user, call_template = mock_notify.call_args.args
+        components = mock_notify.call_args.kwargs['components']
+        self.assertEqual(call_user, locker_due.user)
+        self.assertEqual(call_template, 'premium_renewal_reminder')
+        params = components[0]['parameters']
+        self.assertEqual(params[0]['text'], locker_due.user.get_full_name())
+        self.assertEqual(params[1]['text'], locker_due.premium_expires_at.strftime('%d %b %Y'))
+        self.assertIn('/accounts/subscription/', params[2]['text'])
 
     def test_reminder_not_sent_when_already_in_grace(self):
         today = timezone.localdate()

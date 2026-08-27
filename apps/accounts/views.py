@@ -12,8 +12,9 @@ from django.utils import timezone
 import logging
 
 from indiabox.mixins import ObjectOwnershipRequiredMixin, SecureActionMixin
-from .models import User, Locker, SavedAddress
+from .models import User, Locker, SavedAddress, ConsentRecord
 from .forms import SavedAddressForm
+from .account_deletion import delete_user_account, DeletionBlocked
 from .services import (
     SupabaseAuth,
     _monthly_category_totals,
@@ -22,6 +23,29 @@ from .services import (
     calculate_premium_savings_trend,
     windowed_savings_pct,
 )
+
+
+def _client_ip(request):
+    return SecureActionMixin()._get_client_ip(request)
+
+
+def _record_signup_consent(request, user):
+    """Called only when VerifyOTPView/GoogleCallbackView actually creates a
+    new User — pulls the timestamp/IP the consent checkbox was submitted
+    with from the session (set in LoginView.post/GoogleLoginView.post)."""
+    from apps.notifications.models import AppSettings
+    if not request.session.pop('signup_consent_given', False):
+        # Shouldn't happen — both signup entry points require the checkbox —
+        # but never block account creation over a missing consent record.
+        logger.warning(f"User {user.pk} created with no recorded signup consent.")
+        return
+    ip_address = request.session.pop('signup_consent_ip', None)
+    ConsentRecord.objects.create(
+        user=user,
+        consent_type='signup',
+        policy_version=AppSettings.get_settings().privacy_policy_version,
+        ip_address=ip_address,
+    )
 
 logger = logging.getLogger('security')
 
@@ -37,11 +61,15 @@ class LoginView(View):
     
     def post(self, request):
         email = request.POST.get('email', '').strip().lower()
-        
+
         if not email:
             messages.error(request, 'Please enter your email address.')
             return render(request, self.template_name)
-        
+
+        if not request.POST.get('privacy_consent'):
+            messages.error(request, 'Please agree to the Privacy Policy to continue.')
+            return render(request, self.template_name)
+
         # Validate email format
         from indiabox.validators import validate_email
         from django.core.exceptions import ValidationError
@@ -50,7 +78,7 @@ class LoginView(View):
         except ValidationError as e:
             messages.error(request, str(e))
             return render(request, self.template_name)
-        
+
         # Send OTP via Supabase
         try:
             auth = SupabaseAuth()
@@ -60,6 +88,10 @@ class LoginView(View):
             import secrets
             otp_session_token = secrets.token_urlsafe(32)
             request.session['otp_session_token'] = otp_session_token
+            # Consent is only turned into a ConsentRecord if this OTP verify
+            # actually creates a new User — see _record_signup_consent.
+            request.session['signup_consent_given'] = True
+            request.session['signup_consent_ip'] = _client_ip(request)
             messages.success(request, f'OTP sent to {email}. Please check your inbox.')
             return redirect('accounts:verify_otp')
         except Exception as e:
@@ -69,12 +101,25 @@ class LoginView(View):
 
 
 class GoogleLoginView(View):
-    """Handle Google OAuth login via Supabase."""
-    
+    """Handle Google OAuth login via Supabase.
+
+    POST only (triggered by a submit button in login.html's shared form) —
+    the same consent checkbox that gates the email/OTP flow gates this one,
+    which a bare GET link couldn't enforce server-side."""
+
     def get(self, request):
         if request.user.is_authenticated:
             return redirect('accounts:dashboard')
-        
+        return redirect('accounts:login')
+
+    def post(self, request):
+        if request.user.is_authenticated:
+            return redirect('accounts:dashboard')
+
+        if not request.POST.get('privacy_consent'):
+            messages.error(request, 'Please agree to the Privacy Policy to continue.')
+            return redirect('accounts:login')
+
         try:
             auth = SupabaseAuth()
             # Get the OAuth URL from Supabase — must point back at our callback,
@@ -84,6 +129,8 @@ class GoogleLoginView(View):
             # PKCE: the verifier has to survive until the callback request, so
             # it rides in the Django session (mirrors the OTP session token below).
             request.session['google_code_verifier'] = code_verifier
+            request.session['signup_consent_given'] = True
+            request.session['signup_consent_ip'] = _client_ip(request)
             return redirect(oauth_url)
         except Exception as e:
             logger.error(f'Google login failed: {e}')
@@ -118,6 +165,7 @@ class GoogleCallbackView(View):
             )
             if created:
                 Locker.objects.create(user=user)
+                _record_signup_consent(request, user)
             if not user.supabase_id:
                 user.supabase_id = result.user.id
                 user.save()
@@ -171,7 +219,8 @@ class VerifyOTPView(View):
             # Create locker if new user
             if created:
                 Locker.objects.create(user=user)
-            
+                _record_signup_consent(request, user)
+
             # Update supabase_id if not set
             if not user.supabase_id and result.user:
                 user.supabase_id = result.user.id
@@ -225,8 +274,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             locker = Locker.objects.create(user=user)
         
         # Get announcements
-        from apps.content.models import Announcement
-        announcements = Announcement.objects.filter(is_active=True).order_by('-created_at')[:5]
+        from apps.content.services import get_active_announcements
+        announcements = get_active_announcements()
         
         # Get parcel counts with single aggregate query (instead of 3 separate counts)
         from apps.locker.models import Parcel
@@ -378,6 +427,101 @@ class ProfileView(LoginRequiredMixin, View):
 
         messages.success(request, 'Profile updated successfully.')
         return redirect('accounts:profile')
+
+
+class AccountDataExportView(LoginRequiredMixin, View):
+    """DPDP Act self-service data export — everything CamelTrunk holds about
+    the requesting user, as a downloadable JSON file. KYC document *files*
+    are deliberately excluded (only type/status/dates) — re-exporting raw ID
+    scans through a second, less-audited download path isn't worth adding."""
+
+    def get(self, request):
+        import json
+        from django.core.serializers.json import DjangoJSONEncoder
+        from django.http import HttpResponse
+
+        user = request.user
+        locker = getattr(user, 'locker', None)
+
+        data = {
+            'exported_at': timezone.now(),
+            'profile': {
+                'email': user.email,
+                'full_name': user.full_name,
+                'phone': user.phone,
+                'whatsapp_number': user.whatsapp_number,
+                'date_joined': user.date_joined,
+                'locker_id': locker.locker_id if locker else None,
+                'plan_type': locker.plan_type if locker else None,
+            },
+            'kyc_documents': list(
+                user.kyc_documents.values('document_type', 'status', 'uploaded_at', 'reviewed_at')
+            ),
+            'saved_addresses': list(
+                user.saved_addresses.values(
+                    'label', 'recipient_name', 'address_line1', 'address_line2',
+                    'city', 'state', 'postal_code', 'country',
+                )
+            ),
+            'parcels': list(
+                locker.parcels.values('display_id', 'item_name', 'status', 'received_at')
+            ) if locker else [],
+            'shipments': list(
+                user.shipments.values(
+                    'display_id', 'status', 'tracking_number', 'carrier',
+                    'shipping_cost', 'created_at',
+                )
+            ),
+            'payments': list(
+                user.payments.values(
+                    'display_id', 'amount', 'currency', 'payment_type',
+                    'status', 'created_at', 'paid_at',
+                )
+            ),
+        }
+
+        response = HttpResponse(
+            json.dumps(data, cls=DjangoJSONEncoder, indent=2),
+            content_type='application/json',
+        )
+        response['Content-Disposition'] = f'attachment; filename="cameltrunk-data-{user.pk}.json"'
+        logger.info(f"Data export: {user.email}")
+        return response
+
+
+class AccountDeletionRequestView(LoginRequiredMixin, View):
+    """DPDP Act self-service account deletion. See apps/accounts/account_deletion.py
+    for what's actually retained vs. erased and why.
+
+    Deliberately doesn't use SecureActionMixin — that mixin logs
+    request.user.email *after* dispatch() returns, but this view calls
+    logout() partway through, which replaces request.user with an
+    AnonymousUser before the mixin's post-dispatch logging line runs.
+    Logged manually here instead, before logout."""
+    template_name = 'accounts/delete_account.html'
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+    def post(self, request):
+        if request.POST.get('confirm', '').strip().upper() != 'DELETE':
+            messages.error(request, 'Please type DELETE to confirm.')
+            return render(request, self.template_name)
+
+        request.user.deletion_requested_at = timezone.now()
+        request.user.save(update_fields=['deletion_requested_at'])
+        logger.info(f"Secure action: AccountDeletionRequestView by {request.user.email} from {_client_ip(request)}")
+
+        try:
+            delete_user_account(request.user)
+        except DeletionBlocked as e:
+            messages.error(request, str(e))
+            return render(request, self.template_name)
+
+        logout(request)
+        messages.success(request, 'Your account has been deleted. Financial and shipment '
+                                   'records are retained as required by law, no longer linked to your identity.')
+        return redirect('content:home')
 
 
 class SubscriptionSavingsView(LoginRequiredMixin, View):

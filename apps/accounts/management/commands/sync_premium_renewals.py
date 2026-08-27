@@ -11,7 +11,9 @@ Schedule to run once per day, alongside sync_storage_batches:
 """
 
 from datetime import timedelta
+from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.urls import reverse
 from django.utils import timezone
 from apps.accounts.models import Locker
 from apps.locker.services import batch_billing
@@ -27,7 +29,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         dry_run = options.get('dry_run', False)
         today = timezone.localdate()
-        queryset = Locker.objects.filter(plan_type='paid', premium_expires_at__isnull=False)
+        queryset = Locker.objects.filter(
+            plan_type='paid', premium_expires_at__isnull=False
+        ).select_related('user')
         reminded = entered_grace = downgraded = errors = 0
 
         for locker in queryset:
@@ -35,14 +39,18 @@ class Command(BaseCommand):
                 days_until_expiry = (locker.premium_expires_at - today).days
                 if days_until_expiry == 7 and locker.payment_grace_until is None:
                     if not dry_run:
-                        # components=[] is a placeholder — once the
-                        # 'premium_renewal_reminder' WhatsApp template exists
-                        # in WhatsApp Business Manager, replace this with the
-                        # variables it actually declares (e.g. a formatted
-                        # locker.premium_expires_at), matching the shape an
-                        # existing send_notification call site uses. Do not
-                        # ship a literal empty list once the template is known.
-                        send_notification(locker.user, 'premium_renewal_reminder', components=[])
+                        renewal_link = settings.SITE_URL + reverse('accounts:subscription')
+                        components = [
+                            {
+                                "type": "body",
+                                "parameters": [
+                                    {"type": "text", "text": locker.user.get_full_name()},
+                                    {"type": "text", "text": locker.premium_expires_at.strftime('%d %b %Y')},
+                                    {"type": "text", "text": renewal_link},
+                                ]
+                            }
+                        ]
+                        send_notification(locker.user, 'premium_renewal_reminder', components=components)
                     reminded += 1
                 elif today >= locker.premium_expires_at and locker.payment_grace_until is None:
                     if not dry_run:

@@ -42,6 +42,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(null=True, blank=True)
+
+    deletion_requested_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Set when the user submits a self-service account deletion request (DPDP Act erasure request)."
+    )
+    anonymized_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Set once account_deletion.delete_user_account() has anonymized this row. "
+                   "The row itself is never hard-deleted — see apps/accounts/account_deletion.py "
+                   "for why (Payment/Shipment/BatchCharge financial records must be retained "
+                   "and CASCADE from User)."
+    )
     
     objects = UserManager()
     
@@ -113,6 +125,9 @@ class Locker(models.Model):
     class Meta:
         verbose_name = 'Locker'
         verbose_name_plural = 'Lockers'
+        indexes = [
+            models.Index(fields=['plan_type', 'premium_expires_at'], name='idx_locker_plan_premium_exp'),
+        ]
     
     def __str__(self):
         return f"{self.locker_id} - {self.user.get_full_name()}"
@@ -319,3 +334,32 @@ class SavedAddress(models.Model):
                 user=self.user, is_default=True
             ).exclude(pk=self.pk).update(is_default=False)
         super().save(*args, **kwargs)
+
+
+class ConsentRecord(models.Model):
+    """DPDP Act consent log — proof of what a user agreed to, when, and
+    against which policy version. Not just a UI checkbox: every row here
+    is a durable record a grievance officer or auditor can point to."""
+
+    CONSENT_TYPE_CHOICES = [
+        ('signup', 'Account Signup'),
+        ('kyc_upload', 'KYC Document Upload'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='consent_records')
+    consent_type = models.CharField(max_length=20, choices=CONSENT_TYPE_CHOICES)
+    policy_version = models.CharField(
+        max_length=20,
+        help_text="Snapshot of AppSettings.privacy_policy_version at the moment consent was given."
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    consented_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Consent Record'
+        verbose_name_plural = 'Consent Records'
+        ordering = ['-consented_at']
+
+    def __str__(self):
+        return f"{self.user.email} — {self.get_consent_type_display()} (v{self.policy_version})"

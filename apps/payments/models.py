@@ -204,6 +204,9 @@ class BatchCharge(models.Model):
             # the second attempt rather than double-charging.
             models.UniqueConstraint(fields=['batch', 'charge_date'], name='unique_batch_charge_per_day'),
         ]
+        indexes = [
+            models.Index(fields=['batch', 'status'], name='idx_batchcharge_batch_status'),
+        ]
 
     def __str__(self):
         return f"{self.batch.locker.locker_id} — {self.charge_date} — ₹{self.amount} ({self.get_status_display()})"

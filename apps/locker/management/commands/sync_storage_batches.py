@@ -36,7 +36,9 @@ class Command(BaseCommand):
         dry_run = options.get('dry_run', False)
         today = timezone.localdate()
 
-        queryset = Batch.objects.filter(batch_status__in=['active_free', 'active_chargeable'])
+        queryset = Batch.objects.filter(
+            batch_status__in=['active_free', 'active_chargeable']
+        ).select_related('locker')
         total = queryset.count()
         charged = 0
         skipped_already_billed = 0

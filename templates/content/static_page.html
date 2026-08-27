@@ -1,4 +1,5 @@
 {% extends 'public_base.html' %}
+{% load content_extras %}
 
 {% block title %}{{ page.title }} - CamelTrunk{% endblock %}
 
@@ -9,7 +10,7 @@
 
 <div class="card">
     <div class="card-body static-content">
-        {{ page.content|safe|linebreaks }}
+        {{ page.content|sanitize_html|linebreaks }}
     </div>
 </div>
 

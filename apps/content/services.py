@@ -72,3 +72,59 @@ def build_zones_json():
 def invalidate_zones_cache(**kwargs):
     """Called on ShippingZone/ShippingRate save/delete -- see signals.py."""
     cache.delete(_zones_cache_key())
+
+
+# ---------------------------------------------------------------------------
+# ServiceCharge -- looked up by code on every TrunkAssist/consolidation-fee
+# computation (apps/personal_shop/pricing.py, apps/payments/services.py).
+# ---------------------------------------------------------------------------
+
+SERVICE_CHARGE_CACHE_TTL = 60 * 60
+
+
+def _service_charge_cache_key(code):
+    return f'service_charge:{code}'
+
+
+def get_service_charge(code):
+    """Cached active ServiceCharge lookup by code. Some admin flows update
+    ServiceCharge rows via .update(), which bypasses the post_save signal
+    below entirely -- the TTL, not the signal, is the real safety net here."""
+    key = _service_charge_cache_key(code)
+    cached = cache.get(key)
+    if cached is None:
+        from .models import ServiceCharge
+        charge = ServiceCharge.objects.filter(code=code, is_active=True).first()
+        cache.set(key, charge or False, SERVICE_CHARGE_CACHE_TTL)
+        return charge
+    return cached or None
+
+
+def invalidate_service_charge_cache(code, **kwargs):
+    """Called on ServiceCharge save/delete -- see signals.py."""
+    if code:
+        cache.delete(_service_charge_cache_key(code))
+
+
+# ---------------------------------------------------------------------------
+# Active announcements -- read on every dashboard load.
+# ---------------------------------------------------------------------------
+
+ANNOUNCEMENTS_CACHE_KEY = 'active_announcements'
+ANNOUNCEMENTS_CACHE_TTL = 15 * 60
+
+
+def get_active_announcements():
+    """Cached list of active announcements, newest first, capped at 5 (same
+    shape the dashboard has always queried)."""
+    data = cache.get(ANNOUNCEMENTS_CACHE_KEY)
+    if data is None:
+        from .models import Announcement
+        data = list(Announcement.objects.filter(is_active=True).order_by('-created_at')[:5])
+        cache.set(ANNOUNCEMENTS_CACHE_KEY, data, ANNOUNCEMENTS_CACHE_TTL)
+    return data
+
+
+def invalidate_announcements_cache(**kwargs):
+    """Called on Announcement save/delete -- see signals.py."""
+    cache.delete(ANNOUNCEMENTS_CACHE_KEY)

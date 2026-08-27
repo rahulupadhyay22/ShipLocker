@@ -4,7 +4,7 @@ from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 from unfold.decorators import display
-from .models import User, Locker, KYCDocument, SavedAddress
+from .models import User, Locker, KYCDocument, SavedAddress, ConsentRecord
 
 
 @admin.register(User)
@@ -38,6 +38,13 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
         except Exception:
             return format_html('<span style="color:#9CA3AF;">No locker</span>')
     locker_id_display.short_description = 'Locker ID'
+
+    def has_delete_permission(self, request, obj=None):
+        # Hard-deleting a User cascades away Payment/Shipment/BatchCharge financial
+        # records (see apps/accounts/account_deletion.py). The only sanctioned way
+        # to remove a user's data is that module's anonymize-in-place flow, reached
+        # by the user themselves via AccountDeletionRequestView.
+        return False
 
 
 class LockerInline(StackedInline):
@@ -126,4 +133,24 @@ class SavedAddressAdmin(ModelAdmin):
     search_fields = ['user__email', 'recipient_name', 'city', 'label']
     raw_id_fields = ['user']
     list_editable = ['is_default']
+
+
+@admin.register(ConsentRecord)
+class ConsentRecordAdmin(ModelAdmin):
+    """Read-only audit trail — DPDP consent proof. Nothing here should ever
+    be editable or deletable; it exists to be pointed at, not modified."""
+    list_display = ['user', 'consent_type', 'policy_version', 'ip_address', 'consented_at']
+    list_filter = ['consent_type', 'policy_version']
+    search_fields = ['user__email']
+    raw_id_fields = ['user']
+    date_hierarchy = 'consented_at'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 

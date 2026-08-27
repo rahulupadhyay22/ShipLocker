@@ -16,12 +16,12 @@ def suggested_service_fee(request_type, product_value=None):
     None if no active ServiceCharge is configured for it (staff set one
     manually — custom_request in particular is always just a starting point,
     'final fee based on complexity' per the CamelTrunk pricing guide)."""
-    from apps.content.models import ServiceCharge
+    from apps.content.services import get_service_charge
 
     code = REQUEST_TYPE_TO_SERVICE_CHARGE_CODE.get(request_type)
     if code is None:
         return None
-    charge = ServiceCharge.objects.filter(code=code, is_active=True).first()
+    charge = get_service_charge(code)
     if charge is None:
         return None
     return charge.compute(product_value)

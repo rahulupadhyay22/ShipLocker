@@ -14,7 +14,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+# Fails closed: a missing/unset DEBUG env var means DEBUG=False, not True.
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', '')
@@ -24,14 +25,28 @@ if not SECRET_KEY:
     else:
         raise RuntimeError('SECRET_KEY environment variable must be set when DEBUG=False.')
 
+# A real (non-sqlite-fallback) database means this could be holding real user
+# data, so the dev encryption key fallback below must never apply to it —
+# gated on the DB target rather than DEBUG, since DEBUG can be (mis)set True
+# against a real database too.
+_has_real_database = bool(
+    os.getenv('DATABASE_URL', '').strip()
+    or os.getenv('DATABASE_POOLER_URL', '').strip()
+    or os.getenv('SUPABASE_POOLER_URL', '').strip()
+)
+
 # Key for encrypting sensitive AppSettings fields (e.g. supabase_service_role_key)
 # at rest in the database — see indiabox/fields.py:EncryptedCharField.
 FIELD_ENCRYPTION_KEY = os.getenv('FIELD_ENCRYPTION_KEY', '')
 if not FIELD_ENCRYPTION_KEY:
-    if DEBUG:
-        FIELD_ENCRYPTION_KEY = 'CojLDhe4IKi4qtjOVW1LBjdDLnaqvQjop2X_JFa6SW8='
+    if not _has_real_database:
+        # No real DB, so nothing encrypted under this key needs to survive a
+        # restart — safe to generate an ephemeral one rather than hardcode a
+        # secret in source.
+        from cryptography.fernet import Fernet
+        FIELD_ENCRYPTION_KEY = Fernet.generate_key().decode()
     else:
-        raise RuntimeError('FIELD_ENCRYPTION_KEY environment variable must be set when DEBUG=False.')
+        raise RuntimeError('FIELD_ENCRYPTION_KEY environment variable must be set when a real database is configured.')
 
 allowed_hosts_env = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',') if host.strip()]
 
@@ -49,6 +64,15 @@ if railway_static_url:
 
 ALLOWED_HOSTS = list(dict.fromkeys(allowed_hosts_env))
 
+# Base URL for building absolute links in outbound notifications (e.g. WhatsApp
+# reminders) where no request object is available. Falls back to the Railway
+# public domain, then the first allowed host.
+SITE_URL = os.getenv('SITE_URL', '').strip() or (
+    f'https://{railway_public_domain}' if railway_public_domain
+    else f'https://{ALLOWED_HOSTS[0]}' if ALLOWED_HOSTS
+    else 'http://localhost:8000'
+)
+
 # Note: Deprecated JAZZMIN settings removed. Django Unfold is used instead.
 
 INSTALLED_APPS = [
@@ -62,6 +86,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Admin 2FA (see indiabox/admin_site.py — django.contrib.admin is gated
+    # behind OTP verification for staff/superuser logins)
+    'django_otp',
+    'django_otp.plugins.otp_static',
+    'django_otp.plugins.otp_totp',
+    'two_factor',
     # Local apps
     'apps.accounts',
     'apps.locker',
@@ -81,6 +111,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
+    'indiabox.middleware.LockerCacheMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Custom Security Middleware
@@ -182,6 +214,22 @@ if not DEBUG:
             RuntimeWarning
         )
 
+# =============================================================================
+# ERROR TRACKING (Sentry)
+# =============================================================================
+SENTRY_DSN = os.getenv('SENTRY_DSN', '').strip()
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        environment=os.getenv('SENTRY_ENVIRONMENT', 'production' if not DEBUG else 'development'),
+        traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', '0.0')),
+        send_default_pii=False,
+    )
+
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -228,6 +276,11 @@ WHATSAPP_VERIFY_TOKEN = os.getenv('WHATSAPP_VERIFY_TOKEN', '')
 # Login URLs
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
+
+# Admin OTP gate wires its own login redirect explicitly (indiabox/admin_site.py)
+# rather than relying on two_factor's global-LOGIN_URL auto-patch — the site-wide
+# LOGIN_URL above is the customer passwordless flow, not the staff 2FA one.
+TWO_FACTOR_PATCH_ADMIN = False
 
 # Rate limiting: per-category thresholds, all overridable via env.
 # auth = login/OTP (per-IP AND per-account, exponential backoff on repeat abuse)
@@ -335,7 +388,13 @@ ALLOWED_UPLOAD_TYPES = [
 ]
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 
-# Logging Configuration – console only (safe for Railway / any PaaS)
+# Logging Configuration – console (Railway/PaaS log stream) plus Sentry for
+# the security logger specifically. Platform console logs are typically
+# retained hours-to-days and aren't searchable; routing 'security' through
+# Sentry gives it a durable, searchable destination without standing up a
+# dedicated log drain. sentry_sdk.integrations.logging.EventHandler is a
+# no-op when SENTRY_DSN isn't set (no Sentry client to send to), so this is
+# safe to leave in place unconditionally.
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -350,6 +409,13 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
+        'sentry': {
+            # WARNING+ only -- INFO-level security logs (routine OTP/login
+            # activity) still reach Sentry as breadcrumb context via its
+            # default LoggingIntegration, without costing a standalone event.
+            'level': 'WARNING',
+            'class': 'sentry_sdk.integrations.logging.EventHandler',
+        },
     },
     'root': {
         'handlers': ['console'],
@@ -362,12 +428,12 @@ LOGGING = {
             'propagate': False,
         },
         'security': {
-            'handlers': ['console'],
+            'handlers': ['console', 'sentry'],
             'level': 'INFO',
             'propagate': True,
         },
         'django.security': {
-            'handlers': ['console'],
+            'handlers': ['console', 'sentry'],
             'level': 'WARNING',
             'propagate': True,
         },

@@ -217,6 +217,8 @@ def run_daily_billing(batch, today):
     # apps.locker.models at load time).
 
     with transaction.atomic():
+        batch = Batch.objects.select_for_update().get(pk=batch.pk)
+
         if batch.current_parcel_count == 0:
             close_batch(batch, today)
             return None

@@ -13,3 +13,5 @@ django-redis==5.4.0
 redis==5.2.1
 cryptography==48.0.1
 sentry-sdk[django]==2.68.1
+django-two-factor-auth==1.18.1
+bleach==6.4.0

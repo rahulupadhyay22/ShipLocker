@@ -517,6 +517,24 @@
     </form>
 </div>
 
+<!-- Privacy & Data -->
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header">
+        <h3>Privacy &amp; Data</h3>
+    </div>
+    <div class="card-body">
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+            Manage the personal data CamelTrunk holds about you, per the
+            <a href="{% url 'content:privacy' %}">Privacy Policy</a>.
+        </p>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'accounts:data_export' %}" class="btn btn-secondary">Download My Data</a>
+            <a href="{% url 'accounts:delete_account' %}" class="btn btn-secondary"
+                style="border-color: var(--danger-text); color: var(--danger-text);">Delete My Account</a>
+        </div>
+    </div>
+</div>
+
 <!-- Need Help -->
 <div class="card" style="background: var(--surface-50); border-style: dashed; margin-top: 1.5rem;">
     <div class="card-body" style="text-align: center;">

@@ -4,7 +4,7 @@ from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 
-from apps.accounts.models import KYCDocument
+from apps.accounts.models import KYCDocument, ConsentRecord
 from apps.locker.utils import upload_kyc_document, get_signed_kyc_url, get_user_locker_id
 
 
@@ -37,6 +37,10 @@ class KYCUploadView(LoginRequiredMixin, View):
 
         if not doc_type or not file:
             messages.error(request, 'Please select document type and file.')
+            return render(request, self.template_name)
+
+        if not request.POST.get('kyc_consent'):
+            messages.error(request, 'Please consent to processing this document to continue.')
             return render(request, self.template_name)
 
         if doc_type not in dict(KYCDocument.DOCUMENT_TYPES):
@@ -72,7 +76,17 @@ class KYCUploadView(LoginRequiredMixin, View):
                 document_url=file_path,
                 status='pending'
             )
-            
+
+            from apps.notifications.models import AppSettings
+            from indiabox.mixins import SecureActionMixin
+            ConsentRecord.objects.create(
+                user=request.user,
+                consent_type='kyc_upload',
+                policy_version=AppSettings.get_settings().privacy_policy_version,
+                ip_address=SecureActionMixin()._get_client_ip(request),
+            )
+
+
             security_logger.info(
                 f"KYC uploaded: {request.user.email} - {doc_type}"
             )

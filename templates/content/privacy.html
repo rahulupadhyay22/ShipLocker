@@ -76,6 +76,17 @@
                 <p>If you have any questions about this privacy policy or our privacy practices, please contact us at:
                     <a href="mailto:privacy@cameltrunk.com" style="color: #005F73;">privacy@cameltrunk.com</a></p>
             </section>
+
+            {% if grievance_officer_name and grievance_officer_email %}
+            <section>
+                <h3>8. Grievance Officer</h3>
+                <p>In accordance with applicable data protection law, the Grievance Officer for CamelTrunk is:</p>
+                <p>
+                    {{ grievance_officer_name }}<br>
+                    <a href="mailto:{{ grievance_officer_email }}" style="color: #005F73;">{{ grievance_officer_email }}</a>
+                </p>
+            </section>
+            {% endif %}
         </div>
     </div>
 </div>

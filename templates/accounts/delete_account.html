@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Account - CamelTrunk{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Delete Account</h1>
+        <p class="page-subtitle">This can't be undone.</p>
+    </div>
+</div>
+
+{% if messages %}
+<div class="messages" style="margin-bottom: 2rem;">
+    {% for message in messages %}
+    <div class="modern-alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card" style="max-width: 640px;">
+    <div class="card-body">
+        <p style="margin-bottom: 1rem;">Requesting deletion will:</p>
+        <ul style="margin: 0 0 1rem 1.25rem; color: var(--text-secondary);">
+            <li>Permanently delete your KYC documents, saved addresses, and any parcels that haven't shipped yet</li>
+            <li>Remove your name, phone number, and WhatsApp number from your account</li>
+            <li>Log you out immediately, and revoke this email's login access
+                (in the rare case that step fails, our team is notified and follows up manually)</li>
+        </ul>
+        <p style="margin-bottom: 1rem;">
+            <strong>What we keep:</strong> payment records, and any parcel/shipment that already
+            shipped, are retained as required by tax and customs record-keeping law — no longer
+            linked to your name or contact details.
+        </p>
+        <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+            If you have an unpaid storage charge, you'll need to settle it before deletion can proceed.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="confirm">Type <strong>DELETE</strong> to confirm</label>
+                <input type="text" id="confirm" name="confirm" class="form-control" required autocomplete="off">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-secondary" style="border-color: var(--danger-text); color: var(--danger-text);">
+                    Delete My Account
+                </button>
+                <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

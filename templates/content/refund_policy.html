@@ -1,4 +1,5 @@
 {% extends base_template|default:'public_base.html' %}
+{% load content_extras %}
 
 {% block title %}Refund Policy - CamelTrunk{% endblock %}
 
@@ -55,7 +56,7 @@
         </div>
         <div class="card-body-clean">
             <div class="policy-content">
-                {{ section.content|safe }}
+                {{ section.content|sanitize_html }}
             </div>
         </div>
     </div>
@@ -64,7 +65,7 @@
 {% else %}
 <div class="modern-card">
     <div class="card-body-clean policy-content">
-        {{ page.content|safe }}
+        {{ page.content|sanitize_html }}
     </div>
 </div>
 {% endif %}

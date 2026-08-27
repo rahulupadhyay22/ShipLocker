@@ -42,10 +42,10 @@ class AppSettings(models.Model):
         default=False,
         help_text="Enable/disable WhatsApp notifications"
     )
-    whatsapp_api_token = models.CharField(
+    whatsapp_api_token = EncryptedCharField(
         max_length=500,
         blank=True,
-        help_text="Permanent Access Token from Meta App Dashboard"
+        help_text="Permanent Access Token from Meta App Dashboard — stored encrypted at rest"
     )
     whatsapp_phone_number_id = models.CharField(
         max_length=100,
@@ -209,15 +209,15 @@ class AppSettings(models.Model):
         blank=True,
         help_text="Razorpay Key ID"
     )
-    razorpay_key_secret = models.CharField(
+    razorpay_key_secret = EncryptedCharField(
         max_length=200,
         blank=True,
-        help_text="Razorpay Key Secret"
+        help_text="Razorpay Key Secret — stored encrypted at rest"
     )
-    razorpay_webhook_secret = models.CharField(
+    razorpay_webhook_secret = EncryptedCharField(
         max_length=200,
         blank=True,
-        help_text="Razorpay Webhook Secret"
+        help_text="Razorpay Webhook Secret — stored encrypted at rest"
     )
     razorpay_test_mode = models.BooleanField(
         default=True,
@@ -282,6 +282,25 @@ class AppSettings(models.Model):
     )
 
     # ===========================
+    # DPDP ACT 2023 COMPLIANCE
+    # ===========================
+    grievance_officer_name = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Named grievance officer per DPDP Act 2023 — shown on the Privacy Policy page"
+    )
+    grievance_officer_email = models.EmailField(
+        blank=True,
+        help_text="Grievance officer's contact email — shown on the Privacy Policy page"
+    )
+    privacy_policy_version = models.CharField(
+        max_length=20,
+        default='1.0',
+        help_text="Bump this when the Privacy Policy text changes. Snapshotted onto every "
+                   "new ConsentRecord so we know exactly which version a user agreed to."
+    )
+
+    # ===========================
     # METADATA
     # ===========================
     updated_at = models.DateTimeField(auto_now=True)
@@ -300,27 +319,37 @@ class AppSettings(models.Model):
         # Clear cache when settings change
         cache.delete('app_settings')
     
+    # Fields encrypted at rest -- the cached copy keeps these re-encrypted
+    # rather than decrypted plaintext, since the shared cache (often Redis,
+    # persistable to disk) is exactly the kind of plaintext store they're
+    # encrypted to stay out of.
+    _ENCRYPTED_FIELDS = (
+        'supabase_service_role_key',
+        'whatsapp_api_token',
+        'razorpay_key_secret',
+        'razorpay_webhook_secret',
+    )
+
     @classmethod
     def get_settings(cls):
         """
         Get the singleton settings instance.
         Uses caching for performance.
-
-        The cached copy keeps the service-role key re-encrypted rather than
-        the decrypted plaintext -- that field is encrypted at rest
-        specifically to keep it out of any plaintext store, and the shared
-        cache (often Redis, persistable to disk) is exactly such a store.
         """
         settings = cache.get('app_settings')
         if settings is not None:
-            if settings.supabase_service_role_key:
-                settings.supabase_service_role_key = decrypt_value(settings.supabase_service_role_key)
+            for field in cls._ENCRYPTED_FIELDS:
+                value = getattr(settings, field)
+                if value:
+                    setattr(settings, field, decrypt_value(value))
             return settings
 
         settings, created = cls.objects.get_or_create(pk=1)
         cached_copy = copy.copy(settings)
-        if cached_copy.supabase_service_role_key:
-            cached_copy.supabase_service_role_key = encrypt_value(cached_copy.supabase_service_role_key)
+        for field in cls._ENCRYPTED_FIELDS:
+            value = getattr(cached_copy, field)
+            if value:
+                setattr(cached_copy, field, encrypt_value(value))
         cache.set('app_settings', cached_copy, 300)  # Cache 5 minutes
         return settings
     

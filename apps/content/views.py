@@ -162,6 +162,14 @@ class PrivacyView(TemplateView):
     """Privacy Policy page."""
     template_name = 'content/privacy.html'
 
+    def get_context_data(self, **kwargs):
+        from apps.notifications.models import AppSettings
+        context = super().get_context_data(**kwargs)
+        app_settings = AppSettings.get_settings()
+        context['grievance_officer_name'] = app_settings.grievance_officer_name
+        context['grievance_officer_email'] = app_settings.grievance_officer_email
+        return context
+
 
 @method_decorator(cache_page(STATIC_PAGE_CACHE_SECONDS), name='dispatch')
 class AboutView(TemplateView):

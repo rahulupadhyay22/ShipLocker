@@ -159,9 +159,9 @@ def _lookup_consolidation_fee_standard() -> Decimal:
     code='consolidation_fee' (a stable key, not a name-text match — renaming
     the row in admin no longer breaks this lookup). Not configured -> 0 (fee
     simply isn't shown/charged)."""
-    from apps.content.models import ServiceCharge
+    from apps.content.services import get_service_charge
 
-    charge = ServiceCharge.objects.filter(is_active=True, code='consolidation_fee').first()
+    charge = get_service_charge('consolidation_fee')
     return Decimal(str(charge.compute())) if charge else Decimal('0.00')
 
 

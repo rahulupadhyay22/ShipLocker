@@ -121,6 +121,15 @@ class AppSettingsAdmin(ModelAdmin):
             ),
             'description': 'Shown on every generated GST invoice. company_state is compared against each domestic shipment\'s delivery state to decide CGST+SGST vs IGST.',
         }),
+        ('⚖️ DPDP Act Compliance', {
+            'fields': (
+                'grievance_officer_name',
+                'grievance_officer_email',
+                'privacy_policy_version',
+            ),
+            'description': 'Grievance officer contact shown on the Privacy Policy page. '
+                            'Bump the policy version whenever the (legally reviewed) policy text changes.',
+        }),
         ('ℹ️ Status', {
             'fields': ('integration_dashboard', 'updated_at',),
         }),

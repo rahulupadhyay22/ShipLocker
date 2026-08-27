@@ -25,6 +25,21 @@ from .models import (
 from .views import build_timeline
 
 
+def _login_admin(client, user):
+    """force_login() plus a verified OTP device — admin.site now requires
+    OTP verification (see indiabox/admin_site.py), so a plain force_login()
+    gets 302'd by the admin's own login redirect just like an unverified
+    staff user would in production."""
+    from django_otp import DEVICE_ID_SESSION_KEY
+    from django_otp.plugins.otp_static.models import StaticDevice
+
+    client.force_login(user)
+    device = StaticDevice.objects.create(user=user, name='test', confirmed=True)
+    session = client.session
+    session[DEVICE_ID_SESSION_KEY] = device.persistent_id
+    session.save()
+
+
 def _make_locker(email):
     user = User.objects.create(email=email, is_active=True)
     return Locker.objects.create(user=user)
@@ -889,7 +904,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         self.req = _make_request(self.locker, status='reviewing')  # custom_request type
 
     def test_returns_suggested_fee_for_known_request(self):
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[self.req.pk])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -906,7 +921,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='product_link',
         )
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
         response = self.client.get(url, {'product_value': '10000'})
         self.assertEqual(response.status_code, 200)
@@ -916,7 +931,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='product_link',
         )
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
         response = self.client.get(url, {'product_value': '1000'})
         self.assertEqual(response.status_code, 200)
@@ -926,7 +941,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='product_link',
         )
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
         response = self.client.get(url, {'product_value': 'not-a-number'})
         self.assertEqual(response.status_code, 200)
@@ -939,7 +954,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='product_link',
         )
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
         response = self.client.get(url, {'product_value': 'NaN'})
         self.assertEqual(response.status_code, 200)
@@ -951,7 +966,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='product_link',
         )
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
         response = self.client.get(url, {'product_value': 'Infinity'})
         self.assertEqual(response.status_code, 200)
@@ -963,7 +978,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         unpermitted_staff = User.objects.create(
             email='no-view-perm-staff@example.com', is_staff=True, is_superuser=False,
         )
-        self.client.force_login(unpermitted_staff)
+        _login_admin(self.client, unpermitted_staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[self.req.pk])
         self.assertEqual(self.client.get(url).status_code, 404)
 
@@ -971,7 +986,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='boutique_purchase',
         )
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
         response = self.client.get(url)
         self.assertEqual(set(response.json()['allowed_quotation_types']), {'purchase', 'expense_advance'})
@@ -980,7 +995,7 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='local_shop_purchase',
         )
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
         response = self.client.get(url)
         self.assertEqual(set(response.json()['allowed_quotation_types']), {'purchase', 'expense_advance'})
@@ -989,13 +1004,13 @@ class SuggestedFeeAdminEndpointTests(TestCase):
         req = PersonalShopRequest.objects.create(
             locker=self.locker, request_type='product_link',
         )
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
         response = self.client.get(url)
         self.assertEqual(response.json()['allowed_quotation_types'], ['purchase'])
 
     def test_unknown_request_id_404s(self):
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[uuid.uuid4()])
         self.assertEqual(self.client.get(url).status_code, 404)
 
@@ -1305,6 +1320,13 @@ class Spec10VerifyPricingSuggestionTests(TestCase):
     no ServiceCharge is configured' — there is no ServiceCharge model in this
     spec at all; the table simply has no entry for some request types, and
     the function returns None for those so staff must set the fee manually."""
+
+    def setUp(self):
+        # get_service_charge() caches by code (apps/content/services.py) --
+        # the cache backend isn't reset between tests like the DB is, so a
+        # prior test's warm cache would silently defeat assertNumQueries below.
+        from django.core.cache import cache
+        cache.clear()
 
     def test_percentage_types_use_minimum_when_no_product_value_given(self):
         self.assertEqual(pricing.suggested_service_fee('product_link'), Decimal('199'))
@@ -1926,7 +1948,7 @@ class AdminPremiumPreviewConsistencyTests(TestCase):
         locker.save()
         req = _make_request(locker, status='reviewing')  # custom_request -> flat 499 fee
 
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
         response = self.client.get(url)
 
@@ -1942,7 +1964,7 @@ class AdminPremiumPreviewConsistencyTests(TestCase):
         locker = _make_locker('premium-preview-free@example.com')
         req = _make_request(locker, status='reviewing')
 
-        self.client.force_login(self.staff)
+        _login_admin(self.client, self.staff)
         url = reverse('admin:personal_shop_quotation_suggested_fee', args=[req.pk])
         response = self.client.get(url)
 

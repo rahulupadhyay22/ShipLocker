@@ -152,13 +152,15 @@ class ApproveParcelView(LoginRequiredMixin, View):
     """Handle parcel approval."""
     
     def post(self, request, pk):
-        parcel = get_object_or_404(Parcel, pk=pk, locker=request.user.locker)
-        
-        if parcel.status != 'action_required':
-            messages.error(request, 'This parcel cannot be approved.')
-            return redirect('locker:parcel_detail', pk=pk)
-        
         with transaction.atomic():
+            parcel = get_object_or_404(
+                Parcel.objects.select_for_update(), pk=pk, locker=request.user.locker
+            )
+
+            if parcel.status != 'action_required':
+                messages.error(request, 'This parcel cannot be approved.')
+                return redirect('locker:parcel_detail', pk=pk)
+
             # Update parcel with user's declaration
             parcel.item_name = request.POST.get('item_name', parcel.item_name)
             parcel.item_price = request.POST.get('item_price') or parcel.item_price
@@ -202,18 +204,21 @@ class RequestReturnView(LoginRequiredMixin, View):
     """Request return for a parcel."""
     
     def post(self, request, pk):
-        parcel = get_object_or_404(Parcel, pk=pk, locker=request.user.locker)
         reason = request.POST.get('reason', '')
-        
-        if parcel.status not in ['action_required', 'approved']:
-            messages.error(request, 'Return cannot be requested for this parcel.')
-            return redirect('locker:parcel_detail', pk=pk)
-        
+
         with transaction.atomic():
+            parcel = get_object_or_404(
+                Parcel.objects.select_for_update(), pk=pk, locker=request.user.locker
+            )
+
+            if parcel.status not in ['action_required', 'approved']:
+                messages.error(request, 'Return cannot be requested for this parcel.')
+                return redirect('locker:parcel_detail', pk=pk)
+
             ReturnRequest.objects.create(parcel=parcel, reason=reason)
             parcel.status = 'return_requested'
             parcel.save()
-        
+
         messages.success(request, 'Return request submitted.')
         return redirect('locker:returns')
 
@@ -222,17 +227,20 @@ class RequestDiscardView(LoginRequiredMixin, View):
     """Request discard for a parcel."""
     
     def post(self, request, pk):
-        parcel = get_object_or_404(Parcel, pk=pk, locker=request.user.locker)
         reason = request.POST.get('reason', '')
-        
-        if parcel.status not in ['action_required', 'approved']:
-            messages.error(request, 'Discard cannot be requested for this parcel.')
-            return redirect('locker:parcel_detail', pk=pk)
-        
+
         with transaction.atomic():
+            parcel = get_object_or_404(
+                Parcel.objects.select_for_update(), pk=pk, locker=request.user.locker
+            )
+
+            if parcel.status not in ['action_required', 'approved']:
+                messages.error(request, 'Discard cannot be requested for this parcel.')
+                return redirect('locker:parcel_detail', pk=pk)
+
             DiscardRequest.objects.create(parcel=parcel, reason=reason)
             parcel.status = 'discard_requested'
             parcel.save()
-        
+
         messages.warning(request, 'Discard request submitted. This action is irreversible once confirmed.')
         return redirect('locker:discards')

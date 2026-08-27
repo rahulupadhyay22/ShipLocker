@@ -166,22 +166,28 @@ class PersonalShopRequest(models.Model):
 
         No-ops if the request was cancelled in the meantime (e.g. the user cancelled
         while a Razorpay checkout was still open) so a late-arriving payment can't
-        resurrect a cancelled request.
+        resurrect a cancelled request. select_for_update() here is defense-in-depth —
+        callers are already expected to hold their own lock on this row.
         """
-        if self.status == 'cancelled':
-            return False
-        self.status = 'paid'
-        self.save()
-        if self.active_quotation and self.active_quotation.status == 'pending':
-            self.active_quotation.status = 'approved'
-            self.active_quotation.save()
-            if self.active_quotation.quotation_type == 'purchase':
-                from apps.accounts.models import Locker
-                self.locker.record_premium_savings(
-                    self.active_quotation.service_fee_standard_amount,
-                    Locker.PREMIUM_SERVICE_FEE_DISCOUNT_RATE,
-                )
-        return True
+        with transaction.atomic():
+            locked_status = type(self).objects.select_for_update().values_list(
+                'status', flat=True
+            ).get(pk=self.pk)
+            if locked_status == 'cancelled':
+                self.status = locked_status
+                return False
+            self.status = 'paid'
+            self.save()
+            if self.active_quotation and self.active_quotation.status == 'pending':
+                self.active_quotation.status = 'approved'
+                self.active_quotation.save()
+                if self.active_quotation.quotation_type == 'purchase':
+                    from apps.accounts.models import Locker
+                    self.locker.record_premium_savings(
+                        self.active_quotation.service_fee_standard_amount,
+                        Locker.PREMIUM_SERVICE_FEE_DISCOUNT_RATE,
+                    )
+            return True
 
     # request_type -> {'primary': (real_model_field, label) or None, 'details': [(type_details key, label), ...]}
     # Drives both `product_summary` (list-page one-liner) and `detail_pairs` (detail-page card).

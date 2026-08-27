@@ -29,6 +29,8 @@ class RateLimitMiddleware:
         '/locker/parcel/': 'authenticated',
         '/personal-shop/new/': 'authenticated',
         '/personal-shop/requests/': 'authenticated',
+        '/payments/verify/': 'authenticated',
+        '/payments/webhook/razorpay/': 'public',
     }
 
     def __init__(self, get_response):
@@ -95,6 +97,32 @@ class RateLimitMiddleware:
             lockout = min(limits['backoff_base'] * (2 ** (violations - 1)), backoff_max)
             cache.set(lockout_key, True, lockout)
         return False
+
+
+class LockerCacheMiddleware:
+    """Primes request.user.locker in one query right after auth resolves.
+
+    request.user.locker is read in most authenticated views (ownership
+    mixins, dashboards, parcel/shipment/personal-shop views) — Django caches
+    the reverse OneToOne after the first touch, but that first touch still
+    means every one of those requests pays for the user fetch *and* a
+    separate locker fetch. Priming it here keeps it at one extra query
+    (same as today) instead of leaving it to whichever accessor happens to
+    run first, and means the view code never needs to think about it.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = request.user
+        if user.is_authenticated:
+            from apps.accounts.models import Locker
+            try:
+                user.locker = Locker.objects.select_related('user').get(user=user)
+            except Locker.DoesNotExist:
+                pass
+        return self.get_response(request)
 
 
 class SecurityHeadersMiddleware:
