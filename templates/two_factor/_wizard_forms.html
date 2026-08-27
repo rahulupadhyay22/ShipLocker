@@ -1,0 +1,9 @@
+{% load unfold %}
+{{ wizard.management_form }}
+{% for field in wizard.form %}
+    {% if field.field.widget.input_type == "checkbox" %}
+        {% include "unfold/helpers/field.html" with field=field %}
+    {% else %}
+        {% include "unfold/helpers/field.html" with field=field|add_css_class:"border border-base-200 bg-white rounded-default shadow-xs text-sm px-3 py-2 w-full focus:outline-2 focus:-outline-offset-2 focus:outline-primary-600 dark:bg-base-900 dark:border-base-700 dark:text-font-default-dark dark:scheme-dark" %}
+    {% endif %}
+{% endfor %}

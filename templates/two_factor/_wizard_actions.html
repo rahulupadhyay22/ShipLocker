@@ -1,0 +1,19 @@
+{% load i18n unfold %}
+
+<div class="flex flex-col gap-3 mt-6">
+    {% component "unfold/components/button.html" with submit=1 variant="primary" class="w-full" %}
+        {% translate "Next" %}
+    {% endcomponent %}
+
+    {% if wizard.steps.prev %}
+        {% component "unfold/components/button.html" with submit=1 name="wizard_goto_step" value=wizard.steps.prev variant="secondary" class="w-full" %}
+            {% translate "Back" %}
+        {% endcomponent %}
+    {% endif %}
+
+    {% if cancel_url %}
+        {% component "unfold/components/button.html" with href=cancel_url variant="secondary" class="w-full" %}
+            {% translate "Cancel" %}
+        {% endcomponent %}
+    {% endif %}
+</div>

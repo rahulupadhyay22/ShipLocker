@@ -1,0 +1,23 @@
+{% extends "unfold/layouts/unauthenticated.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    {% block extra_media %}{% endblock %}
+{% endblock %}
+
+{% block base %}
+    <div id="page" class="bg-white flex min-h-screen dark:bg-base-900 ">
+        <div class="flex grow items-center justify-center mx-auto px-4 relative">
+            <div class="w-full sm:w-96">
+                {% include "unfold/helpers/unauthenticated_title.html" with title=site_title|default:_('Django site admin') subtitle=_('Two-Factor Authentication') %}
+
+                {% include "unfold/helpers/messages.html" %}
+
+                {% block content_wrapper %}{% endblock %}
+            </div>
+
+            {% include "unfold/helpers/unauthenticated_header.html" %}
+        </div>
+    </div>
+{% endblock %}
