@@ -91,12 +91,14 @@
             {% if is_premium %}
             <span>
                 <span class="profile-summary-value">Renews on {{ locker.premium_expires_at }}</span>
+                {% if locker.premium_renewal_due %}
                 <button type="button" class="btn btn-secondary btn-sm premium-checkout-btn"
                     data-create-url="{% url 'payments:premium_create_order' %}"
                     data-verify-url="{% url 'payments:verify' %}"
                     data-error-target="premium-account-type-error">
                     Renew now
                 </button>
+                {% endif %}
             </span>
             {% else %}
             <span>
@@ -111,10 +113,6 @@
             {% endif %}
         </div>
         <p id="premium-account-type-error" class="modern-alert alert-danger form-loading-error" role="alert" hidden></p>
-        <div class="profile-summary-row">
-            <span></span>
-            <a href="{% url 'accounts:subscription' %}">View full savings breakdown &rarr;</a>
-        </div>
         <div class="profile-summary-row">
             <span class="profile-summary-label">Trunk ID</span>
             <span>

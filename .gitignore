@@ -83,6 +83,8 @@ package.json
 package-lock.json
 prod-checklist.md
 prod-chceklist.txt
+PRODUCTION_SETUP.md
+RAILWAY_SETUP.md
 final.txt
 *-using-cached-stren.txt
 scratchpad/

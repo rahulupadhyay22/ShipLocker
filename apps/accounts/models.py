@@ -4,6 +4,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.conf import settings
+from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
@@ -165,6 +166,15 @@ class Locker(models.Model):
     def is_premium(self):
         """Return True if locker has paid plan."""
         return self.plan_type == 'paid'
+
+    @property
+    def premium_renewal_due(self):
+        """True once a Premium locker is within 7 days of (or past) its
+        renewal date — matches the day sync_premium_renewals sends its
+        WhatsApp reminder, so the UI renew prompt lines up with it."""
+        if not self.is_premium or not self.premium_expires_at:
+            return False
+        return (self.premium_expires_at - timezone.localdate()).days <= 7
 
     def apply_service_fee_discount(self, standard_amount):
         """Apply 25% discount to service fee if premium; returns (discounted_amount, discount_amount)."""

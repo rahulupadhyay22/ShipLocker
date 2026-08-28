@@ -89,8 +89,20 @@ class ProfileBadgeCtaRenderingTests(TestCase):
         self.assertContains(response, 'Upgrade to Premium')
         self.assertNotContains(response, 'Renew now')
 
-    def test_premium_user_sees_premium_badge_and_renew_cta_with_expiry(self):
+    def test_premium_user_far_from_expiry_sees_no_renew_cta(self):
         expiry = timezone.localdate() + timedelta(days=200)
+        user, _ = _make_user_with_locker(
+            'premium-profile-far@example.com', plan_type='paid', premium_expires_at=expiry,
+        )
+        self.client.force_login(user)
+        response = self.client.get(reverse('accounts:profile'))
+        self.assertContains(response, 'PREMIUM')
+        self.assertContains(response, date_filter(expiry))
+        self.assertNotContains(response, 'Renew now')
+        self.assertNotContains(response, 'Upgrade to Premium')
+
+    def test_premium_user_near_expiry_sees_renew_cta(self):
+        expiry = timezone.localdate() + timedelta(days=3)
         user, _ = _make_user_with_locker(
             'premium-profile-render@example.com', plan_type='paid', premium_expires_at=expiry,
         )
@@ -104,7 +116,7 @@ class ProfileBadgeCtaRenderingTests(TestCase):
     def test_premium_checkout_script_included(self):
         user, _ = _make_user_with_locker(
             'checkout-script@example.com', plan_type='paid',
-            premium_expires_at=timezone.localdate() + timedelta(days=200),
+            premium_expires_at=timezone.localdate() + timedelta(days=3),
         )
         self.client.force_login(user)
         response = self.client.get(reverse('accounts:profile'))

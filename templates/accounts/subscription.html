@@ -177,7 +177,8 @@
         {% if premium_annual_price %}
         <div class="sub-billing-row"><span class="label">Amount</span><span class="value">&#8377;{{ premium_annual_price|floatformat:2 }}</span></div>
         {% endif %}
-        <div class="sub-billing-note">Prepaid annual plan &mdash; renew before it expires to keep your benefits.</div>
+        {% if locker.premium_renewal_due %}
+        <div class="sub-billing-note">Your Premium plan renews soon &mdash; renew now to keep your benefits without a gap.</div>
         <button type="button" class="btn btn-primary premium-checkout-btn sub-billing-btn"
             data-create-url="{% url 'payments:premium_create_order' %}"
             data-verify-url="{% url 'payments:verify' %}"
@@ -185,6 +186,9 @@
             Renew Now
         </button>
         <p id="subscription-billing-error" class="modern-alert alert-danger form-loading-error sub-billing-error" role="alert" hidden></p>
+        {% else %}
+        <div class="sub-billing-note">Prepaid annual plan &mdash; you'll be able to renew here starting 7 days before it expires.</div>
+        {% endif %}
     </div>
     {% else %}
     <div class="sub-card sub-upgrade-card">
