@@ -389,3 +389,76 @@ class CreateShipmentPreselectedParcelsTests(TestCase):
         self.assertNotIn('Not Mine', content)
         self.assertNotIn('Outfit A', content)
         self.assertNotIn('Outfit B', content)
+
+
+class CreateShipmentESignTests(TestCase):
+    """CreateShipmentView.post: e-sign customs declaration (spec:
+    .claude/specs/12-esign-declaration.md). No KYC/name-match validation —
+    signature_name is a free-text attestation; declaration_purpose and
+    signature_agree are the only required gates."""
+
+    def setUp(self):
+        self.user = User.objects.create(email='esign@example.com', full_name='Real User')
+        self.locker = Locker.objects.create(user=self.user)
+        self.parcel = Parcel.objects.create(
+            locker=self.locker, status='approved', item_name='Shoes',
+            weight_kg=Decimal('1.2'), item_price=Decimal('80'), item_currency='USD',
+            category='sports', customs_description='Running shoes',
+        )
+        self.client.force_login(self.user)
+
+    def _post(self, **overrides):
+        data = dict(
+            parcels=[str(self.parcel.id)],
+            shipment_type='international',
+            declaration_purpose='gift',
+            signature_agree='on',
+            signature_name='Someone Else',
+            recipient_name='Jane Doe', address_line1='1 Test St',
+            city='Testville', state='TS', postal_code='000000', country='USA',
+            recipient_phone='9999999999', recipient_email='jane@example.com',
+        )
+        data.update(overrides)
+        return self.client.post(reverse('shipments:create'), data)
+
+    def test_missing_purpose_rejected(self):
+        response = self._post(declaration_purpose='')
+        self.assertEqual(Shipment.objects.count(), 0)
+        self.assertRedirects(response, reverse('shipments:create'))
+
+    def test_missing_agreement_rejected(self):
+        response = self._post(signature_agree='')
+        self.assertEqual(Shipment.objects.count(), 0)
+        self.assertRedirects(response, reverse('shipments:create'))
+
+    def test_blank_signature_name_rejected(self):
+        response = self._post(signature_name='  ')
+        self.assertEqual(Shipment.objects.count(), 0)
+        self.assertRedirects(response, reverse('shipments:create'))
+
+    def test_signature_name_not_matching_account_is_accepted(self):
+        """No identity/KYC match — a typed name different from the
+        account's full_name must still be accepted."""
+        response = self._post(signature_name='Someone Else')
+        self.assertEqual(response.status_code, 302)
+        shipment = Shipment.objects.get()
+        self.assertEqual(shipment.declaration_signed_name, 'Someone Else')
+
+    def test_successful_signature_records_audit_fields_and_document(self):
+        response = self._post()
+        shipment = Shipment.objects.get()
+        self.assertEqual(shipment.declaration_purpose, 'gift')
+        self.assertEqual(shipment.declaration_signed_name, 'Someone Else')
+        self.assertIsNotNone(shipment.declaration_signed_at)
+        self.assertEqual(shipment.declaration_version, Shipment.DECLARATION_TEXT_VERSION)
+        doc = shipment.documents.get(document_type='customs')
+        self.assertTrue(doc.document_url)
+        self.parcel.refresh_from_db()
+        self.assertEqual(self.parcel.status, 'shipped')
+
+    def test_no_declaration_file_field_required(self):
+        """The old download/sign/scan/upload field is gone — omitting any
+        'declaration_file' key must not block creation."""
+        response = self._post()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Shipment.objects.count(), 1)

@@ -5,6 +5,29 @@ from apps.accounts.models import User
 from apps.locker.models import Parcel
 from apps.content.models import ShippingRate
 
+DECLARATION_TEXT_VERSION = 'v1'
+
+DECLARATION_TEXT = """1. Declaration of Ownership & Usage
+I declare that all items in this shipment belong to me, and that the purpose of this shipment is accurately reflected in the declaration purpose selected above.
+
+2. Shipment Contents & Value Declaration
+I confirm that I have reviewed the shipment contents and declared their value accurately. I understand that customs authorities may independently assess or reassess the value.
+
+3. Authorization for Inspection, Storage & Consolidation
+I authorize CamelTrunk to receive, inspect, store, consolidate, and repack my parcels for international shipping, where applicable.
+
+4. Courier & Customs Acknowledgement
+I understand that customs clearance, duties, taxes, and other charges are determined by the destination country's authorities and may be my responsibility.
+
+5. KYC & Documentation Consent
+I consent to providing government-issued identification or other documentation when required for shipping, customs, or regulatory compliance.
+
+6. Limitation of Liability
+I understand that CamelTrunk cannot control customs decisions, customs delays, courier delays, or duties and taxes imposed by authorities or carriers.
+
+7. Final Authorization
+I confirm that I have reviewed the information provided, understand this declaration, and authorize CamelTrunk to process this shipment."""
+
 
 def generate_shipment_id(user):
     """Generate sequential shipment ID: RB-12345-S001 (race-condition safe)."""
@@ -97,6 +120,17 @@ class Shipment(models.Model):
 
     SERVICE_TYPE_CHOICES = ShippingRate.SERVICE_TYPE_CHOICES
 
+    DECLARATION_PURPOSE_CHOICES = [
+        ('gift', 'Gift'),
+        ('sale', 'Sale'),
+        ('sample', 'Commercial Sample'),
+        ('return', 'Return'),
+        ('other', 'Other'),
+    ]
+
+    DECLARATION_TEXT_VERSION = DECLARATION_TEXT_VERSION
+    DECLARATION_TEXT = DECLARATION_TEXT
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     display_id = models.CharField(max_length=50, unique=True, editable=False, db_index=True, null=True, blank=True)
     
@@ -171,6 +205,15 @@ class Shipment(models.Model):
     
     # Notes
     admin_notes = models.TextField(blank=True)
+
+    # Customs declaration e-signature — set once at shipment creation, never
+    # modified afterward (a point-in-time signature record, not editable
+    # shipment metadata).
+    declaration_purpose = models.CharField(max_length=20, choices=DECLARATION_PURPOSE_CHOICES, blank=True)
+    declaration_signed_name = models.CharField(max_length=255, blank=True)
+    declaration_signed_at = models.DateTimeField(null=True, blank=True)
+    declaration_signed_ip = models.GenericIPAddressField(null=True, blank=True)
+    declaration_version = models.CharField(max_length=20, blank=True)
     
     class Meta:
         verbose_name = 'Shipment'

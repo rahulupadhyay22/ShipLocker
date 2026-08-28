@@ -269,6 +269,7 @@ from django.shortcuts import redirect
 from django.views import View
 from django.contrib import messages
 from django.db import transaction
+from django.utils import timezone
 from apps.locker.models import Parcel
 from apps.accounts.models import SavedAddress
 from .models import ShipmentItem
@@ -342,11 +343,13 @@ class CreateShipmentView(LoginRequiredMixin, View):
             'default_address': default_address,
             'saved_addresses': saved_addresses,
             'preselected_ids': preselected_ids,
+            'declaration_text': Shipment.DECLARATION_TEXT,
+            'declaration_purpose_choices': Shipment.DECLARATION_PURPOSE_CHOICES,
         })
     
     def post(self, request):
         from django.core.exceptions import ValidationError
-        from indiabox.validators import validate_file_upload, validate_address, validate_phone, validate_email
+        from indiabox.validators import validate_address, validate_phone, validate_email
 
         # Get selected parcel IDs
         parcel_ids = request.POST.getlist('parcels')
@@ -360,15 +363,10 @@ class CreateShipmentView(LoginRequiredMixin, View):
             messages.error(request, 'Invalid shipment type.')
             return redirect('shipments:create')
 
-        # Check for declaration file
-        declaration_file = request.FILES.get('declaration_file')
-        if not declaration_file:
-            messages.error(request, 'Please upload the signed declaration form.')
-            return redirect('shipments:create')
-
-        # Validate declaration file
+        # Customs declaration e-signature fields
+        from .services.declaration_service import DeclarationService
         try:
-            validate_file_upload(declaration_file)
+            declaration_purpose, signature_name = DeclarationService.validate_signature_fields(request.POST)
         except ValidationError as e:
             messages.error(request, str(e))
             return redirect('shipments:create')
@@ -394,18 +392,8 @@ class CreateShipmentView(LoginRequiredMixin, View):
             messages.error(request, str(e))
             return redirect('shipments:create')
 
-        # Validate parcels belong to user
         locker = request.user.locker
-        parcels = list(Parcel.objects.filter(
-            id__in=parcel_ids,
-            locker=locker,
-            status='approved'
-        ))
 
-        if len(parcels) != len(parcel_ids):
-            messages.error(request, 'Invalid parcel selection.')
-            return redirect('shipments:create')
-        
         # Locked in now, at creation, so it doesn't drift if the admin later
         # edits the 'Consolidation' ServiceCharge amount (e.g. after payment).
         # Applies to every shipment regardless of parcel count, not just 2+.
@@ -413,83 +401,116 @@ class CreateShipmentView(LoginRequiredMixin, View):
         consolidation_fee = _get_consolidation_fee_amount(locker)
         consolidation_fee_standard = _lookup_consolidation_fee_standard()
 
-        with transaction.atomic():
-            # Create shipment with declaration_pending status
-            shipment = Shipment.objects.create(
-                user=request.user,
-                shipment_type=shipment_type,
-                status='declaration_pending',
-                recipient_name=address_data.get('recipient_name', ''),
-                address_line1=address_data.get('address_line1', ''),
-                address_line2=address_data.get('address_line2', ''),
-                city=address_data.get('city', ''),
-                state=address_data.get('state', ''),
-                postal_code=address_data.get('postal_code', ''),
-                country=address_data.get('country', ''),
-                recipient_phone=recipient_phone,
-                recipient_email=recipient_email,
-                consolidation_fee=consolidation_fee,
-                consolidation_fee_standard=consolidation_fee_standard,
-            )
+        try:
+            with transaction.atomic():
+                # select_for_update() locks the parcels being consumed for the
+                # duration of this transaction — a concurrent duplicate submit
+                # (double-click, two tabs) racing on the same rows serializes
+                # here; the loser re-checks status='approved' against rows the
+                # winner has already flipped to 'shipped' and fails validation
+                # below instead of creating a second shipment. Same pattern as
+                # ApproveParcelView.post in apps/locker/views.py.
+                parcels = list(Parcel.objects.select_for_update().filter(
+                    id__in=parcel_ids,
+                    locker=locker,
+                    status='approved'
+                ))
 
-            # Optionally save as default address for quick reuse
-            if request.POST.get('save_address') == 'on':
-                default_saved = request.user.saved_addresses.filter(is_default=True).first()
-                address_payload = {
-                    'label': request.POST.get('address_label', '').strip(),
-                    'recipient_name': address_data.get('recipient_name', ''),
-                    'recipient_phone': request.POST.get('recipient_phone', ''),
-                    'recipient_email': request.POST.get('recipient_email', ''),
-                    'address_line1': address_data.get('address_line1', ''),
-                    'address_line2': request.POST.get('address_line2', ''),
-                    'city': address_data.get('city', ''),
-                    'state': request.POST.get('state', ''),
-                    'postal_code': address_data.get('postal_code', ''),
-                    'country': address_data.get('country', ''),
-                    'is_default': True,
-                }
+                if len(parcels) != len(parcel_ids):
+                    messages.error(request, 'Invalid parcel selection.')
+                    return redirect('shipments:create')
 
-                if default_saved:
-                    for field, value in address_payload.items():
-                        setattr(default_saved, field, value)
-                    default_saved.save()
-                else:
-                    SavedAddress.objects.create(user=request.user, **address_payload)
-            
-            # Upload declaration file to Supabase Storage
-            from apps.locker.utils import upload_shipment_document, get_user_locker_id
-            try:
-                # Reset file pointer to beginning
-                declaration_file.seek(0)
-                locker_id = get_user_locker_id(request.user)
-                declaration_path = upload_shipment_document(
-                    declaration_file,
-                    locker_id,
-                    shipment.display_id, 
-                    'declaration'
+                import ipaddress
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                candidate_ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
+                try:
+                    ipaddress.ip_address(candidate_ip)
+                    client_ip = candidate_ip
+                except (ValueError, TypeError):
+                    client_ip = request.META.get('REMOTE_ADDR')
+
+                # Create shipment with declaration_pending status
+                shipment = Shipment.objects.create(
+                    user=request.user,
+                    shipment_type=shipment_type,
+                    status='declaration_pending',
+                    recipient_name=address_data.get('recipient_name', ''),
+                    address_line1=address_data.get('address_line1', ''),
+                    address_line2=address_data.get('address_line2', ''),
+                    city=address_data.get('city', ''),
+                    state=address_data.get('state', ''),
+                    postal_code=address_data.get('postal_code', ''),
+                    country=address_data.get('country', ''),
+                    recipient_phone=recipient_phone,
+                    recipient_email=recipient_email,
+                    consolidation_fee=consolidation_fee,
+                    consolidation_fee_standard=consolidation_fee_standard,
+                    declaration_purpose=declaration_purpose,
+                    declaration_signed_name=signature_name,
+                    declaration_signed_at=timezone.now(),
+                    declaration_signed_ip=client_ip,
+                    declaration_version=Shipment.DECLARATION_TEXT_VERSION,
                 )
-                # Create document record with the file path
+
+                # Optionally save as default address for quick reuse
+                if request.POST.get('save_address') == 'on':
+                    default_saved = request.user.saved_addresses.filter(is_default=True).first()
+                    address_payload = {
+                        'label': request.POST.get('address_label', '').strip(),
+                        'recipient_name': address_data.get('recipient_name', ''),
+                        'recipient_phone': request.POST.get('recipient_phone', ''),
+                        'recipient_email': request.POST.get('recipient_email', ''),
+                        'address_line1': address_data.get('address_line1', ''),
+                        'address_line2': request.POST.get('address_line2', ''),
+                        'city': address_data.get('city', ''),
+                        'state': request.POST.get('state', ''),
+                        'postal_code': address_data.get('postal_code', ''),
+                        'country': address_data.get('country', ''),
+                        'is_default': True,
+                    }
+
+                    if default_saved:
+                        for field, value in address_payload.items():
+                            setattr(default_saved, field, value)
+                        default_saved.save()
+                    else:
+                        SavedAddress.objects.create(user=request.user, **address_payload)
+
+                # Generate the signed declaration PDF and upload it. Any
+                # failure here must roll back the whole shipment creation —
+                # a failed PDF/upload means the declaration was never
+                # actually recorded — which is why this stays inside
+                # transaction.atomic() with no inner try/except; the outer
+                # try/except below turns the resulting exception into a
+                # normal user-facing error instead of a raw 500.
+                pdf_bytes = DeclarationService.generate_pdf(shipment, parcels)
+                declaration_path = DeclarationService.upload_pdf(pdf_bytes, shipment)
                 ShipmentDocument.objects.create(
                     shipment=shipment,
                     document_type='customs',
-                    document_url=declaration_path  # This is the file path in storage
+                    document_url=declaration_path
                 )
-            except Exception as e:
-                logger.error(f'Declaration upload failed for shipment {shipment.pk}: {e}')
-                messages.warning(request, 'Declaration upload failed. Shipment created without document.')
-            
-            # Add parcels to shipment
-            ShipmentItem.objects.bulk_create(
-                [ShipmentItem(shipment=shipment, parcel=parcel) for parcel in parcels]
-            )
-            # Individual .save() calls, not a bulk .update() — Django never
-            # sends pre_save/post_save signals for QuerySet.update(), and
-            # apps/locker/signals.py relies on those to decrement/close the
-            # locker's batch when a parcel leaves the warehouse.
-            for parcel in parcels:
-                parcel.status = 'shipped'
-                parcel.save(update_fields=['status', 'updated_at'])
-        
+                logger.info(
+                    f"Declaration signed: user={request.user.email} shipment={shipment.pk} "
+                    f"name={signature_name!r} ip={client_ip} purpose={declaration_purpose}"
+                )
+
+                # Add parcels to shipment
+                ShipmentItem.objects.bulk_create(
+                    [ShipmentItem(shipment=shipment, parcel=parcel) for parcel in parcels]
+                )
+                # Individual .save() calls, not a bulk .update() — Django never
+                # sends pre_save/post_save signals for QuerySet.update(), and
+                # apps/locker/signals.py relies on those to decrement/close the
+                # locker's batch when a parcel leaves the warehouse.
+                for parcel in parcels:
+                    parcel.status = 'shipped'
+                    parcel.save(update_fields=['status', 'updated_at'])
+        except Exception as e:
+            logger.error(f"Declaration signing failed for user={request.user.email}: {e}")
+            messages.error(request, 'We could not process your declaration. Please try again.')
+            return redirect('shipments:create')
+
         messages.success(request, 'Shipment created! Your declaration is pending approval.')
         return redirect('shipments:detail', pk=shipment.pk)
 
