@@ -363,24 +363,110 @@
                 <div style="padding-top: 1.5rem; border-top: 2px dashed var(--surface-100);">
                     <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Customs Declaration</h4>
 
-                    <div class="modern-alert"
-                        style="background: var(--success-bg); border: 1px solid #BBF7D0; color: #166534; flex-direction: column; align-items: flex-start;">
-                        <p style="margin: 0; font-size: 0.9rem;">Download, sign, and upload the declaration form.
-                        </p>
-                        <a href="{% static 'documents/Customer_Declaration_Authorization.pdf' %}"
-                            class="btn btn-sm btn-secondary" style="margin-top: 0.5rem; background: white;"
-                            download>
-                            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/></svg>
-                            Download Form
-                        </a>
+                    <div class="modern-alert" id="declarationStatusAlert"
+                        style="background: var(--warning-bg); border: 1px solid var(--surface-200); align-items: center;">
+                        <div style="flex: 1;">
+                            <strong id="declarationStatusText">Not signed yet</strong>
+                            <p id="declarationStatusHelp" style="margin-top: 0.25rem; font-size: 0.85rem;">Review your shipment contents and sign the customs declaration before submitting.</p>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm" id="declarationActionBtn" onclick="openDeclarationModal()">Review &amp; Sign Declaration →</button>
                     </div>
 
-                    <div class="form-group" style="margin-top: 1rem;">
-                        <label class="form-label">Upload Signed Declaration *</label>
-                        <input type="file" name="declaration_file" class="form-control" required
-                            accept=".pdf,.jpg,.jpeg,.png">
-                    </div>
+                    <p id="declarationRequiredError" class="modern-alert" hidden
+                        style="background: var(--danger-bg); border: 1px solid var(--surface-200); color: var(--danger-text); font-size: 0.85rem; margin-top: 0.75rem;">
+                        Please sign the Customs Declaration before creating the shipment.
+                    </p>
+
+                    <!-- Hidden fields the popup writes into on Sign — these are what actually submit with the form -->
+                    <input type="hidden" name="declaration_purpose" id="declarationPurposeField">
+                    <input type="hidden" name="signature_agree" id="signatureAgreeField">
+                    <input type="hidden" name="signature_name" id="signatureNameField">
                 </div>
+
+                <dialog id="declarationModal" class="declaration-modal">
+                    <div class="declaration-modal-header">
+                        <h3 style="margin: 0;">Customs Declaration &amp; Authorization</h3>
+                        <button type="button" class="declaration-modal-close" onclick="closeDeclarationModal()" aria-label="Close">
+                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="declaration-modal-body">
+                        <div class="form-group" style="overflow-x: auto;">
+                            <table class="declaration-items-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                <thead>
+                                    <tr style="text-align: left; border-bottom: 1px solid var(--surface-200);">
+                                        <th style="padding: 0.5rem;">Item</th>
+                                        <th style="padding: 0.5rem;">Category</th>
+                                        <th style="padding: 0.5rem;">Description</th>
+                                        <th style="padding: 0.5rem;">Value</th>
+                                        <th style="padding: 0.5rem;">Weight</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for parcel in parcels %}
+                                    <tr class="declaration-item-row" data-parcel-id="{{ parcel.id }}" hidden
+                                        style="border-bottom: 1px solid var(--surface-100);">
+                                        <td style="padding: 0.5rem;">{{ parcel.item_name|default:parcel.tracking_number }}</td>
+                                        <td style="padding: 0.5rem;">{{ parcel.get_category_display }}</td>
+                                        <td style="padding: 0.5rem;">{{ parcel.customs_description|default:"-" }}</td>
+                                        <td style="padding: 0.5rem;">{{ parcel.item_currency }} {{ parcel.item_price }}</td>
+                                        <td style="padding: 0.5rem;">{{ parcel.weight_kg|default:"--" }} kg</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr style="font-weight: 600;">
+                                        <td colspan="3" style="padding: 0.5rem;">Total</td>
+                                        <td style="padding: 0.5rem;" class="js-declaration-total">—</td>
+                                        <td style="padding: 0.5rem;"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Declaration Purpose *</label>
+                            <div class="radio-group" style="flex-direction: column; gap: 0.5rem;">
+                                {% for value, label in declaration_purpose_choices %}
+                                <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 400; cursor: pointer;">
+                                    <input type="radio" name="modal_declaration_purpose" value="{{ value }}">
+                                    {{ label }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="modern-alert"
+                            style="background: var(--success-bg); border: 1px solid var(--surface-200); flex-direction: column; align-items: flex-start;">
+                            <strong>Customer Declaration &amp; Authorization</strong>
+                            <p style="margin: 0.5rem 0 0; font-size: 0.85rem; white-space: pre-line;">{{ declaration_text }}</p>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer;">
+                                <input type="checkbox" id="modalSignatureAgree">
+                                <span style="font-weight: 600;">I have read and agree to the Customer Declaration &amp; Authorization</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Full Name (Electronic Signature) *</label>
+                            <!-- request.user.full_name is also the fallback in openDeclarationModal()'s
+                                 JS below (id="declarationActionBtn" handler) -- keep both in sync if the
+                                 name-fallback logic ever changes. -->
+                            <input type="text" id="modalSignatureName" class="form-control"
+                                value="{{ request.user.full_name }}" placeholder="Type your full name to sign">
+                        </div>
+
+                        <p id="declarationModalError" class="form-error" hidden style="color: var(--danger-text); font-size: 0.85rem;"></p>
+                    </div>
+
+                    <div class="declaration-modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeDeclarationModal()">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="signDeclaration()">Sign &amp; Close</button>
+                    </div>
+                </dialog>
 
                 <div class="modern-alert" style="background: var(--primary-light); border: 1px solid var(--surface-200); margin-top: 1rem;">
                     <div style="color: var(--primary);"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
@@ -392,7 +478,7 @@
 
                 <div class="wizard-nav-row">
                     <button type="button" class="btn btn-secondary" onclick="goToStep(3)">← Back</button>
-                    <button type="submit" class="btn btn-primary" id="submitBtn">Create Shipment</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn" onclick="return confirmDeclarationSigned(event)">Create Shipment</button>
                 </div>
             </div>
         </div>
@@ -437,18 +523,26 @@
         let totalValue = 0;
         let totalBillableWeight = 0;
 
+        let declaredTotal = 0;
+
         cards.forEach(function (card) {
             const cb = card.querySelector('.parcel-checkbox');
+            const declarationRow = document.querySelector('.declaration-item-row[data-parcel-id="' + cb.value + '"]');
             if (cb.checked) {
                 count++;
                 totalWeight += parseFloat(card.dataset.weight) || 0;
                 totalValue += parseFloat(card.dataset.price) || 0;
                 totalBillableWeight += parseFloat(card.dataset.billableWeight) || 0;
+                declaredTotal += parseFloat(card.dataset.price) || 0;
                 card.classList.add('selected');
+                if (declarationRow) declarationRow.hidden = false;
             } else {
                 card.classList.remove('selected');
+                if (declarationRow) declarationRow.hidden = true;
             }
         });
+
+        document.querySelectorAll('.js-declaration-total').forEach(function (el) { el.textContent = declaredTotal.toFixed(2); });
 
         const selectAll = document.getElementById('selectAllParcels');
         if (selectAll) selectAll.checked = cards.length > 0 && count === cards.length;
@@ -576,6 +670,86 @@
         form.recipient_email.value = card.dataset.email || '';
         if (saveCheckbox) saveCheckbox.checked = false;
         updateSummary();
+    }
+
+    function openDeclarationModal() {
+        const modal = document.getElementById('declarationModal');
+        document.getElementById('declarationModalError').hidden = true;
+
+        // Reset the popup to whatever was actually last signed (the hidden
+        // fields), not whatever was left mid-edit from a prior open that was
+        // cancelled/dismissed without signing — otherwise reopening shows a
+        // stale, uncommitted selection that doesn't match the real record.
+        const signedPurpose = document.getElementById('declarationPurposeField').value;
+        document.querySelectorAll('input[name="modal_declaration_purpose"]').forEach(function (radio) {
+            radio.checked = radio.value === signedPurpose;
+        });
+        document.getElementById('modalSignatureAgree').checked = document.getElementById('signatureAgreeField').value === 'on';
+        const signedName = document.getElementById('signatureNameField').value;
+        document.getElementById('modalSignatureName').value = signedName || '{{ request.user.full_name|escapejs }}';
+
+        modal.showModal();
+    }
+
+    function closeDeclarationModal() {
+        document.getElementById('declarationModal').close();
+    }
+
+    function signDeclaration() {
+        const errorEl = document.getElementById('declarationModalError');
+        const purposeInput = document.querySelector('input[name="modal_declaration_purpose"]:checked');
+        const agreeInput = document.getElementById('modalSignatureAgree');
+        const nameInput = document.getElementById('modalSignatureName');
+        const name = nameInput.value.trim();
+
+        if (!purposeInput) {
+            errorEl.textContent = 'Please select a declaration purpose.';
+            errorEl.hidden = false;
+            return;
+        }
+        if (!agreeInput.checked) {
+            errorEl.textContent = 'Please agree to the Customer Declaration & Authorization.';
+            errorEl.hidden = false;
+            return;
+        }
+        if (!name) {
+            errorEl.textContent = 'Please type your full name to sign.';
+            errorEl.hidden = false;
+            nameInput.focus();
+            return;
+        }
+
+        document.getElementById('declarationPurposeField').value = purposeInput.value;
+        document.getElementById('signatureAgreeField').value = 'on';
+        document.getElementById('signatureNameField').value = name;
+
+        const purposeLabel = purposeInput.closest('label').textContent.trim();
+        document.getElementById('declarationStatusAlert').style.background = 'var(--success-bg)';
+        document.getElementById('declarationStatusText').textContent = '✓ Signed by ' + name + ' — ' + purposeLabel;
+        document.getElementById('declarationStatusHelp').textContent = 'You can edit your declaration anytime before submitting.';
+
+        const actionBtn = document.getElementById('declarationActionBtn');
+        actionBtn.textContent = 'Edit Declaration';
+        actionBtn.classList.remove('btn-primary');
+        actionBtn.classList.add('btn-secondary');
+
+        document.getElementById('declarationRequiredError').hidden = true;
+        closeDeclarationModal();
+    }
+
+    function confirmDeclarationSigned(e) {
+        const signed = document.getElementById('signatureAgreeField').value === 'on';
+        const requiredError = document.getElementById('declarationRequiredError');
+
+        if (!signed) {
+            e.preventDefault();
+            requiredError.hidden = false;
+            requiredError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return false;
+        }
+
+        requiredError.hidden = true;
+        return true;
     }
 
     function goToStep(step) {
