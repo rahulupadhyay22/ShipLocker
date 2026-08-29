@@ -5,6 +5,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.urls import reverse
 from django.template.loader import render_to_string
@@ -159,13 +160,14 @@ class GoogleCallbackView(View):
             result = auth.exchange_code_for_session(code, code_verifier)
 
             email = result.user.email
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={'supabase_id': result.user.id}
-            )
-            if created:
-                Locker.objects.create(user=user)
-                _record_signup_consent(request, user)
+            with transaction.atomic():
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={'supabase_id': result.user.id}
+                )
+                if created:
+                    Locker.objects.create(user=user)
+                    _record_signup_consent(request, user)
             if not user.supabase_id:
                 user.supabase_id = result.user.id
                 user.save()
@@ -210,16 +212,17 @@ class VerifyOTPView(View):
             auth = SupabaseAuth()
             result = auth.verify_otp(email, otp)
             
-            # Get or create user
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={'supabase_id': result.user.id if result.user else None}
-            )
-            
-            # Create locker if new user
-            if created:
-                Locker.objects.create(user=user)
-                _record_signup_consent(request, user)
+            # Get or create user (+ locker, atomically — a failure to create
+            # the Locker shouldn't leave a Locker-less User committed, since
+            # several views dereference request.user.locker directly)
+            with transaction.atomic():
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={'supabase_id': result.user.id if result.user else None}
+                )
+                if created:
+                    Locker.objects.create(user=user)
+                    _record_signup_consent(request, user)
 
             # Update supabase_id if not set
             if not user.supabase_id and result.user:

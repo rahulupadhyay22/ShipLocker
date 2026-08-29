@@ -232,19 +232,45 @@ class ShipmentAdmin(ModelAdmin):
             message += f' {skipped} skipped — set Shipping Cost first.'
         self.message_user(request, message)
 
+    def _skip_unpaid(self, request, queryset):
+        """Shared precondition for the fulfillment actions below — none of
+        them should ever apply to a shipment that hasn't been paid for yet,
+        unlike approve_declaration these had no filter at all."""
+        payable, unpaid = [], 0
+        for shipment in queryset:
+            if shipment.payment_status == 'paid':
+                payable.append(shipment)
+            else:
+                unpaid += 1
+        if unpaid:
+            self.message_user(
+                request, f'{unpaid} shipment(s) skipped — not paid yet.', level='warning',
+            )
+        return payable
+
     @admin.action(description='📦 Mark as Packing')
     def mark_packing(self, request, queryset):
-        queryset.update(status='packing')
-    
+        for shipment in self._skip_unpaid(request, queryset):
+            shipment.status = 'packing'
+            shipment.save(update_fields=['status', 'updated_at'])
+
     @admin.action(description='🚀 Mark as Dispatched')
     def mark_dispatched(self, request, queryset):
         from django.utils import timezone
-        queryset.update(status='dispatched', dispatched_at=timezone.now())
-    
+        now = timezone.now()
+        for shipment in self._skip_unpaid(request, queryset):
+            shipment.status = 'dispatched'
+            shipment.dispatched_at = now
+            shipment.save(update_fields=['status', 'dispatched_at', 'updated_at'])
+
     @admin.action(description='✅ Mark as Delivered')
     def mark_delivered(self, request, queryset):
         from django.utils import timezone
-        queryset.update(status='delivered', delivered_at=timezone.now())
+        now = timezone.now()
+        for shipment in self._skip_unpaid(request, queryset):
+            shipment.status = 'delivered'
+            shipment.delivered_at = now
+            shipment.save(update_fields=['status', 'delivered_at', 'updated_at'])
 
     @admin.action(description='🧾 Generate Invoice')
     def generate_invoice(self, request, queryset):

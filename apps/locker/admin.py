@@ -187,22 +187,29 @@ class ParcelAdmin(ModelAdmin):
     # apps/locker/signals.py relies on those to create/join/close the
     # locker's batch when a parcel's status crosses the warehouse boundary.
 
+    # Excludes parcels that have already left the warehouse (shipped/
+    # returned/discarded) — flipping one of those back into pending/
+    # action_required/approved would re-enter it into IN_WAREHOUSE_STATUSES
+    # (signals.py) and double-count an already-departed parcel into a new
+    # storage batch.
+    _LEFT_WAREHOUSE_STATUSES = ('shipped', 'returned', 'discarded')
+
     @admin.action(description='⏳ Mark as Pending')
     def mark_pending(self, request, queryset):
-        for parcel in queryset:
+        for parcel in queryset.exclude(status__in=self._LEFT_WAREHOUSE_STATUSES):
             parcel.status = 'pending'
             parcel.save(update_fields=['status', 'updated_at'])
 
     @admin.action(description='⚠️ Mark as Action Required')
     def mark_action_required(self, request, queryset):
-        for parcel in queryset:
+        for parcel in queryset.exclude(status__in=self._LEFT_WAREHOUSE_STATUSES):
             parcel.status = 'action_required'
             parcel.save(update_fields=['status', 'updated_at'])
 
     @admin.action(description='✅ Mark as Approved')
     def mark_approved(self, request, queryset):
         from django.utils import timezone
-        for parcel in queryset:
+        for parcel in queryset.exclude(status__in=self._LEFT_WAREHOUSE_STATUSES):
             parcel.status = 'approved'
             parcel.approved_at = timezone.now()
             parcel.save(update_fields=['status', 'approved_at', 'updated_at'])
@@ -267,8 +274,18 @@ class ReturnRequestAdmin(ModelAdmin):
     
     @admin.action(description='✅ Mark as Completed')
     def complete_requests(self, request, queryset):
+        """Per-object, not a bare queryset.update() — this is the moment
+        staff confirm the parcel has actually shipped back to the customer,
+        so the Parcel itself must leave IN_WAREHOUSE_STATUSES too (signals.py),
+        or the storage batch never decrements/closes for it."""
         from django.utils import timezone
-        queryset.update(status='completed', completed_at=timezone.now())
+        now = timezone.now()
+        for req in queryset.select_related('parcel'):
+            req.status = 'completed'
+            req.completed_at = now
+            req.save(update_fields=['status', 'completed_at'])
+            req.parcel.status = 'returned'
+            req.parcel.save(update_fields=['status', 'updated_at'])
 
 
 @admin.register(DiscardRequest)
@@ -304,8 +321,17 @@ class DiscardRequestAdmin(ModelAdmin):
     
     @admin.action(description='🗑️ Mark as Discarded')
     def mark_discarded(self, request, queryset):
+        """Per-object, not a bare queryset.update() — same reason as
+        ReturnRequestAdmin.complete_requests: the Parcel must also leave
+        IN_WAREHOUSE_STATUSES once it's actually been thrown away."""
         from django.utils import timezone
-        queryset.update(status='discarded', discarded_at=timezone.now())
+        now = timezone.now()
+        for req in queryset.select_related('parcel'):
+            req.status = 'discarded'
+            req.discarded_at = now
+            req.save(update_fields=['status', 'discarded_at'])
+            req.parcel.status = 'discarded'
+            req.parcel.save(update_fields=['status', 'updated_at'])
 
 
 @admin.register(Batch)

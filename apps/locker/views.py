@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
@@ -163,7 +164,13 @@ class ApproveParcelView(LoginRequiredMixin, View):
 
             # Update parcel with user's declaration
             parcel.item_name = request.POST.get('item_name', parcel.item_name)
-            parcel.item_price = request.POST.get('item_price') or parcel.item_price
+            raw_item_price = request.POST.get('item_price')
+            if raw_item_price:
+                try:
+                    parcel.item_price = Decimal(raw_item_price)
+                except InvalidOperation:
+                    messages.error(request, 'Invalid item price.')
+                    return redirect('locker:parcel_detail', pk=pk)
             parcel.category = request.POST.get('category', parcel.category)
             parcel.customs_description = request.POST.get('customs_description', parcel.customs_description)
             

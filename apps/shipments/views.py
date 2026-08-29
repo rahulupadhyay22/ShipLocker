@@ -351,8 +351,11 @@ class CreateShipmentView(LoginRequiredMixin, View):
         from django.core.exceptions import ValidationError
         from indiabox.validators import validate_address, validate_phone, validate_email
 
-        # Get selected parcel IDs
-        parcel_ids = request.POST.getlist('parcels')
+        # Get selected parcel IDs (deduplicated — a resubmitted form or
+        # duplicate checkbox value would otherwise make len(parcels), which
+        # the id__in query below naturally dedupes, mismatch len(parcel_ids)
+        # and reject an otherwise-valid selection)
+        parcel_ids = list(dict.fromkeys(request.POST.getlist('parcels')))
         shipment_type = request.POST.get('shipment_type', 'international')
 
         if not parcel_ids:
