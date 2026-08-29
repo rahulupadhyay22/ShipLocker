@@ -232,6 +232,60 @@
                             </div>
                         </div>
                     </div>
+                    {% if return_request and is_return_flow %}
+                    <div class="pd-timeline-step done">
+                        <span class="pd-timeline-dot"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></span>
+                        <div class="pd-timeline-content">
+                            <div class="pd-timeline-label">Return Requested</div>
+                            <div class="pd-timeline-date">{{ return_request.requested_at|date:"d M Y, g:i A" }}</div>
+                        </div>
+                    </div>
+                    {% if return_request.status == 'rejected' %}
+                    <div class="pd-timeline-step done">
+                        <span class="pd-timeline-dot"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg></span>
+                        <div class="pd-timeline-content">
+                            <div class="pd-timeline-label">Return Rejected</div>
+                            <div class="pd-timeline-date">{{ return_request.processed_at|date:"d M Y, g:i A"|default:"—" }}</div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="pd-timeline-step {% if return_request.status == 'approved' or return_request.status == 'processing' or return_request.status == 'completed' %}done{% endif %}">
+                        <span class="pd-timeline-dot">{% if return_request.status == 'approved' or return_request.status == 'processing' or return_request.status == 'completed' %}<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>{% endif %}</span>
+                        <div class="pd-timeline-content">
+                            <div class="pd-timeline-label">Return Approved</div>
+                            <div class="pd-timeline-date">
+                                {% if return_request.processed_at %}{{ return_request.processed_at|date:"d M Y, g:i A" }}{% else %}Pending{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pd-timeline-step {% if return_request.status == 'completed' %}done{% endif %}">
+                        <span class="pd-timeline-dot">{% if return_request.status == 'completed' %}<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>{% endif %}</span>
+                        <div class="pd-timeline-content">
+                            <div class="pd-timeline-label">Returned</div>
+                            <div class="pd-timeline-date">
+                                {% if return_request.completed_at %}{{ return_request.completed_at|date:"d M Y, g:i A" }}{% else %}Pending{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% elif discard_request and is_discard_flow %}
+                    <div class="pd-timeline-step done">
+                        <span class="pd-timeline-dot"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></span>
+                        <div class="pd-timeline-content">
+                            <div class="pd-timeline-label">Discard Requested</div>
+                            <div class="pd-timeline-date">{{ discard_request.requested_at|date:"d M Y, g:i A" }}</div>
+                        </div>
+                    </div>
+                    <div class="pd-timeline-step {% if discard_request.status == 'discarded' %}done{% endif %}">
+                        <span class="pd-timeline-dot">{% if discard_request.status == 'discarded' %}<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>{% endif %}</span>
+                        <div class="pd-timeline-content">
+                            <div class="pd-timeline-label">Discarded</div>
+                            <div class="pd-timeline-date">
+                                {% if discard_request.discarded_at %}{{ discard_request.discarded_at|date:"d M Y, g:i A" }}{% else %}Pending{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
                     <div class="pd-timeline-step {% if shipment_item %}done{% endif %}">
                         <span class="pd-timeline-dot">{% if shipment_item %}<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>{% endif %}</span>
                         <div class="pd-timeline-content">
@@ -241,6 +295,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

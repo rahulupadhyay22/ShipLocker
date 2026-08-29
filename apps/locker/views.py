@@ -138,6 +138,14 @@ class ParcelDetailView(LoginRequiredMixin, DetailView):
         shipment_items = list(self.object.shipment_items.all())
         context['shipment_item'] = shipment_items[0] if shipment_items else None
 
+        # Latest request drives the timeline's return/discard branch below —
+        # a parcel can have more than one historically (e.g. a rejected
+        # return followed by a new one).
+        context['return_request'] = self.object.return_requests.order_by('-requested_at').first()
+        context['discard_request'] = self.object.discard_requests.order_by('-requested_at').first()
+        context['is_return_flow'] = self.object.status in ('return_requested', 'return_approved', 'returned')
+        context['is_discard_flow'] = self.object.status in ('discard_requested', 'discarded')
+
         # Storage is billed per Trunk ID (Batch) now, not per parcel — this
         # parcel's "storage left" comes from its locker's one open batch.
         from .services.batch_billing import get_open_batch

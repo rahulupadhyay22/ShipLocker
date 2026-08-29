@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import User, Locker
-from apps.locker.models import Parcel, ReturnRequest
+from apps.locker.models import Parcel, ReturnRequest, DiscardRequest
 from apps.locker.services.returns import finalize_return_request
 from apps.payments.models import Payment
 
@@ -168,3 +168,56 @@ class VerifyPaymentViewReturnChargeTests(TestCase):
         self.parcel.refresh_from_db()
         self.assertEqual(self.parcel.status, 'return_requested')
         self.assertTrue(ReturnRequest.objects.filter(parcel=self.parcel, reason='Wrong size').exists())
+
+
+class ParcelDetailTimelineTests(TestCase):
+    """The timeline must branch to the return/discard sub-steps instead of
+    showing the normal shipping steps once a parcel is in that flow."""
+
+    def setUp(self):
+        self.user = User.objects.create(email='return-timeline@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user)
+        self.client.force_login(self.user)
+
+    def _get(self, parcel):
+        return self.client.get(reverse('locker:parcel_detail', kwargs={'pk': parcel.pk}))
+
+    def test_normal_parcel_shows_shipped_step(self):
+        parcel = Parcel.objects.create(locker=self.locker, item_name='Shoes', status='approved')
+        response = self._get(parcel)
+        self.assertContains(response, 'Shipped to You')
+        self.assertNotContains(response, 'Return Requested')
+
+    def test_return_requested_shows_return_steps_not_shipped(self):
+        parcel = Parcel.objects.create(locker=self.locker, item_name='Shoes', status='return_requested')
+        ReturnRequest.objects.create(parcel=parcel, reason='Wrong size')
+        response = self._get(parcel)
+        self.assertContains(response, 'Return Requested')
+        self.assertContains(response, 'Return Approved')
+        self.assertContains(response, 'Returned')
+        self.assertNotContains(response, 'Shipped to You')
+
+    def test_rejected_return_shows_rejected_step_not_approved(self):
+        parcel = Parcel.objects.create(locker=self.locker, item_name='Shoes', status='return_requested')
+        ReturnRequest.objects.create(parcel=parcel, reason='Wrong size', status='rejected')
+        response = self._get(parcel)
+        self.assertContains(response, 'Return Rejected')
+        self.assertNotContains(response, 'Return Approved')
+
+    def test_discard_requested_shows_discard_steps_not_shipped(self):
+        parcel = Parcel.objects.create(locker=self.locker, item_name='Shoes', status='discard_requested')
+        DiscardRequest.objects.create(parcel=parcel, reason='Not wanted')
+        response = self._get(parcel)
+        self.assertContains(response, 'Discard Requested')
+        self.assertContains(response, 'Discarded')
+        self.assertNotContains(response, 'Shipped to You')
+
+    def test_approved_parcel_after_past_rejected_return_still_shows_shipped_step(self):
+        """Regression guard: a parcel back to 'approved' after a past
+        rejected return must not be misrouted into the return branch just
+        because 'approved' is a substring of 'return_approved'."""
+        parcel = Parcel.objects.create(locker=self.locker, item_name='Shoes', status='approved', approved_at=timezone.now())
+        ReturnRequest.objects.create(parcel=parcel, reason='Changed my mind', status='rejected')
+        response = self._get(parcel)
+        self.assertContains(response, 'Shipped to You')
+        self.assertNotContains(response, 'Return Requested')
