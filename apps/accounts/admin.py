@@ -75,6 +75,14 @@ class LockerAdmin(ModelAdmin):
             from datetime import timedelta
             from django.utils import timezone
             today = timezone.localdate()
+            # Neither apply_upgrade nor apply_downgrade touches
+            # payment_grace_until (only resolve_grace_period does) — an
+            # admin manually flipping plan_type here is an out-of-band
+            # override, so drop any stale grace state instead of leaving
+            # it to later confuse sync_premium_renewals.
+            if obj.payment_grace_until is not None:
+                obj.payment_grace_until = None
+                obj.save(update_fields=['payment_grace_until'])
             if obj.plan_type == 'paid':
                 obj.premium_expires_at = today + timedelta(days=365)
                 obj.save(update_fields=['premium_expires_at'])
