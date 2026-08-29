@@ -356,7 +356,12 @@ class PersonalShopRequestCancelView(LoginRequiredMixin, LockerOwnershipMixin, Se
         if not obj.is_cancellable:
             return HttpResponseBadRequest('This request has already been purchased and cannot be cancelled.')
 
-        if obj.status == 'paid':
+        # paid_at (not status) is the reliable "a payment was captured"
+        # signal: research-fee/expense-advance flows cycle status back to
+        # quotation_ready for a second quotation's payment (see
+        # AWAITING_NEW_QUOTATION_PAYMENT_STATUSES above), but paid_at is
+        # set once and never cleared.
+        if obj.paid_at is not None:
             obj.refund_required = True
         obj.status = 'cancelled'
         obj.cancelled_at = timezone.now()
@@ -454,7 +459,11 @@ class CreatePersonalShopPaymentOrderView(LoginRequiredMixin, LockerOwnershipMixi
                 created_at__gte=timezone.now() - timedelta(minutes=30),
             ).order_by('-created_at').first()
 
-            if existing and existing.razorpay_order_id:
+            # Only reuse the existing order if the quotation's total hasn't
+            # changed since it was created (e.g. an admin edit or the
+            # refresh_service_fee_discount() call above) — otherwise the
+            # customer would be charged the stale amount via Razorpay.
+            if existing and existing.razorpay_order_id and existing.amount == amount:
                 return JsonResponse({
                     'order_id': existing.razorpay_order_id,
                     'amount': int(existing.amount * 100),

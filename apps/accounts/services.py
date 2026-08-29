@@ -179,6 +179,21 @@ class SupabaseStorage:
             return self.client.storage.from_(bucket_name).remove([file_path])
 
 
+def copy_storage_file(bucket_name: str, from_path: str, to_path: str) -> bool:
+    """Best-effort copy of a Supabase Storage object to a new path. Used when
+    the same underlying photo needs to be owned by two independent DB rows
+    with independent delete lifecycles (e.g. a TrunkAssist reference image
+    becoming a Parcel's inspection photo) — without this, deleting either
+    row's post_delete signal would delete the file out from under the other.
+    Returns False on failure so the caller can fall back."""
+    try:
+        SupabaseStorage().client.storage.from_(bucket_name).copy(from_path, to_path)
+        return True
+    except Exception as e:
+        logger.warning(f'Storage copy failed for {bucket_name}/{from_path} -> {to_path}: {e}')
+        return False
+
+
 def delete_storage_file(bucket_name: str, file_path: str):
     """Best-effort Supabase Storage delete for use in model post_delete
     signals — never raises, so a Storage outage can't block the DB delete

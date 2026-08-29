@@ -1,3 +1,5 @@
+import os
+import uuid
 from decimal import Decimal, InvalidOperation
 
 from django import forms
@@ -217,15 +219,24 @@ class PersonalShopRequestAdmin(ModelAdmin):
                 or (obj.source_parcel.item_name if obj.source_parcel_id else '') or obj.display_id,
                 approved_at=timezone.now(),
             )
-            ParcelImage.objects.bulk_create([
-                ParcelImage(
+            new_images = []
+            for index, image in enumerate(obj.images.order_by('uploaded_at')):
+                # Copy to its own storage path — ParcelImage and
+                # PersonalShopImage each independently delete their file on
+                # row delete (apps/locker/signals.py, apps/personal_shop/
+                # signals.py), so sharing image.image_path directly would
+                # let deleting either row delete the other's photo too.
+                ext = os.path.splitext(image.image_path)[1]
+                new_path = f"my-trunk/{obj.locker.locker_id}/{parcel.display_id}/photo_{uuid.uuid4().hex[:6]}{ext}"
+                from apps.accounts.services import copy_storage_file
+                copied = copy_storage_file('parcel-images', image.image_path, new_path)
+                new_images.append(ParcelImage(
                     parcel=parcel,
-                    image_path=image.image_path,
+                    image_path=new_path if copied else image.image_path,
                     caption=image.caption,
                     is_primary=(index == 0),
-                )
-                for index, image in enumerate(obj.images.order_by('uploaded_at'))
-            ])
+                ))
+            ParcelImage.objects.bulk_create(new_images)
             now = timezone.now()
             obj.parcel = parcel
             obj.status = 'added_to_trunk'
