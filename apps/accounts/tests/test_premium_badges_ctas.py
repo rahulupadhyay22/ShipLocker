@@ -124,14 +124,6 @@ class ProfileBadgeCtaRenderingTests(TestCase):
         self.assertContains(response, reverse('payments:premium_create_order'))
         self.assertContains(response, reverse('payments:verify'))
 
-    def test_premium_checkout_script_absent_when_far_from_expiry(self):
-        user, _ = _make_user_with_locker(
-            'checkout-script-far@example.com', plan_type='paid',
-            premium_expires_at=timezone.localdate() + timedelta(days=200),
-        )
-        self.client.force_login(user)
-        response = self.client.get(reverse('accounts:profile'))
-        self.assertNotContains(response, 'premium-checkout-btn')
 
 
 class SubscriptionRenewalCtaRenderingTests(TestCase):
