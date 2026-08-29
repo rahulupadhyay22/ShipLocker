@@ -119,6 +119,31 @@ def _activate_premium_subscription(payment):
     logger.info(f"Premium subscription activated/renewed: locker={locker.locker_id} expires={locker.premium_expires_at}")
 
 
+def apply_payment_captured_side_effects(payment):
+    """Runs everything a captured payment must trigger, by payment_type —
+    settling bundled BatchCharge rows, marking a shipment paid (+ its GST
+    invoice via the post_save signal) and recording premium savings,
+    marking a TrunkAssist request paid, or activating a premium
+    subscription. Shared by VerifyPaymentView, RazorpayWebhookView, and
+    PaymentAdmin.mark_captured (offline/manual payments) so every path
+    that captures a payment does the same thing, not just the online
+    Razorpay ones. Caller is responsible for setting payment.status
+    ='captured' (and paid_at) and saving first."""
+    _mark_batch_charges_paid(payment)
+    if payment.shipment:
+        payment.shipment.payment_status = 'paid'
+        payment.shipment.paid_at = payment.paid_at or timezone.now()
+        payment.shipment.advance_after_payment()
+        payment.shipment.save()
+        _record_shipment_premium_savings(payment.shipment)
+    elif payment.personal_shop_request:
+        payment.personal_shop_request.mark_paid()
+    elif payment.payment_type == 'storage_batch':
+        logger.info(f"Storage batch payment captured: payment={payment.pk} amount={payment.amount}")
+    elif payment.payment_type == 'premium_subscription':
+        _activate_premium_subscription(payment)
+
+
 class CreatePaymentOrderView(LoginRequiredMixin, View):
     """Create a Razorpay order for a shipment payment.
 
@@ -356,21 +381,7 @@ class VerifyPaymentView(LoginRequiredMixin, View):
             payment.paid_at = timezone.now()
             payment.save()
 
-            _mark_batch_charges_paid(payment)
-
-            # Update shipment payment status
-            if payment.shipment:
-                payment.shipment.payment_status = 'paid'
-                payment.shipment.paid_at = timezone.now()
-                payment.shipment.advance_after_payment()
-                payment.shipment.save()
-                _record_shipment_premium_savings(payment.shipment)
-            elif payment.personal_shop_request:
-                payment.personal_shop_request.mark_paid()
-            elif payment.payment_type == 'storage_batch':
-                logger.info(f"Storage batch payment captured: payment={payment.pk} amount={payment.amount}")
-            elif payment.payment_type == 'premium_subscription':
-                _activate_premium_subscription(payment)
+            apply_payment_captured_side_effects(payment)
 
         logger.info(
             f"Payment VERIFIED: user={request.user.email} "
@@ -429,19 +440,7 @@ class RazorpayWebhookView(View):
                             payment.status = 'captured'
                             payment.paid_at = timezone.now()
                             payment.save()
-                            _mark_batch_charges_paid(payment)
-                            if payment.shipment:
-                                payment.shipment.payment_status = 'paid'
-                                payment.shipment.paid_at = timezone.now()
-                                payment.shipment.advance_after_payment()
-                                payment.shipment.save()
-                                _record_shipment_premium_savings(payment.shipment)
-                            elif payment.personal_shop_request:
-                                payment.personal_shop_request.mark_paid()
-                            elif payment.payment_type == 'storage_batch':
-                                logger.info(f"Storage batch payment captured via webhook: payment={payment.pk}")
-                            elif payment.payment_type == 'premium_subscription':
-                                _activate_premium_subscription(payment)
+                            apply_payment_captured_side_effects(payment)
                     if captured_now:
                         logger.info(f"Webhook: Payment captured for order {order_id}")
                 except Payment.DoesNotExist:

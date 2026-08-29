@@ -91,10 +91,21 @@ class PaymentAdmin(ModelAdmin):
 
     @admin.action(description='✅ Mark as Captured/Paid')
     def mark_captured(self, request, queryset):
+        """Per-object, not a bare queryset.update() — this is the only place
+        offline payments (bank_transfer/cash/manual) get recorded, so it has
+        to run the same side effects a Razorpay capture would: settling
+        bundled BatchCharge rows, marking the shipment paid (+ invoice),
+        marking a TrunkAssist request paid, or activating premium."""
+        from django.db import transaction
         from django.utils import timezone
-        queryset.filter(status__in=['pending', 'authorized']).update(
-            status='captured', paid_at=timezone.now()
-        )
+        from .views import apply_payment_captured_side_effects
+
+        for payment in queryset.filter(status__in=['pending', 'authorized']):
+            with transaction.atomic():
+                payment.status = 'captured'
+                payment.paid_at = timezone.now()
+                payment.save(update_fields=['status', 'paid_at'])
+                apply_payment_captured_side_effects(payment)
 
     @admin.action(description='❌ Mark as Failed')
     def mark_failed(self, request, queryset):

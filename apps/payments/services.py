@@ -183,17 +183,14 @@ def _financial_year_label(invoice_date):
     return f"{year - 1}-{str(year)[-2:]}"
 
 
-def generate_invoice_number(invoice_date):
-    """Sequential invoice number within a financial year: INV/2026-27/0001.
+def _generate_sequential_invoice_number(model, prefix):
+    """Sequential number within a financial year, e.g. INV/2026-27/0001.
     Race-safe via select_for_update, same pattern as generate_shipment_id
-    in apps/shipments/models.py."""
-    from .models import Invoice
-
-    prefix = f"INV/{_financial_year_label(invoice_date)}/"
-
+    in apps/shipments/models.py. Shared by generate_invoice_number and
+    generate_personal_shop_invoice_number — same logic, different model/prefix."""
     with transaction.atomic():
         last = (
-            Invoice.objects
+            model.objects
             .select_for_update()
             .filter(invoice_number__startswith=prefix)
             .order_by('-invoice_number')
@@ -203,22 +200,33 @@ def generate_invoice_number(invoice_date):
             try:
                 num = int(last.invoice_number.rsplit('/', 1)[1]) + 1
             except (ValueError, IndexError):
-                num = Invoice.objects.filter(invoice_number__startswith=prefix).count() + 1
+                num = model.objects.filter(invoice_number__startswith=prefix).count() + 1
         else:
             num = 1
 
     return f"{prefix}{num:04d}"
 
 
+def generate_invoice_number(invoice_date):
+    """Sequential invoice number within a financial year: INV/2026-27/0001."""
+    from .models import Invoice
+    return _generate_sequential_invoice_number(Invoice, f"INV/{_financial_year_label(invoice_date)}/")
+
+
 def build_charge_snapshot(shipment):
     """{'shipping_amount', 'storage_fee_amount', 'consolidation_fee_amount'}
-    reusing the exact same totals already shown on the shipment detail page."""
+    for the GST invoice — a historical record of what this payment actually
+    settled. Uses storage_fee_paid (not _payment_summary's storage_fee_total,
+    which is deliberately pending+paid for the live "what you owe" page) —
+    otherwise the invoice's taxable/total amount would include the locker's
+    other batches' still-pending storage charges that this payment never
+    collected."""
     from apps.shipments.views import _payment_summary
 
     summary = _payment_summary(shipment)
     return {
         'shipping_amount': summary['shipping_amount'],
-        'storage_fee_amount': summary['storage_fee_total'],
+        'storage_fee_amount': summary['storage_fee_paid'],
         'consolidation_fee_amount': summary['consolidation_fee'],
     }
 
@@ -411,26 +419,7 @@ def generate_personal_shop_invoice_number(invoice_date):
     """Sequential invoice number within a financial year: TA-INV/2026-27/0001.
     Own sequence, separate from generate_invoice_number's shipment INV/ series."""
     from .models import PersonalShopInvoice
-
-    prefix = f"TA-INV/{_financial_year_label(invoice_date)}/"
-
-    with transaction.atomic():
-        last = (
-            PersonalShopInvoice.objects
-            .select_for_update()
-            .filter(invoice_number__startswith=prefix)
-            .order_by('-invoice_number')
-            .first()
-        )
-        if last:
-            try:
-                num = int(last.invoice_number.rsplit('/', 1)[1]) + 1
-            except (ValueError, IndexError):
-                num = PersonalShopInvoice.objects.filter(invoice_number__startswith=prefix).count() + 1
-        else:
-            num = 1
-
-    return f"{prefix}{num:04d}"
+    return _generate_sequential_invoice_number(PersonalShopInvoice, f"TA-INV/{_financial_year_label(invoice_date)}/")
 
 
 class PersonalShopInvoiceService:
