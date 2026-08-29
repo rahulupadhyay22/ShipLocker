@@ -56,6 +56,7 @@ class Payment(models.Model):
         ('shipment', 'Shipment'),
         ('storage_batch', 'Storage Batch'),
         ('premium_subscription', 'Premium Subscription'),
+        ('return_service_charge', 'Return Service Charge'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -84,7 +85,7 @@ class Payment(models.Model):
 
     # Type
     payment_type = models.CharField(
-        max_length=20, choices=PAYMENT_TYPE_CHOICES, default='shipment'
+        max_length=25, choices=PAYMENT_TYPE_CHOICES, default='shipment'
     )
 
     # Method & Status

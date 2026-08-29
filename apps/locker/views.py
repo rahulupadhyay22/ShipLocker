@@ -1,4 +1,6 @@
+import json
 import logging
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -6,6 +8,7 @@ from django.views import View
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
+from django.http import JsonResponse
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Count, Q
@@ -207,27 +210,106 @@ class ApproveParcelView(LoginRequiredMixin, View):
         return redirect('locker:ready_to_ship')
 
 
-class RequestReturnView(LoginRequiredMixin, View):
-    """Request return for a parcel."""
-    
+class CreateReturnPaymentOrderView(LoginRequiredMixin, View):
+    """Create a Razorpay order for the Return Service Charge. The actual
+    ReturnRequest is only created once this payment is captured — see
+    apps/locker/services/returns.py's finalize_return_request, invoked from
+    apps/payments/views.py's apply_payment_captured_side_effects."""
+
     def post(self, request, pk):
+        from apps.content.services import get_service_charge
+        from apps.payments.models import Payment
+        from apps.payments.services import RazorpayService
+
         reason = request.POST.get('reason', '')
+        if not reason.strip():
+            return JsonResponse({'error': 'Reason for return is required.'}, status=400)
+
+        parcel = get_object_or_404(Parcel, pk=pk, locker=request.user.locker)
+        if parcel.status not in ('action_required', 'approved'):
+            return JsonResponse({'error': 'Return cannot be requested for this parcel.'}, status=400)
+
+        charge = get_service_charge('return_service_charge')
+        amount = charge.compute() if charge else Decimal('0.00')
+
+        if amount <= 0:
+            # Inactive/misconfigured charge -> free return, same as a
+            # misconfigured consolidation fee is treated as "not charged"
+            # rather than "returns are blocked".
+            from .services.returns import create_return_request
+            with transaction.atomic():
+                parcel = Parcel.objects.select_for_update().get(pk=parcel.pk)
+                create_return_request(parcel, reason)
+            return JsonResponse({'status': 'success'})
+
+        amount_paise = int(amount * 100)
+
+        service = RazorpayService()
+        if not service.is_enabled:
+            return JsonResponse({'error': 'Payments not configured'}, status=503)
 
         with transaction.atomic():
-            parcel = get_object_or_404(
-                Parcel.objects.select_for_update(), pk=pk, locker=request.user.locker
+            # Dedupe by parcel — Payment has no dedicated FK for this charge
+            # type (parcel_id lives in notes, same as batch_charge_ids does
+            # for shipment payments), so check recent pending orders in Python.
+            recent = Payment.objects.select_for_update().filter(
+                user=request.user,
+                payment_type='return_service_charge',
+                status='pending',
+                created_at__gte=timezone.now() - timedelta(minutes=30),
+            ).order_by('-created_at')
+            existing = None
+            for candidate in recent:
+                try:
+                    candidate_notes = json.loads(candidate.notes)
+                except (TypeError, ValueError):
+                    continue
+                if candidate_notes.get('parcel_id') == str(parcel.pk):
+                    existing = candidate
+                    break
+
+            if existing and existing.razorpay_order_id and existing.amount == amount:
+                return JsonResponse({
+                    'order_id': existing.razorpay_order_id,
+                    'amount': int(existing.amount * 100),
+                    'currency': existing.currency,
+                    'key_id': service.key_id,
+                    'payment_pk': str(existing.pk),
+                })
+
+            payment = Payment.objects.create(
+                user=request.user,
+                amount=amount,
+                payment_type='return_service_charge',
+                payment_method='razorpay',
+                status='pending',
+                description=f'Return Service Charge for {parcel.display_id}',
+                notes=json.dumps({'parcel_id': str(parcel.pk), 'reason': reason}),
             )
 
-            if parcel.status not in ['action_required', 'approved']:
-                messages.error(request, 'Return cannot be requested for this parcel.')
-                return redirect('locker:parcel_detail', pk=pk)
+            order = service.create_order(
+                amount_paise=amount_paise,
+                currency=charge.currency if charge else 'INR',
+                receipt=payment.display_id,
+                notes={'parcel_id': str(parcel.pk)},
+            )
 
-            ReturnRequest.objects.create(parcel=parcel, reason=reason)
-            parcel.status = 'return_requested'
-            parcel.save()
+            if not order:
+                payment.status = 'failed'
+                payment.failure_reason = 'Order creation failed'
+                payment.save()
+                return JsonResponse({'error': 'Payment order creation failed'}, status=502)
 
-        messages.success(request, 'Return request submitted.')
-        return redirect('locker:returns')
+            payment.razorpay_order_id = order['id']
+            payment.save()
+
+        return JsonResponse({
+            'order_id': order['id'],
+            'amount': amount_paise,
+            'currency': charge.currency if charge else 'INR',
+            'key_id': service.key_id,
+            'payment_pk': str(payment.pk),
+        })
 
 
 class RequestDiscardView(LoginRequiredMixin, View):

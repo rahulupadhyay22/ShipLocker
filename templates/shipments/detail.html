@@ -302,7 +302,6 @@
                 <span>Item</span>
                 <span>Category</span>
                 <span>Weight</span>
-                <span>Declared Value</span>
                 <span>Received On</span>
             </div>
             {% for item in shipment.items.all %}
@@ -319,7 +318,6 @@
                 </span>
                 <span data-label="Category">{{ item.parcel.get_category_display }}</span>
                 <span data-label="Weight">{{ item.parcel.weight_kg|default:"—" }} kg</span>
-                <span data-label="Declared Value">{{ item.parcel.item_currency }} {{ item.parcel.item_price }}</span>
                 <span data-label="Received On">{{ item.parcel.received_at|date:"d M Y" }}</span>
             </div>
             {% endfor %}

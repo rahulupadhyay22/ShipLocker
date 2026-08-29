@@ -12,20 +12,6 @@
     </div>
 </div>
 
-{% if not has_kyc %}
-<div class="modern-alert" style="background: var(--warning-bg); border: 1px solid #FCD34D;">
-    <div style="color: var(--warning-text);"><svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
-    <div style="flex: 1;">
-        <strong>KYC Verification Pending</strong>
-        <p style="color: var(--warning-text); margin-top: 0.25rem;">
-            International shipments require KYC. You might face customs delays or higher duties.
-            <a href="{% url 'kyc:list' %}" style="text-decoration: underline; font-weight: 600; color: inherit;">Upload
-                documents now</a>.
-        </p>
-    </div>
-</div>
-{% endif %}
-
 {% if parcels %}
 <!-- Wizard Stepper -->
 <div class="wizard-stepper card" id="wizardStepper">
@@ -78,7 +64,6 @@
                         <div style="display: flex; flex-direction: column; gap: 1rem;">
                             {% for parcel in parcels %}
                             <label class="parcel-select-card" data-weight="{{ parcel.weight_kg|default:'0' }}"
-                                data-price="{{ parcel.item_price|default:'0' }}"
                                 data-billable-weight="{{ parcel.billable_weight|default:'0' }}">
                                 <input type="checkbox" name="parcels" value="{{ parcel.id }}" class="parcel-checkbox"
                                     {% if parcel.id|stringformat:"s" in preselected_ids %}checked{% endif %}
@@ -97,9 +82,6 @@
                                             {{ parcel.get_category_display }} • {{ parcel.weight_kg|default:"--" }} kg
                                         </div>
                                         <div class="psc-received">Received {{ parcel.received_at|date:"d M Y" }}</div>
-                                    </div>
-                                    <div class="psc-price">
-                                        {{ parcel.item_currency }} {{ parcel.item_price }}
                                     </div>
                                     <button type="button" class="psc-remove" aria-label="Remove"
                                         onclick="event.preventDefault(); this.closest('.parcel-select-card').querySelector('.parcel-checkbox').checked=false; updateSummary();">
@@ -151,10 +133,6 @@
                             <div class="summary-stat">
                                 <span class="summary-stat-label">Total Weight</span>
                                 <span class="summary-stat-value js-sum-weight">0.00 kg</span>
-                            </div>
-                            <div class="summary-stat">
-                                <span class="summary-stat-label">Declared Value</span>
-                                <span class="summary-stat-value js-sum-value">0</span>
                             </div>
                         </div>
 
@@ -399,7 +377,6 @@
                                         <th style="padding: 0.5rem;">Item</th>
                                         <th style="padding: 0.5rem;">Category</th>
                                         <th style="padding: 0.5rem;">Description</th>
-                                        <th style="padding: 0.5rem;">Value</th>
                                         <th style="padding: 0.5rem;">Weight</th>
                                     </tr>
                                 </thead>
@@ -410,18 +387,10 @@
                                         <td style="padding: 0.5rem;">{{ parcel.item_name|default:parcel.tracking_number }}</td>
                                         <td style="padding: 0.5rem;">{{ parcel.get_category_display }}</td>
                                         <td style="padding: 0.5rem;">{{ parcel.customs_description|default:"-" }}</td>
-                                        <td style="padding: 0.5rem;">{{ parcel.item_currency }} {{ parcel.item_price }}</td>
                                         <td style="padding: 0.5rem;">{{ parcel.weight_kg|default:"--" }} kg</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
-                                <tfoot>
-                                    <tr style="font-weight: 600;">
-                                        <td colspan="3" style="padding: 0.5rem;">Total</td>
-                                        <td style="padding: 0.5rem;" class="js-declaration-total">—</td>
-                                        <td style="padding: 0.5rem;"></td>
-                                    </tr>
-                                </tfoot>
                             </table>
                         </div>
 
@@ -520,10 +489,7 @@
         const cards = document.querySelectorAll('.parcel-select-card');
         let count = 0;
         let totalWeight = 0;
-        let totalValue = 0;
         let totalBillableWeight = 0;
-
-        let declaredTotal = 0;
 
         cards.forEach(function (card) {
             const cb = card.querySelector('.parcel-checkbox');
@@ -531,9 +497,7 @@
             if (cb.checked) {
                 count++;
                 totalWeight += parseFloat(card.dataset.weight) || 0;
-                totalValue += parseFloat(card.dataset.price) || 0;
                 totalBillableWeight += parseFloat(card.dataset.billableWeight) || 0;
-                declaredTotal += parseFloat(card.dataset.price) || 0;
                 card.classList.add('selected');
                 if (declarationRow) declarationRow.hidden = false;
             } else {
@@ -542,14 +506,11 @@
             }
         });
 
-        document.querySelectorAll('.js-declaration-total').forEach(function (el) { el.textContent = declaredTotal.toFixed(2); });
-
         const selectAll = document.getElementById('selectAllParcels');
         if (selectAll) selectAll.checked = cards.length > 0 && count === cards.length;
 
         document.querySelectorAll('.js-sum-count').forEach(function (el) { el.textContent = count; });
         document.querySelectorAll('.js-sum-weight').forEach(function (el) { el.textContent = totalWeight.toFixed(2) + ' kg'; });
-        document.querySelectorAll('.js-sum-value').forEach(function (el) { el.textContent = totalValue.toFixed(2); });
 
         // Storage is billed per Trunk ID, not per parcel — this is the
         // locker's whole outstanding balance, shown whenever any items are

@@ -151,13 +151,6 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="item_price">Item Value ({{ parcel.item_currency }}) <span
-                                style="color: var(--danger-text);">*</span></label>
-                        <input type="number" id="item_price" name="item_price" class="form-input"
-                            value="{{ parcel.item_price }}" step="0.01" placeholder="0.00" required>
-                    </div>
-
-                    <div class="form-group">
                         <label class="form-label" for="category">Category <span
                                 style="color: var(--danger-text);">*</span></label>
                         <select id="category" name="category" class="form-input" required>
@@ -349,7 +342,7 @@
                 style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary);">&times;</button>
         </div>
         <div class="card-body">
-            <form method="post" action="{% url 'locker:request_return' pk=parcel.pk %}" data-guard-submit>
+            <form id="returnForm" method="post" action="{% url 'locker:request_return' pk=parcel.pk %}">
                 {% csrf_token %}
                 <div class="form-group">
                     <label class="form-label">Reason for return <span
@@ -357,7 +350,9 @@
                     <textarea name="reason" class="form-input" rows="4" required
                         placeholder="Please explain why you want to return this item..."></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Return Request</button>
+                <p class="pd-form-hint" style="margin-bottom: 0.75rem;">A return service charge applies and is collected before the request is submitted.</p>
+                <p id="returnFormError" class="modern-alert alert-danger form-loading-error" role="alert" hidden></p>
+                <button type="submit" class="btn btn-primary" data-error-target="returnFormError" style="width: 100%;">Continue to Payment</button>
             </form>
         </div>
     </div>
@@ -615,5 +610,107 @@
             else if (e.key === 'ArrowRight') nextImage();
         }
     });
+</script>
+
+<!-- Return Service Charge checkout — same create-order/verify/reload pattern
+     as templates/accounts/_premium_checkout_script.html, adapted because the
+     create-order call here needs to send the return reason as a form body. -->
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+<script>
+    (function () {
+        const returnForm = document.getElementById('returnForm');
+        if (!returnForm) return;
+
+        const csrfToken = '{{ csrf_token }}';
+        const verifyUrl = '{% url "payments:verify" %}';
+
+        async function parseJsonOrThrow(response) {
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                return response.json();
+            }
+            const errorText = await response.text();
+            throw new Error(errorText || 'Unexpected server response.');
+        }
+
+        returnForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const submitBtn = returnForm.querySelector('button[type="submit"]');
+            if (submitBtn.dataset.loading === 'true') return;
+
+            CamelTrunkLoading.clearError(submitBtn);
+            CamelTrunkLoading.start(submitBtn);
+
+            try {
+                const createResponse = await fetch(returnForm.action, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                    body: new FormData(returnForm),
+                });
+                const orderData = await parseJsonOrThrow(createResponse);
+
+                if (!createResponse.ok) {
+                    throw new Error(orderData.error || 'Could not start payment.');
+                }
+
+                if (orderData.status === 'success') {
+                    // Return service charge is inactive/zero — request was
+                    // submitted directly, no payment needed.
+                    window.location.reload();
+                    return;
+                }
+
+                if (!window.Razorpay) {
+                    throw new Error('Razorpay checkout failed to load.');
+                }
+
+                const options = {
+                    key: orderData.key_id,
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: 'CamelTrunk',
+                    description: 'Return Service Charge',
+                    order_id: orderData.order_id,
+                    handler: async function (response) {
+                        try {
+                            const verifyResult = await parseJsonOrThrow(await fetch(verifyUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrfToken,
+                                },
+                                body: JSON.stringify({
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                }),
+                            }));
+
+                            if (verifyResult.status === 'success') {
+                                window.location.reload();
+                                return;
+                            }
+                            CamelTrunkLoading.showError(submitBtn, verifyResult.error || 'Payment verification failed.');
+                        } catch (error) {
+                            CamelTrunkLoading.showError(submitBtn, error.message || 'Payment verification failed.');
+                        } finally {
+                            CamelTrunkLoading.stop(submitBtn);
+                        }
+                    },
+                    theme: { color: '#f6a313' },
+                    modal: {
+                        ondismiss: function () {
+                            CamelTrunkLoading.stop(submitBtn);
+                        }
+                    }
+                };
+
+                new Razorpay(options).open();
+            } catch (error) {
+                CamelTrunkLoading.showError(submitBtn, error.message || 'Unable to start payment.');
+                CamelTrunkLoading.stop(submitBtn);
+            }
+        });
+    })();
 </script>
 {% endblock %}

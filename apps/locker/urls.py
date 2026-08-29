@@ -11,6 +11,6 @@ urlpatterns = [
     path('discards/', views.MyTrunkView.as_view(), name='discards'),
     path('parcel/<uuid:pk>/', views.ParcelDetailView.as_view(), name='parcel_detail'),
     path('parcel/<uuid:pk>/approve/', views.ApproveParcelView.as_view(), name='approve_parcel'),
-    path('parcel/<uuid:pk>/return/', views.RequestReturnView.as_view(), name='request_return'),
+    path('parcel/<uuid:pk>/return/', views.CreateReturnPaymentOrderView.as_view(), name='request_return'),
     path('parcel/<uuid:pk>/discard/', views.RequestDiscardView.as_view(), name='request_discard'),
 ]

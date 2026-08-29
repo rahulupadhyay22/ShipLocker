@@ -131,6 +131,7 @@ KNOWN_SERVICE_CHARGE_CODES = [
     ('trunkassist_local_shop_purchase', 'TrunkAssist – Local Shop Purchase'),
     ('trunkassist_custom_request', 'TrunkAssist – Custom Request'),
     ('consolidation_fee', 'Consolidation Fee'),
+    ('return_service_charge', 'Return Service Charge'),
 ]
 
 

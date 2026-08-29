@@ -142,6 +142,9 @@ def apply_payment_captured_side_effects(payment):
         logger.info(f"Storage batch payment captured: payment={payment.pk} amount={payment.amount}")
     elif payment.payment_type == 'premium_subscription':
         _activate_premium_subscription(payment)
+    elif payment.payment_type == 'return_service_charge':
+        from apps.locker.services.returns import finalize_return_request
+        finalize_return_request(payment)
 
 
 class CreatePaymentOrderView(LoginRequiredMixin, View):
