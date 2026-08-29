@@ -173,7 +173,9 @@
             Next Billing
         </div>
         <div class="sub-billing-row"><span class="label">Plan</span><span class="value">Premium (Annual)</span></div>
+        {% if locker.premium_expires_at %}
         <div class="sub-billing-row"><span class="label">Renews On</span><span class="value">{{ locker.premium_expires_at|date:"d M Y" }}</span></div>
+        {% endif %}
         {% if premium_annual_price %}
         <div class="sub-billing-row"><span class="label">Amount</span><span class="value">&#8377;{{ premium_annual_price|floatformat:2 }}</span></div>
         {% endif %}
