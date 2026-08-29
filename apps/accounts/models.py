@@ -171,9 +171,12 @@ class Locker(models.Model):
     def premium_renewal_due(self):
         """True once a Premium locker is within 7 days of (or past) its
         renewal date — matches the day sync_premium_renewals sends its
-        WhatsApp reminder, so the UI renew prompt lines up with it."""
-        if not self.is_premium or not self.premium_expires_at:
+        WhatsApp reminder, so the UI renew prompt lines up with it.
+        A missing expiry on a Premium locker is treated as due, not skipped."""
+        if not self.is_premium:
             return False
+        if not self.premium_expires_at:
+            return True
         return (self.premium_expires_at - timezone.localdate()).days <= 7
 
     def apply_service_fee_discount(self, standard_amount):

@@ -123,3 +123,50 @@ class ProfileBadgeCtaRenderingTests(TestCase):
         self.assertContains(response, 'premium-checkout-btn')
         self.assertContains(response, reverse('payments:premium_create_order'))
         self.assertContains(response, reverse('payments:verify'))
+
+    def test_premium_checkout_script_absent_when_far_from_expiry(self):
+        user, _ = _make_user_with_locker(
+            'checkout-script-far@example.com', plan_type='paid',
+            premium_expires_at=timezone.localdate() + timedelta(days=200),
+        )
+        self.client.force_login(user)
+        response = self.client.get(reverse('accounts:profile'))
+        self.assertNotContains(response, 'premium-checkout-btn')
+
+
+class SubscriptionRenewalCtaRenderingTests(TestCase):
+    def test_premium_user_far_from_expiry_sees_no_renew_cta(self):
+        expiry = timezone.localdate() + timedelta(days=200)
+        user, _ = _make_user_with_locker(
+            'sub-premium-far@example.com', plan_type='paid', premium_expires_at=expiry,
+        )
+        self.client.force_login(user)
+        response = self.client.get(reverse('accounts:subscription'))
+        self.assertNotContains(response, 'Renew Now')
+
+    def test_premium_user_near_expiry_sees_renew_cta(self):
+        expiry = timezone.localdate() + timedelta(days=3)
+        user, _ = _make_user_with_locker(
+            'sub-premium-near@example.com', plan_type='paid', premium_expires_at=expiry,
+        )
+        self.client.force_login(user)
+        response = self.client.get(reverse('accounts:subscription'))
+        self.assertContains(response, 'Renew Now')
+
+    def test_premium_user_with_missing_expiry_sees_renew_cta(self):
+        user, _ = _make_user_with_locker(
+            'sub-premium-null-expiry@example.com', plan_type='paid', premium_expires_at=None,
+        )
+        self.client.force_login(user)
+        response = self.client.get(reverse('accounts:subscription'))
+        self.assertContains(response, 'Renew Now')
+
+
+class PremiumRenewalDueModelTests(TestCase):
+    def test_premium_locker_with_missing_expiry_is_renewal_due(self):
+        _, locker = _make_user_with_locker(
+            'model-null-expiry@example.com', plan_type='paid', premium_expires_at=None,
+        )
+        self.assertTrue(locker.is_premium)
+        self.assertIsNone(locker.premium_expires_at)
+        self.assertTrue(locker.premium_renewal_due)
