@@ -76,11 +76,12 @@ def get_open_batch(locker):
 
 def _in_grace_period(locker, today):
     """payment_grace_until is set to midnight of (start + 7 days) by
-    enter_grace_period, so the window is the 7 days strictly before that
-    date — use < here, not <=, or the window runs 8 days."""
+    enter_grace_period. Must stay inclusive (>=) to match
+    sync_premium_renewals's resolution boundary (`today > grace_date`),
+    which only treats grace as over the day *after* this date."""
     if not locker.payment_grace_until:
         return False
-    return today < dj_timezone.localtime(locker.payment_grace_until).date()
+    return dj_timezone.localtime(locker.payment_grace_until).date() >= today
 
 
 # ---------------------------------------------------------------------------

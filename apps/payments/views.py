@@ -32,18 +32,22 @@ def _get_pending_batch_charges_for_locker(locker):
     return BatchCharge.objects.filter(batch__locker=locker, status='pending')
 
 
+def _get_batch_charge_ids_from_notes(payment):
+    """Reads payment.notes['batch_charge_ids'], tolerating missing/malformed notes."""
+    if not payment.notes:
+        return []
+    try:
+        return json.loads(payment.notes).get('batch_charge_ids', []) or []
+    except (TypeError, json.JSONDecodeError):
+        return []
+
+
 def _mark_batch_charges_paid(payment):
     """Marks the BatchCharge rows referenced in payment.notes['batch_charge_ids']
     as paid. Works for any payment_type — a future storage_batch payment
     flow populates this list the same way shipment payments once populated
     storage_fee_ids."""
-    charge_ids = []
-    if payment.notes:
-        try:
-            notes_data = json.loads(payment.notes)
-            charge_ids = notes_data.get('batch_charge_ids', []) or []
-        except (TypeError, json.JSONDecodeError):
-            charge_ids = []
+    charge_ids = _get_batch_charge_ids_from_notes(payment)
 
     if not charge_ids:
         return
@@ -154,12 +158,7 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         ).exclude(shipment=shipment)
         claimed_charge_ids = set()
         for other in other_pending_payments:
-            if not other.notes:
-                continue
-            try:
-                claimed_charge_ids.update(json.loads(other.notes).get('batch_charge_ids', []) or [])
-            except (TypeError, json.JSONDecodeError):
-                pass
+            claimed_charge_ids.update(_get_batch_charge_ids_from_notes(other))
         if claimed_charge_ids:
             pending_charges_qs = pending_charges_qs.exclude(id__in=claimed_charge_ids)
         pending_storage_total = pending_charges_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
