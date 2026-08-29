@@ -90,7 +90,9 @@
             <span class="profile-summary-label">Account Type</span>
             {% if is_premium %}
             <span>
+                {% if locker.premium_expires_at %}
                 <span class="profile-summary-value">Renews on {{ locker.premium_expires_at }}</span>
+                {% endif %}
                 {% if locker.premium_renewal_due %}
                 <button type="button" class="btn btn-secondary btn-sm premium-checkout-btn"
                     data-create-url="{% url 'payments:premium_create_order' %}"

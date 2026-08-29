@@ -172,7 +172,9 @@ class Locker(models.Model):
         """True once a Premium locker is within 7 days of (or past) its
         renewal date — matches the day sync_premium_renewals sends its
         WhatsApp reminder, so the UI renew prompt lines up with it.
-        A missing expiry on a Premium locker is treated as due, not skipped."""
+        A missing expiry on a Premium locker (which sync_premium_renewals
+        skips, since it can't compute days-until-expiry) is treated as
+        due so the UI still prompts the user to fix it."""
         if not self.is_premium:
             return False
         if not self.premium_expires_at:
