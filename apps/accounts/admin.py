@@ -71,14 +71,20 @@ class LockerAdmin(ModelAdmin):
             old_plan_type = Locker.objects.get(pk=obj.pk).plan_type
         super().save_model(request, obj, form, change)
         if change and old_plan_type is not None and old_plan_type != obj.plan_type:
-            from apps.locker.services.batch_billing import apply_upgrade, apply_downgrade, get_open_batch
+            from apps.locker.services.batch_billing import (
+                apply_upgrade, apply_downgrade, get_open_batch, resolve_grace_period,
+            )
             from datetime import timedelta
             from django.utils import timezone
             today = timezone.localdate()
             if obj.plan_type == 'paid':
+                in_grace = obj.payment_grace_until is not None
                 obj.premium_expires_at = today + timedelta(days=365)
                 obj.save(update_fields=['premium_expires_at'])
-                apply_upgrade(obj, today, active_batch=get_open_batch(obj))
+                if in_grace:
+                    resolve_grace_period(obj, today, payment_succeeded=True)
+                else:
+                    apply_upgrade(obj, today, active_batch=get_open_batch(obj))
             else:
                 obj.premium_expires_at = None
                 obj.save(update_fields=['premium_expires_at'])

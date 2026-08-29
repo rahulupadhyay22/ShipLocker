@@ -23,7 +23,13 @@ def delete_image_from_storage(sender, instance, **kwargs):
     delete_storage_file('parcel-images', instance.image_path)
 
 # "Physically in warehouse" — must match apps/locker/services/batch_billing.py.
-IN_WAREHOUSE_STATUSES = {'pending', 'action_required', 'approved'}
+# Includes the return/discard *_requested and return_approved states: the
+# parcel is still sitting in the warehouse awaiting staff action in all of
+# them. Only 'shipped', 'returned', and 'discarded' actually leave.
+IN_WAREHOUSE_STATUSES = {
+    'pending', 'action_required', 'approved',
+    'return_requested', 'return_approved', 'discard_requested',
+}
 
 
 # Track original status before save (same shape as apps/shipments/signals.py's

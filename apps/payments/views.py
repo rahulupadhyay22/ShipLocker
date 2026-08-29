@@ -142,6 +142,26 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         # outstanding storage balance too — bundle it into the same order.
         locker = getattr(shipment.user, 'locker', None)
         pending_charges_qs = _get_pending_batch_charges_for_locker(locker) if locker else BatchCharge.objects.none()
+
+        # A BatchCharge stays 'pending' until its payment actually completes,
+        # so a second in-flight order for a *different* shipment would
+        # otherwise bundle and charge for the same storage balance twice.
+        # Exclude charge ids already claimed by another still-pending order.
+        other_pending_payments = Payment.objects.filter(
+            user=request.user,
+            status='pending',
+            created_at__gte=timezone.now() - timedelta(minutes=30),
+        ).exclude(shipment=shipment)
+        claimed_charge_ids = set()
+        for other in other_pending_payments:
+            if not other.notes:
+                continue
+            try:
+                claimed_charge_ids.update(json.loads(other.notes).get('batch_charge_ids', []) or [])
+            except (TypeError, json.JSONDecodeError):
+                pass
+        if claimed_charge_ids:
+            pending_charges_qs = pending_charges_qs.exclude(id__in=claimed_charge_ids)
         pending_storage_total = pending_charges_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
         pending_storage_total = pending_storage_total.quantize(Decimal('0.01'))
 
