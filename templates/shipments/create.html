@@ -64,7 +64,8 @@
                         <div style="display: flex; flex-direction: column; gap: 1rem;">
                             {% for parcel in parcels %}
                             <label class="parcel-select-card" data-weight="{{ parcel.weight_kg|default:'0' }}"
-                                data-billable-weight="{{ parcel.billable_weight|default:'0' }}">
+                                data-billable-weight="{{ parcel.billable_weight|default:'0' }}"
+                                data-item-price="{{ parcel.item_price|default:'0' }}">
                                 <input type="checkbox" name="parcels" value="{{ parcel.id }}" class="parcel-checkbox"
                                     {% if parcel.id|stringformat:"s" in preselected_ids %}checked{% endif %}
                                     onchange="updateSummary()">
@@ -139,8 +140,8 @@
                         <div class="modern-alert" style="background: var(--primary-light); border: 1px solid var(--primary); align-items: flex-start; margin-top: 1.5rem;">
                             <div style="color: var(--primary);"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg></div>
                             <div>
-                                <strong>Your items are 100% insured</strong>
-                                <p style="margin-top: 0.25rem; font-size: 0.85rem;">We provide full insurance coverage for your shipment.</p>
+                                <strong>Basic protection included</strong>
+                                <p style="margin-top: 0.25rem; font-size: 0.85rem;">Every shipment includes basic protection — add Insurance in the next step for full coverage of your declared value.</p>
                             </div>
                         </div>
 
@@ -276,39 +277,24 @@
         <div class="card">
             <div class="card-header"><h3 style="display: flex; align-items: center; gap: 0.5rem;"><svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Choose Service</h3></div>
             <div class="card-body">
-                <div class="radio-group">
+                <div class="modern-alert" id="shipmentTypeBadge" style="background: var(--surface-50); border: 1px solid var(--surface-200); align-items: center;">
+                    <strong id="shipmentTypeBadgeText">Add a delivery address to see shipment type</strong>
+                </div>
+
+                <h4 style="font-size: 1rem; font-weight: 600; margin: 1.5rem 0 1rem;">Add-on Services</h4>
+                <div class="radio-group" id="addonOptions">
+                    {% for opt in addon_options %}
                     <label class="radio-card">
-                        <input type="radio" name="shipment_type" value="international" checked>
+                        <input type="checkbox" name="addons" value="{{ opt.code }}" class="addon-checkbox" data-addon-code="{{ opt.code }}" onchange="updateSummary()">
                         <span class="rc-content">
-                            <div class="rc-icon-wrapper">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-                                </svg>
-                            </div>
                             <div>
-                                <strong>International</strong>
-                                <span>Global shipping</span>
+                                <strong>{{ opt.label }}</strong>
+                                <span>{{ opt.description }}</span>
+                                <span class="addon-price" data-addon-price="{{ opt.code }}">—</span>
                             </div>
                         </span>
                     </label>
-                    <label class="radio-card">
-                        <input type="radio" name="shipment_type" value="domestic">
-                        <span class="rc-content">
-                            <div class="rc-icon-wrapper">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                                </svg>
-                            </div>
-                            <div>
-                                <strong>Domestic</strong>
-                                <span>Within India</span>
-                            </div>
-                        </span>
-                    </label>
+                    {% endfor %}
                 </div>
 
                 <div class="wizard-nav-row">
@@ -473,6 +459,7 @@
     const CONSOLIDATION_FEE_STANDARD = parseFloat('{{ consolidation_fee_standard|default:"0" }}') || 0;
     const STORAGE_FEE_PENDING = parseFloat('{{ storage_fee_pending|default:"0" }}') || 0;
     const STORAGE_FEE_DAYS_PENDING = parseInt('{{ storage_fee_days_pending|default:"0" }}', 10) || 0;
+    const ADDON_OPTIONS = JSON.parse('{{ addon_options_json|escapejs }}');
 
     function toggleSelectAll(checkbox) {
         document.querySelectorAll('.parcel-checkbox').forEach(function (cb) {
@@ -536,13 +523,60 @@
         const nextBtn = document.getElementById('step1NextBtn');
         if (nextBtn) nextBtn.disabled = count === 0;
 
-        const otherFees = (showStorageFee ? STORAGE_FEE_PENDING : 0) + (count >= 1 ? CONSOLIDATION_FEE : 0);
+        updateShipmentTypeBadge();
+        updateAddonPrices();
+
+        let addonsTotal = 0;
+        document.querySelectorAll('.addon-checkbox:checked').forEach(function (cb) {
+            const priceEl = document.querySelector('.addon-price[data-addon-price="' + cb.dataset.addonCode + '"]');
+            if (priceEl) addonsTotal += parseFloat(priceEl.textContent.replace(/[^0-9.]/g, '')) || 0;
+        });
+        document.querySelectorAll('.js-addons-fee-row').forEach(function (el) { el.hidden = addonsTotal <= 0; });
+        document.querySelectorAll('.js-sum-addons-fee').forEach(function (el) { el.textContent = fmtMoney(addonsTotal); });
+
+        const otherFees = (showStorageFee ? STORAGE_FEE_PENDING : 0) + (count >= 1 ? CONSOLIDATION_FEE : 0) + addonsTotal;
         updateShippingEstimate(totalBillableWeight, otherFees);
     }
 
     function setEstimateText(text) {
         document.querySelectorAll('.js-sum-shipping-estimate').forEach(function (el) { el.textContent = text; });
         document.querySelectorAll('.js-sum-estimated-total').forEach(function (el) { el.textContent = text; });
+    }
+
+    function updateShipmentTypeBadge() {
+        const form = document.getElementById('shipmentForm');
+        const badgeText = document.getElementById('shipmentTypeBadgeText');
+        if (!badgeText) return;
+        const country = form.country.value.trim();
+        if (!country) {
+            badgeText.textContent = 'Add a delivery address to see shipment type';
+            return;
+        }
+        badgeText.textContent = country.toUpperCase() === 'INDIA'
+            ? '🚚 Domestic Shipment (within India)'
+            : '🌍 International Shipment';
+    }
+
+    function updateAddonPrices() {
+        let declaredValue = 0;
+        document.querySelectorAll('.parcel-select-card').forEach(function (card) {
+            const cb = card.querySelector('.parcel-checkbox');
+            if (cb.checked) {
+                declaredValue += parseFloat(card.dataset.itemPrice) || 0;
+            }
+        });
+
+        ADDON_OPTIONS.forEach(function (opt) {
+            const priceEl = document.querySelector('.addon-price[data-addon-price="' + opt.code + '"]');
+            if (!priceEl) return;
+            let price;
+            if (opt.charge_type === 'percentage') {
+                price = Math.max(declaredValue * (opt.rate / 100), opt.floor_or_amount);
+            } else {
+                price = opt.floor_or_amount;
+            }
+            priceEl.textContent = fmtMoney(price);
+        });
     }
 
     function updateShippingEstimate(billableWeight, otherFees) {
@@ -592,8 +626,10 @@
             addressEl.textContent = (city || country) ? [city, country].filter(Boolean).join(', ') : '—';
         }
         if (serviceEl) {
-            const checked = form.querySelector('input[name="shipment_type"]:checked');
-            serviceEl.textContent = checked ? (checked.value === 'domestic' ? 'Domestic (Within India)' : 'International') : '—';
+            const country = form.country.value.trim();
+            serviceEl.textContent = country
+                ? (country.toUpperCase() === 'INDIA' ? 'Domestic (Within India)' : 'International')
+                : '—';
         }
     }
 

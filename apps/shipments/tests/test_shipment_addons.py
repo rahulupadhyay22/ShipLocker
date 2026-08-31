@@ -155,6 +155,7 @@ class CreateShipmentAddonsAndTypeTests(TestCase):
         from apps.content.services import invalidate_service_charge_cache
         ServiceCharge.objects.filter(code='addon_extra_photos').update(is_active=False)
         invalidate_service_charge_cache('addon_extra_photos')
+        self.addCleanup(invalidate_service_charge_cache, 'addon_extra_photos')
 
         response = self.client.post(self.url, self._valid_data(addons=['extra_photos']))
         self.assertEqual(response.status_code, 302)
@@ -166,6 +167,37 @@ class CreateShipmentAddonsAndTypeTests(TestCase):
         self.assertEqual(response.status_code, 302)
         shipment = Shipment.objects.get()
         self.assertEqual(shipment.addons.count(), 0)
+
+
+class CreateShipmentTemplateTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email='create-template@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user)
+        self.parcel = make_parcel(self.locker)
+        self.client.force_login(self.user)
+
+    def test_no_shipment_type_radio_rendered(self):
+        response = self.client.get(reverse('shipments:create'))
+        self.assertNotContains(response, 'name="shipment_type"')
+
+    def test_addon_checkboxes_rendered_for_each_configured_addon(self):
+        response = self.client.get(reverse('shipments:create'))
+        for code in ('insurance', 'extra_photos', 'priority_packing', 'gift_wrapping'):
+            self.assertContains(response, f'value="{code}"')
+
+    def test_parcel_card_carries_item_price_data_attribute(self):
+        response = self.client.get(reverse('shipments:create'))
+        self.assertContains(response, 'data-item-price=')
+
+    def test_hidden_addon_not_rendered(self):
+        from apps.content.models import ServiceCharge
+        from apps.content.services import invalidate_service_charge_cache
+        ServiceCharge.objects.filter(code='addon_insurance').update(is_active=False)
+        invalidate_service_charge_cache('addon_insurance')
+        self.addCleanup(invalidate_service_charge_cache, 'addon_insurance')
+
+        response = self.client.get(reverse('shipments:create'))
+        self.assertNotContains(response, 'value="insurance"')
 
 
 class PaymentSummaryAddonsTests(TestCase):
