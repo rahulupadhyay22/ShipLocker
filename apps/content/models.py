@@ -132,6 +132,10 @@ KNOWN_SERVICE_CHARGE_CODES = [
     ('trunkassist_custom_request', 'TrunkAssist – Custom Request'),
     ('consolidation_fee', 'Consolidation Fee'),
     ('return_service_charge', 'Return Service Charge'),
+    ('addon_insurance', 'Add-on: Insurance'),
+    ('addon_extra_photos', 'Add-on: Extra Photos'),
+    ('addon_priority_packing', 'Add-on: Priority Packing'),
+    ('addon_gift_wrapping', 'Add-on: Gift Wrapping'),
 ]
 
 
