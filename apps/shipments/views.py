@@ -64,8 +64,9 @@ def _payment_summary(shipment):
 
     shipping_amount = Decimal(str(shipment.shipping_cost or 0))
     consolidation_fee = Decimal(str(shipment.consolidation_fee or 0))
+    addons_amount = shipment.addons.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     storage_total = pending_total + paid_total
-    unpaid_charges = shipping_amount + consolidation_fee
+    unpaid_charges = shipping_amount + consolidation_fee + addons_amount
 
     return {
         'storage_fee_pending': pending_total,
@@ -73,6 +74,7 @@ def _payment_summary(shipment):
         'storage_fee_total': storage_total,
         'shipping_amount': shipping_amount,
         'consolidation_fee': consolidation_fee,
+        'addons_amount': addons_amount,
         'shipping_discount_amount': shipment.shipping_discount_amount,
         'consolidation_fee_discount_amount': shipment.consolidation_fee_discount_amount,
         'shipment_total_amount': unpaid_charges + storage_total,

@@ -857,3 +857,61 @@ class GetAddonOptionsTests(TestCase):
         options = {opt['code']: opt for opt in get_addon_options()}
         self.assertIsNone(options['gift_wrapping']['rate'])
         self.assertEqual(options['gift_wrapping']['floor_or_amount'], 99.0)
+
+
+class CreatePaymentOrderAddonsTests(TestCase):
+    def setUp(self):
+        from apps.shipments.models import ShipmentAddon
+        self.user = User.objects.create(email='addons-checkout@example.com', is_active=True)
+        Locker.objects.create(user=self.user, plan_type='free')
+        self.shipment = Shipment.objects.create(
+            user=self.user, shipment_type='international', status='pending_payment',
+            recipient_name='Jane Doe', address_line1='1 Test Street', city='Testville',
+            state='Test State', postal_code='12345', country='United States',
+            shipping_cost=Decimal('800.00'), consolidation_fee=Decimal('300.00'), currency='INR',
+        )
+        ShipmentAddon.objects.create(shipment=self.shipment, code='gift_wrapping', amount=Decimal('99.00'))
+        self.client.force_login(self.user)
+        self.url = reverse('payments:create_order', kwargs={'shipment_pk': self.shipment.pk})
+
+    def test_total_due_includes_addons(self):
+        p1, p2, p3 = _enable_razorpay('order_addons_1')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 200)
+        # 800 + 300 + 99 = 1199.00 -> 119900 paise
+        self.assertEqual(response.json()['amount'], 119900)
+
+    def test_displayed_total_equals_charged_total_with_every_fee_present(self):
+        """Regression guard for the consolidation_fee billing gap: proves
+        the two independent calculations (display math vs. charge math)
+        agree, not just that each one's own formula looks right in
+        isolation -- that's what let them drift apart the first time."""
+        from django.utils import timezone
+        from apps.shipments.views import _payment_summary
+        from apps.locker.models import Batch
+        from apps.payments.models import BatchCharge
+
+        # Batch lives in apps.locker.models (the storage-billing unit), not
+        # apps.payments.models -- BatchCharge (the per-day line item) is the
+        # one that lives in payments. Required fields per apps/locker/models.py:
+        # plan_type_at_creation, quota_year, first_parcel_received_date.
+        batch = Batch.objects.create(
+            locker=self.shipment.user.locker,
+            plan_type_at_creation='free',
+            quota_year=timezone.now().year,
+            first_parcel_received_date=timezone.now().date(),
+        )
+        BatchCharge.objects.create(
+            batch=batch, charge_date=timezone.now().date(),
+            parcel_count_snapshot=1, amount=Decimal('50.00'), status='pending',
+        )
+
+        displayed = _payment_summary(self.shipment)['shipment_amount_due']
+
+        p1, p2, p3 = _enable_razorpay('order_addons_2')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+        charged = Decimal(str(response.json()['amount'])) / 100
+
+        self.assertEqual(displayed, charged)

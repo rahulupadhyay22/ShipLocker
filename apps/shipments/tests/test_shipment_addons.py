@@ -9,6 +9,7 @@ from django.urls import reverse
 from apps.accounts.models import User, Locker
 from apps.locker.models import Parcel
 from apps.shipments.models import Shipment, ShipmentAddon
+from apps.shipments.views import _payment_summary
 
 
 def make_shipment(user):
@@ -165,3 +166,22 @@ class CreateShipmentAddonsAndTypeTests(TestCase):
         self.assertEqual(response.status_code, 302)
         shipment = Shipment.objects.get()
         self.assertEqual(shipment.addons.count(), 0)
+
+
+class PaymentSummaryAddonsTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email='payment-summary-addons@example.com', is_active=True)
+        Locker.objects.create(user=self.user, plan_type='free')
+        self.shipment = make_shipment(self.user)
+        self.shipment.shipping_cost = Decimal('800.00')
+        self.shipment.consolidation_fee = Decimal('300.00')
+        self.shipment.payment_status = 'unpaid'
+        self.shipment.save()
+        ShipmentAddon.objects.create(shipment=self.shipment, code='gift_wrapping', amount=Decimal('99.00'))
+        ShipmentAddon.objects.create(shipment=self.shipment, code='priority_packing', amount=Decimal('299.00'))
+
+    def test_addons_amount_included_in_unpaid_charges_and_amount_due(self):
+        summary = _payment_summary(self.shipment)
+        self.assertEqual(summary['addons_amount'], Decimal('398.00'))
+        # 800 shipping + 300 consolidation + 398 addons = 1498.00
+        self.assertEqual(summary['shipment_amount_due'], Decimal('1498.00'))

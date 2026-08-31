@@ -289,6 +289,7 @@ def build_charge_snapshot(shipment):
         'shipping_amount': summary['shipping_amount'],
         'storage_fee_amount': summary['storage_fee_paid'],
         'consolidation_fee_amount': summary['consolidation_fee'],
+        'addons_amount': summary['addons_amount'],
     }
 
 
@@ -349,6 +350,8 @@ class InvoiceService:
             rows.append(['Storage Fee', f"{context['storage_fee_amount']:.2f}"])
         if context['consolidation_fee_amount'] > 0:
             rows.append(['Consolidation Fee', f"{context['consolidation_fee_amount']:.2f}"])
+        if context['addons_amount'] > 0:
+            rows.append(['Add-ons', f"{context['addons_amount']:.2f}"])
         rows.append(['Taxable Amount', f"{context['taxable_amount']:.2f}"])
 
         if context['is_zero_rated']:
@@ -412,7 +415,8 @@ class InvoiceService:
 
         charges = build_charge_snapshot(shipment)
         taxable_amount = (
-            charges['shipping_amount'] + charges['storage_fee_amount'] + charges['consolidation_fee_amount']
+            charges['shipping_amount'] + charges['storage_fee_amount']
+            + charges['consolidation_fee_amount'] + charges['addons_amount']
         )
         gst = calculate_gst(shipment, taxable_amount, settings)
         customer = build_customer_snapshot(shipment)
@@ -457,6 +461,7 @@ class InvoiceService:
                 shipping_amount=charges['shipping_amount'],
                 storage_fee_amount=charges['storage_fee_amount'],
                 consolidation_fee_amount=charges['consolidation_fee_amount'],
+                addons_amount=charges['addons_amount'],
                 taxable_amount=taxable_amount,
                 is_zero_rated=gst['is_zero_rated'],
                 gst_rate=gst['gst_rate'],
