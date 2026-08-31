@@ -1,3 +1,4 @@
+import json
 import logging
 import uuid
 from django.shortcuts import render
@@ -317,7 +318,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
         # parcel, so there's no per-parcel "overdue days" figure anymore —
         # instead we show the locker's whole outstanding storage balance
         # once below, independent of which parcels happen to be checked.
-        from apps.payments.services import _get_consolidation_fee_amount, _lookup_consolidation_fee_standard
+        from apps.payments.services import _get_consolidation_fee_amount, _lookup_consolidation_fee_standard, get_addon_options
         from apps.payments.views import _get_pending_batch_charges_for_locker
         from apps.content.services import build_zones_json
         from django.db.models import Sum
@@ -345,6 +346,8 @@ class CreateShipmentView(LoginRequiredMixin, View):
             'preselected_ids': preselected_ids,
             'declaration_text': Shipment.DECLARATION_TEXT,
             'declaration_purpose_choices': Shipment.DECLARATION_PURPOSE_CHOICES,
+            'addon_options': get_addon_options(),
+            'addon_options_json': json.dumps(get_addon_options()),
         })
     
     def post(self, request):
@@ -356,14 +359,9 @@ class CreateShipmentView(LoginRequiredMixin, View):
         # the id__in query below naturally dedupes, mismatch len(parcel_ids)
         # and reject an otherwise-valid selection)
         parcel_ids = list(dict.fromkeys(request.POST.getlist('parcels')))
-        shipment_type = request.POST.get('shipment_type', 'international')
 
         if not parcel_ids:
             messages.error(request, 'Please select at least one parcel.')
-            return redirect('shipments:create')
-
-        if shipment_type not in dict(Shipment.TYPE_CHOICES):
-            messages.error(request, 'Invalid shipment type.')
             return redirect('shipments:create')
 
         # Customs declaration e-signature fields
@@ -394,6 +392,8 @@ class CreateShipmentView(LoginRequiredMixin, View):
         except ValidationError as e:
             messages.error(request, str(e))
             return redirect('shipments:create')
+
+        shipment_type = 'domestic' if address_data['country'].strip().upper() == 'INDIA' else 'international'
 
         locker = request.user.locker
 
@@ -454,6 +454,20 @@ class CreateShipmentView(LoginRequiredMixin, View):
                     declaration_signed_ip=client_ip,
                     declaration_version=Shipment.DECLARATION_TEXT_VERSION,
                 )
+
+                from .models import ShipmentAddon
+                from apps.payments.services import _compute_addon_amount
+
+                requested_addons = set(request.POST.getlist('addons'))
+                valid_addon_codes = dict(ShipmentAddon.ADDON_CHOICES).keys()
+                for addon_code in requested_addons & valid_addon_codes:
+                    amount = _compute_addon_amount(addon_code, parcels)
+                    if amount is not None:
+                        ShipmentAddon.objects.create(shipment=shipment, code=addon_code, amount=amount)
+                        logger.info(
+                            f"Add-on '{addon_code}' (₹{amount}) added to shipment {shipment.display_id} "
+                            f"by user {request.user.id}"
+                        )
 
                 # Optionally save as default address for quick reuse
                 if request.POST.get('save_address') == 'on':
