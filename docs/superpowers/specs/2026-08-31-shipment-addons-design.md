@@ -130,7 +130,7 @@ to free).
 
 ## Shipment type derivation
 `shipment_type` is no longer read from a POST field. In
-`ShipmentCreateView.post` (`apps/shipments/views.py`), after
+`CreateShipmentView.post` (`apps/shipments/views.py`), after
 `validate_address` produces `address_data['country']`:
 ```python
 shipment_type = 'domestic' if address_data['country'].strip().upper() == 'INDIA' else 'international'
@@ -141,13 +141,29 @@ This matches the existing `_match_shipping_zone`'s
 and its `if shipment_type not in dict(Shipment.TYPE_CHOICES)` validation are
 deleted — there is no longer a client-supplied value to validate.
 
-Verified this is safe: the `country` `<select>` in step 2 is populated from
-`ShippingZone.get_countries_list()`, which uppercases every country name —
-there is an active zone named "India" with `countries="India"`, so "INDIA"
-is already a valid option value today. `SavedAddress` rows are created from
-the same `address_data` dict, so round-tripping a saved address preserves
-the same casing (`selectSavedAddress` in create.html writes
-`data-country` straight into `form.country.value`).
+**This is a literal string comparison, not a `ShippingZone` database
+lookup** — it does not query `ShippingZone` at request time at all, so it
+cannot break if that table's "India" row is ever renamed, deactivated, or
+edited. That row only matters for a *different* concern: whether "India"
+appears as a selectable option in the step-2 country `<select>` in the
+first place (populated from `ShippingZone.get_countries_list()`) — a
+pre-existing UI-availability property of this codebase, unrelated to and
+unaffected by this derivation logic. Verified today: there is an active
+zone named "India" with `countries="India"`, so "INDIA" is a valid option
+value.
+
+No fallback/error path is needed for the derivation itself: any
+`address_data['country']` value that isn't literally "India"
+(case-insensitive) — including an unrecognized or malformed value from a
+direct POST bypassing the dropdown — resolves to `'international'`, which
+is a safe, non-crashing default and matches the *old* code's own default
+(`request.POST.get('shipment_type', 'international')`). There is no
+undefined state to guard against.
+
+`SavedAddress` rows are created from the same `address_data` dict, so
+round-tripping a saved address preserves the same casing
+(`selectSavedAddress` in create.html writes `data-country` straight into
+`form.country.value`).
 
 ## Wizard UI (`templates/shipments/create.html`)
 
@@ -192,16 +208,30 @@ Inside the existing `transaction.atomic()` block, after the `Shipment` is
 created:
 ```python
 requested_addons = set(request.POST.getlist('addons'))
-for code in requested_addons & VALID_ADDON_CODES:
+valid_codes = dict(ShipmentAddon.ADDON_CHOICES).keys()
+for code in requested_addons & valid_codes:
     amount = _compute_addon_amount(code, parcels)  # never trust a client-supplied price
     if amount is not None:  # None if the ServiceCharge is missing/inactive
         ShipmentAddon.objects.create(shipment=shipment, code=code, amount=amount)
 ```
+`valid_codes` comes straight from `ShipmentAddon.ADDON_CHOICES` — the
+model's own canonical set — so a junk/unknown POST value can never create a
+row, independent of pricing. Whether an add-on is actually *offered* is a
+second, separate gate: `_compute_addon_amount` returns `None` whenever the
+`addon_{code}` `ServiceCharge` is missing or inactive, so a known-but-
+unpriced code still creates nothing. Both this creation path and the
+step-3 template's checkbox list (`get_addon_options()`, below) read the
+same `ServiceCharge` rows through the same lookup — there is no second,
+separately-maintained "what's available" list that could drift out of sync
+with what's rendered to the customer.
+
 `_compute_addon_amount` looks up the `ServiceCharge` by code
 (`addon_{code}`) and calls `.compute(sum_item_price)` for `insurance`,
 `.compute()` (no `product_value`) for the three flat ones. Lives in
 `apps/payments/services.py` next to `_get_consolidation_fee_amount`, same
-module other fee lookups already live in.
+module other fee lookups already live in. `get_addon_options()` lives
+alongside it and is the single source both `CreateShipmentView.get`'s
+template context and `.post`'s creation logic read from.
 
 ## Payment wiring
 - `_payment_summary()` (`apps/shipments/views.py`): `unpaid_charges` becomes
@@ -218,6 +248,15 @@ module other fee lookups already live in.
   ```
   `description_parts` gains `'consolidation'`/`'add-ons'` entries when each
   is > 0, consistent with the existing `'shipping'`/`'storage'` entries.
+
+  **Regression guard**: add one test that builds a single shipment with
+  shipping, consolidation_fee, add-ons, and pending storage all non-zero,
+  then asserts `_payment_summary(shipment)['shipment_amount_due']` equals
+  the `total_due` `CreatePaymentOrderView` actually sends to
+  `RazorpayService.create_order`. This is deliberately an equivalence
+  check between the two independent calculations, not a check that either
+  one's formula is "correct" in isolation — that's what let display and
+  charge drift apart the first time.
 - Invoice generation (`apps/payments/services.py` GST calc, ~line 217-398):
   `addons_amount` is added into the same `taxable_amount` sum as
   `consolidation_fee_amount`, and stamped onto the new
@@ -307,6 +346,14 @@ None.
 - [ ] `CreatePaymentOrderView` charges `shipping + consolidation_fee +
       addons_total + pending_storage` — verified consolidation_fee is now
       actually collected, not just displayed
+- [ ] A single end-to-end test asserts `_payment_summary()`'s displayed
+      `shipment_amount_due` figure exactly equals the `total_due` actually
+      sent to Razorpay by `CreatePaymentOrderView`, for one shipment with
+      shipping + consolidation_fee + add-ons + pending storage all present
+      simultaneously (not each component asserted in isolation) — this is
+      the regression guard for the exact bug class fixed above: two
+      separate calculations (display math vs. charge math) drifting apart
+      from each other again in the future
 - [ ] `ShipmentAdmin` in `/manage-rb-panel/` shows each shipment's purchased
       add-ons to staff (via `ShipmentAddonInline`)
 - [ ] The generated GST invoice's `taxable_amount` includes
