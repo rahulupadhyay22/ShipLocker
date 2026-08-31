@@ -360,6 +360,36 @@ class ShipmentItem(models.Model):
         return f"{self.parcel.display_id} in {self.shipment.display_id}"
 
 
+class ShipmentAddon(models.Model):
+    """Opt-in paid add-on service purchased at shipment creation (Insurance,
+    Extra Photos, Priority Packing, Gift Wrapping). amount is locked in at
+    creation time, same rationale as Shipment.consolidation_fee -- an admin
+    changing the ServiceCharge rate later doesn't retroactively change what
+    an existing shipment owes. No Premium-plan discount applies to add-ons
+    (opt-in extras, not baseline service)."""
+
+    ADDON_CHOICES = [
+        ('insurance', 'Insurance'),
+        ('extra_photos', 'Extra Photos'),
+        ('priority_packing', 'Priority Packing'),
+        ('gift_wrapping', 'Gift Wrapping'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name='addons')
+    code = models.CharField(max_length=20, choices=ADDON_CHOICES)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Shipment Add-on'
+        verbose_name_plural = 'Shipment Add-ons'
+        unique_together = ['shipment', 'code']
+
+    def __str__(self):
+        return f"{self.get_code_display()} — {self.shipment.display_id}"
+
+
 class ShipmentDocument(models.Model):
     """Documents related to a shipment (customs forms, invoices, etc)."""
     

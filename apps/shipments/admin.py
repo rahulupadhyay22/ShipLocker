@@ -5,7 +5,7 @@ from django.utils.html import format_html, mark_safe
 from django import forms
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display
-from .models import Shipment, ShipmentItem, ShipmentDocument, TrackingEvent
+from .models import Shipment, ShipmentItem, ShipmentAddon, ShipmentDocument, TrackingEvent
 
 logger = logging.getLogger('security')
 
@@ -31,6 +31,15 @@ class ShipmentItemInline(TabularInline):
     extra = 1
     raw_id_fields = ['parcel']
     readonly_fields = ['added_at']
+
+
+class ShipmentAddonInline(TabularInline):
+    model = ShipmentAddon
+    extra = 0
+    readonly_fields = ['code', 'amount', 'created_at']
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
 
 class ShipmentDocumentForm(forms.ModelForm):
@@ -133,7 +142,7 @@ class ShipmentAdmin(ModelAdmin):
     search_fields = ['display_id', 'user__email', 'tracking_number', 'recipient_name']
     readonly_fields = ['display_id', 'created_at', 'updated_at', 'paid_at', 'cancelled_at']
     raw_id_fields = ['user']
-    inlines = [ShipmentItemInline, ShipmentDocumentInline, TrackingEventInline]
+    inlines = [ShipmentItemInline, ShipmentAddonInline, ShipmentDocumentInline, TrackingEventInline]
     date_hierarchy = 'created_at'
     list_per_page = 25
     
