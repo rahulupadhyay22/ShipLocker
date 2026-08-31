@@ -324,6 +324,47 @@ class PersonalShopRequestPaidSignalTests(TestCase):
         self.assertEqual(PersonalShopInvoice.objects.filter(quotation=self.quotation).count(), 0)
 
 
+from django.urls import reverse as django_reverse
+
+
+class CreatePaymentOrderConsolidationFeeTests(TestCase):
+    """Regression test for the consolidation_fee billing gap: total_due
+    must include consolidation_fee, not just shipping + pending storage."""
+
+    def setUp(self):
+        self.user = User.objects.create(email='consolidation-bug@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user, plan_type='free')
+        self.shipment = Shipment.objects.create(
+            user=self.user,
+            shipment_type='international',
+            status='pending_payment',
+            recipient_name='Jane Doe',
+            address_line1='1 Test Street',
+            city='Testville',
+            state='Test State',
+            postal_code='12345',
+            country='United States',
+            shipping_cost=Decimal('800.00'),
+            consolidation_fee=Decimal('300.00'),
+            currency='INR',
+        )
+        self.client.force_login(self.user)
+        self.url = django_reverse('payments:create_order', kwargs={'shipment_pk': self.shipment.pk})
+
+    def test_total_due_includes_consolidation_fee(self):
+        p1, p2, p3 = _enable_razorpay('order_consolidation_1')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        # 800 shipping + 300 consolidation = 1100.00 -> 110000 paise
+        self.assertEqual(data['amount'], 110000)
+
+        payment = Payment.objects.get(shipment=self.shipment)
+        self.assertEqual(payment.amount, Decimal('1100.00'))
+
+
 from datetime import date
 
 from apps.locker.models import Batch
