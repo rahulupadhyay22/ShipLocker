@@ -11,10 +11,41 @@ already entered in step 2. This spec:
 2. Adds four opt-in paid add-on services the customer can select in the same
    step: **Insurance**, **Extra Photos**, **Priority Packing**, **Gift
    Wrapping**.
-3. Fixes a pre-existing bug where `consolidation_fee` is shown to customers
-   as owed but never actually included in the Razorpay charge amount — fixed
-   in the same change since add-ons need to go through that same line to be
-   collected at all.
+3. Fixes a confirmed pre-existing billing bug, as its own explicitly-called-out
+   change (not folded silently into the add-ons work) — see "Confirmed bug:
+   consolidation_fee is displayed as owed but never charged" below.
+
+## Confirmed bug: consolidation_fee is displayed as owed but never charged
+`CreatePaymentOrderView` (`apps/payments/views.py:170-195`) computes the
+actual Razorpay charge as `shipping_due + pending_storage_total` — it has
+never included `consolidation_fee`, in any commit since the field was
+introduced (`git log -S"consolidation_fee" -- apps/payments/views.py` shows
+exactly one touch to that file, unrelated to this line). Meanwhile the
+customer-facing "Amount Due" shown before checkout
+(`_payment_summary()`'s `shipment_amount_due`) **does** include
+`consolidation_fee` — so a Free-plan customer sees a total that includes
+consolidation but is only ever actually charged the shipping+storage
+portion of it. Premium-plan customers are unaffected (consolidation is
+waived to ₹0 for them). This is a real bug, not an intentional split — an
+intentional design would not show the customer a due amount it never
+collects.
+
+This fix is **in scope for this change** (the line needs to be touched
+regardless, to wire in add-ons), but is implemented and committed as its
+own explicit fix, separate from the add-ons feature commit, with a commit
+message documenting the historical gap. No automatic billing reconciliation
+is performed by this change — determining whether any already-paid
+Free-plan shipments were underbilled requires querying production data
+(this repo's local dev DB is SQLite seed data, not representative), e.g.:
+```sql
+SELECT display_id, consolidation_fee, shipping_cost, paid_at
+FROM shipments_shipment
+WHERE payment_status = 'paid' AND consolidation_fee > 0
+ORDER BY paid_at DESC;
+```
+cross-referenced against `payments_payment.amount` actually captured per
+shipment. That reconciliation, if needed, is a follow-up outside this
+spec's scope.
 
 ## Depends on
 None of specs 01-08 gate this. Builds on the existing `Shipment` model, the
@@ -198,10 +229,19 @@ purchased add-ons + amounts) and an "Add-ons" line in the Payment Summary
 card — a charge with no visible record anywhere after creation would be a
 support-ticket generator.
 
+**Staff fulfillment visibility**: Extra Photos, Priority Packing, and Gift
+Wrapping all require a warehouse-staff action, not just a charge. Without a
+way for staff to see what was purchased, nobody is ever told to fulfill
+them. `apps/shipments/admin.py`'s `ShipmentAdmin` gets a new
+`ShipmentAddonInline` (read-only `code`/`amount`), following the existing
+`ShipmentItemInline`/`ShipmentDocumentInline` pattern, so staff working a
+shipment in `/manage-rb-panel/` can see its add-ons at a glance.
+
 ## Files to change
 - `apps/shipments/models.py` — `ShipmentAddon` model
 - `apps/shipments/views.py` — `ShipmentCreateView.get`/`.post`,
   `_payment_summary`
+- `apps/shipments/admin.py` — `ShipmentAddonInline` on `ShipmentAdmin`
 - `apps/content/models.py` — `KNOWN_SERVICE_CHARGE_CODES`
 - `apps/payments/services.py` — `_compute_addon_amount`, invoice
   `taxable_amount` calc
@@ -261,9 +301,14 @@ None.
 - [ ] Submitting the form with add-ons checked creates matching
       `ShipmentAddon` rows with server-recomputed (not client-supplied)
       amounts
+- [ ] The consolidation_fee billing-gap fix is its own commit, separate from
+      the add-ons feature commit, with a message documenting the historical
+      bug
 - [ ] `CreatePaymentOrderView` charges `shipping + consolidation_fee +
       addons_total + pending_storage` — verified consolidation_fee is now
       actually collected, not just displayed
+- [ ] `ShipmentAdmin` in `/manage-rb-panel/` shows each shipment's purchased
+      add-ons to staff (via `ShipmentAddonInline`)
 - [ ] The generated GST invoice's `taxable_amount` includes
       `addons_amount`
 - [ ] Shipment detail page shows the add-ons purchased and their cost
