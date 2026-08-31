@@ -175,6 +175,67 @@ def _get_consolidation_fee_amount(locker) -> Decimal:
     return standard
 
 
+ADDON_SERVICE_CHARGE_CODES = {
+    'insurance': 'addon_insurance',
+    'extra_photos': 'addon_extra_photos',
+    'priority_packing': 'addon_priority_packing',
+    'gift_wrapping': 'addon_gift_wrapping',
+}
+
+ADDON_LABELS = {
+    'insurance': ('Insurance', "Protect your shipment's full declared value against loss or damage."),
+    'extra_photos': ('Extra Photos', 'Extra photos of your items before packing, beyond the standard intake set.'),
+    'priority_packing': ('Priority Packing', 'Jump the queue — your shipment gets packed first.'),
+    'gift_wrapping': ('Gift Wrapping', 'Have your shipment gift-wrapped before it ships.'),
+}
+
+
+def _compute_addon_amount(addon_code, parcels=None) -> Decimal | None:
+    """Resolve the price for a shipment add-on from its ServiceCharge row.
+    Returns None if the ServiceCharge is missing/inactive -- unlike
+    consolidation_fee's "missing means free" convention, an unpriced add-on
+    should not be offered at all (these are optional upsells, not
+    mandatory fees). parcels is only used for 'insurance' (percentage of
+    declared value); ignored for the three flat add-ons."""
+    from apps.content.services import get_service_charge
+
+    charge_code = ADDON_SERVICE_CHARGE_CODES.get(addon_code)
+    if not charge_code:
+        return None
+    charge = get_service_charge(charge_code)
+    if not charge:
+        return None
+    if addon_code == 'insurance':
+        declared_value = sum((p.item_price or Decimal('0')) for p in (parcels or []))
+        return Decimal(str(charge.compute(declared_value))).quantize(Decimal('0.01'))
+    return Decimal(str(charge.compute())).quantize(Decimal('0.01'))
+
+
+def get_addon_options():
+    """List of {code, label, description, charge_type, rate, floor_or_amount}
+    for every add-on with an active ServiceCharge configured -- single
+    source of truth for both the step-3 checkbox list (CreateShipmentView.get)
+    and add-on creation validation (CreateShipmentView.post), so the two
+    can't drift out of sync with each other. rate is None for flat charges."""
+    from apps.content.services import get_service_charge
+
+    options = []
+    for code, charge_code in ADDON_SERVICE_CHARGE_CODES.items():
+        charge = get_service_charge(charge_code)
+        if not charge:
+            continue
+        label, description = ADDON_LABELS[code]
+        options.append({
+            'code': code,
+            'label': label,
+            'description': description,
+            'charge_type': charge.charge_type,
+            'rate': float(charge.percentage_rate) if charge.charge_type == 'percentage' else None,
+            'floor_or_amount': float(charge.amount),
+        })
+    return options
+
+
 def _financial_year_label(invoice_date):
     """FY runs Apr 1 - Mar 31. E.g. any date in Apr 2026-Mar 2027 -> '2026-27'."""
     year = invoice_date.year

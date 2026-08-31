@@ -367,7 +367,7 @@ class CreatePaymentOrderConsolidationFeeTests(TestCase):
 
 from datetime import date
 
-from apps.locker.models import Batch
+from apps.locker.models import Batch, Parcel
 from apps.payments.models import BatchCharge
 
 
@@ -756,3 +756,104 @@ class RazorpayWebhookConcurrentCaptureTests(TransactionTestCase):
 
         self.payment.refresh_from_db()
         self.assertEqual(self.payment.status, 'captured')
+
+
+class ComputeAddonAmountTests(TestCase):
+    def setUp(self):
+        # addon_* ServiceCharge rows are seeded by
+        # apps/content/migrations/0013_seed_addon_service_charges.py.
+        self.user = User.objects.create(email='addon-pricing@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user)
+        self.parcel_a = Parcel.objects.create(
+            locker=self.locker, item_name='Watch', status='approved', item_price=Decimal('4000.00'),
+        )
+        self.parcel_b = Parcel.objects.create(
+            locker=self.locker, item_name='Bag', status='approved', item_price=Decimal('1000.00'),
+        )
+
+    def tearDown(self):
+        # Clear addon service charge cache since some tests modify it
+        # and TestCase doesn't automatically clear cache between methods
+        from apps.content.services import invalidate_service_charge_cache
+        from apps.payments.services import ADDON_SERVICE_CHARGE_CODES
+        for addon_code in ADDON_SERVICE_CHARGE_CODES.values():
+            invalidate_service_charge_cache(addon_code)
+        super().tearDown()
+
+    def test_insurance_percentage_above_floor(self):
+        from apps.payments.services import _compute_addon_amount
+        # sum = 5000, 2% = 100.00, above the 99.00 floor
+        amount = _compute_addon_amount('insurance', [self.parcel_a, self.parcel_b])
+        self.assertEqual(amount, Decimal('100.00'))
+
+    def test_insurance_percentage_below_floor_uses_floor(self):
+        from apps.payments.services import _compute_addon_amount
+        cheap_parcel = Parcel.objects.create(
+            locker=self.locker, item_name='Pen', status='approved', item_price=Decimal('500.00'),
+        )
+        # 500 * 2% = 10.00, below the 99.00 floor
+        amount = _compute_addon_amount('insurance', [cheap_parcel])
+        self.assertEqual(amount, Decimal('99.00'))
+
+    def test_insurance_with_no_parcels_uses_floor(self):
+        from apps.payments.services import _compute_addon_amount
+        amount = _compute_addon_amount('insurance', [])
+        self.assertEqual(amount, Decimal('99.00'))
+
+    def test_flat_addon_returns_configured_amount(self):
+        from apps.payments.services import _compute_addon_amount
+        self.assertEqual(_compute_addon_amount('gift_wrapping'), Decimal('99.00'))
+        self.assertEqual(_compute_addon_amount('extra_photos'), Decimal('149.00'))
+        self.assertEqual(_compute_addon_amount('priority_packing'), Decimal('299.00'))
+
+    def test_unconfigured_addon_returns_none(self):
+        from apps.content.models import ServiceCharge
+        from apps.payments.services import _compute_addon_amount
+        ServiceCharge.objects.filter(code='addon_gift_wrapping').update(is_active=False)
+        from apps.content.services import invalidate_service_charge_cache
+        invalidate_service_charge_cache('addon_gift_wrapping')  # .update() bypasses the save signal
+        self.assertIsNone(_compute_addon_amount('gift_wrapping'))
+
+
+class GetAddonOptionsTests(TestCase):
+    def tearDown(self):
+        # Clear addon service charge cache since some tests modify it
+        # and TestCase doesn't automatically clear cache between methods
+        from apps.content.services import invalidate_service_charge_cache
+        from apps.payments.services import ADDON_SERVICE_CHARGE_CODES
+        for addon_code in ADDON_SERVICE_CHARGE_CODES.values():
+            invalidate_service_charge_cache(addon_code)
+        super().tearDown()
+
+    def test_returns_all_four_configured_addons(self):
+        from apps.payments.services import get_addon_options
+        options = get_addon_options()
+        codes = {opt['code'] for opt in options}
+        self.assertEqual(codes, {'insurance', 'extra_photos', 'priority_packing', 'gift_wrapping'})
+
+    def test_excludes_addon_with_no_active_service_charge(self):
+        from apps.content.models import ServiceCharge
+        from apps.content.services import invalidate_service_charge_cache
+        from apps.payments.services import get_addon_options
+
+        ServiceCharge.objects.filter(code='addon_priority_packing').update(is_active=False)
+        invalidate_service_charge_cache('addon_priority_packing')
+
+        options = get_addon_options()
+        codes = {opt['code'] for opt in options}
+        self.assertNotIn('priority_packing', codes)
+        self.assertEqual(len(options), 3)
+
+    def test_insurance_option_carries_rate_and_floor(self):
+        from apps.payments.services import get_addon_options
+        options = {opt['code']: opt for opt in get_addon_options()}
+        insurance = options['insurance']
+        self.assertEqual(insurance['charge_type'], 'percentage')
+        self.assertEqual(insurance['rate'], 2.0)
+        self.assertEqual(insurance['floor_or_amount'], 99.0)
+
+    def test_flat_option_has_no_rate(self):
+        from apps.payments.services import get_addon_options
+        options = {opt['code']: opt for opt in get_addon_options()}
+        self.assertIsNone(options['gift_wrapping']['rate'])
+        self.assertEqual(options['gift_wrapping']['floor_or_amount'], 99.0)
