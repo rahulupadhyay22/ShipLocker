@@ -238,6 +238,7 @@ class ShipmentDetailView(LoginRequiredMixin, DetailView):
         context['other_documents'] = [d for d in prefetched_docs if d.document_type not in ('invoice', 'label')]
 
         context.update(_payment_summary(shipment))
+        context['has_insurance_addon'] = shipment.addons.filter(code='insurance').exists()
         return context
 
 

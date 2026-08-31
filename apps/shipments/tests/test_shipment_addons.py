@@ -217,3 +217,26 @@ class PaymentSummaryAddonsTests(TestCase):
         self.assertEqual(summary['addons_amount'], Decimal('398.00'))
         # 800 shipping + 300 consolidation + 398 addons = 1498.00
         self.assertEqual(summary['shipment_amount_due'], Decimal('1498.00'))
+
+
+class ShipmentDetailAddonsVisibilityTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(email='detail-addons@example.com', is_active=True)
+        Locker.objects.create(user=self.user)
+        self.shipment = make_shipment(self.user)
+        self.client.force_login(self.user)
+        self.url = reverse('shipments:detail', kwargs={'pk': self.shipment.pk})
+
+    def test_no_addons_section_hidden(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Gift Wrapping')
+
+    def test_purchased_addons_are_listed(self):
+        ShipmentAddon.objects.create(shipment=self.shipment, code='gift_wrapping', amount=Decimal('99.00'))
+        ShipmentAddon.objects.create(shipment=self.shipment, code='insurance', amount=Decimal('120.00'))
+        response = self.client.get(self.url)
+        self.assertContains(response, 'Gift Wrapping')
+        self.assertContains(response, 'Insurance')
+        self.assertContains(response, '99.00')
+        self.assertContains(response, '120.00')
