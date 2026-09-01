@@ -168,6 +168,16 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
             return JsonResponse({'error': 'Payments not configured'}, status=503)
 
         shipping_due = shipment.shipping_cost if shipment.payment_status != 'paid' else Decimal('0.00')
+        # Add-ons are created once, at shipment creation, before the first
+        # payment -- so a 'paid' shipment's add-ons were necessarily already
+        # covered by that payment. Gate this the same way as shipping_due/
+        # consolidation_fee_due, or a second order (e.g. triggered by a new
+        # storage charge accruing later) would re-charge them.
+        addons_total = (
+            (shipment.addons.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')).quantize(Decimal('0.01'))
+        ) if shipment.payment_status != 'paid' else Decimal('0.00')
+        consolidation_fee_due = (shipment.consolidation_fee or Decimal('0.00')) if shipment.payment_status != 'paid' else Decimal('0.00')
+        consolidation_due = consolidation_fee_due + addons_total
 
         # Storage is billed per Trunk ID (Batch), not per shipment, but
         # paying for a shipment is a natural moment to settle the locker's
@@ -192,7 +202,7 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         pending_storage_total = pending_charges_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
         pending_storage_total = pending_storage_total.quantize(Decimal('0.01'))
 
-        total_due = (shipping_due + pending_storage_total).quantize(Decimal('0.01'))
+        total_due = (shipping_due + consolidation_due + pending_storage_total).quantize(Decimal('0.01'))
         if total_due <= 0:
             return JsonResponse({'error': 'No pending charges for this shipment'}, status=400)
 
@@ -203,6 +213,10 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         description_parts = []
         if shipping_due > 0:
             description_parts.append('shipping')
+        if consolidation_fee_due > 0:
+            description_parts.append('consolidation')
+        if addons_total > 0:
+            description_parts.append('add-ons')
         if pending_storage_total > 0:
             description_parts.append('storage')
         charge_label = ' + '.join(description_parts) if description_parts else 'charges'
@@ -240,6 +254,8 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
                 notes=json.dumps({
                     'shipment_id': str(shipment.pk),
                     'shipping_due': str(shipping_due),
+                    'consolidation_due': str(consolidation_fee_due),
+                    'addons_due': str(addons_total),
                     'storage_due': str(pending_storage_total),
                     'batch_charge_ids': charge_ids,
                 }),
@@ -252,6 +268,8 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
                 notes={
                     'shipment_id': str(shipment.pk),
                     'shipping_due': str(shipping_due),
+                    'consolidation_due': str(consolidation_fee_due),
+                    'addons_due': str(addons_total),
                     'storage_due': str(pending_storage_total),
                 },
             )

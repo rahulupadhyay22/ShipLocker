@@ -324,9 +324,50 @@ class PersonalShopRequestPaidSignalTests(TestCase):
         self.assertEqual(PersonalShopInvoice.objects.filter(quotation=self.quotation).count(), 0)
 
 
+from django.urls import reverse as django_reverse
+
+
+class CreatePaymentOrderConsolidationFeeTests(TestCase):
+    """Regression test for the consolidation_fee billing gap: total_due
+    must include consolidation_fee, not just shipping + pending storage."""
+
+    def setUp(self):
+        self.user = User.objects.create(email='consolidation-bug@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user, plan_type='free')
+        self.shipment = Shipment.objects.create(
+            user=self.user,
+            shipment_type='international',
+            status='pending_payment',
+            recipient_name='Jane Doe',
+            address_line1='1 Test Street',
+            city='Testville',
+            state='Test State',
+            postal_code='12345',
+            country='United States',
+            shipping_cost=Decimal('800.00'),
+            consolidation_fee=Decimal('300.00'),
+            currency='INR',
+        )
+        self.client.force_login(self.user)
+        self.url = django_reverse('payments:create_order', kwargs={'shipment_pk': self.shipment.pk})
+
+    def test_total_due_includes_consolidation_fee(self):
+        p1, p2, p3 = _enable_razorpay('order_consolidation_1')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        # 800 shipping + 300 consolidation = 1100.00 -> 110000 paise
+        self.assertEqual(data['amount'], 110000)
+
+        payment = Payment.objects.get(shipment=self.shipment)
+        self.assertEqual(payment.amount, Decimal('1100.00'))
+
+
 from datetime import date
 
-from apps.locker.models import Batch
+from apps.locker.models import Batch, Parcel
 from apps.payments.models import BatchCharge
 
 
@@ -715,3 +756,258 @@ class RazorpayWebhookConcurrentCaptureTests(TransactionTestCase):
 
         self.payment.refresh_from_db()
         self.assertEqual(self.payment.status, 'captured')
+
+
+class ComputeAddonAmountTests(TestCase):
+    def setUp(self):
+        # addon_* ServiceCharge rows are seeded by
+        # apps/content/migrations/0013_seed_addon_service_charges.py.
+        self.user = User.objects.create(email='addon-pricing@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user)
+        self.parcel_a = Parcel.objects.create(
+            locker=self.locker, item_name='Watch', status='approved', item_price=Decimal('4000.00'),
+        )
+        self.parcel_b = Parcel.objects.create(
+            locker=self.locker, item_name='Bag', status='approved', item_price=Decimal('1000.00'),
+        )
+
+    def tearDown(self):
+        # Clear addon service charge cache since some tests modify it
+        # and TestCase doesn't automatically clear cache between methods
+        from apps.content.services import invalidate_service_charge_cache
+        from apps.payments.services import ADDON_SERVICE_CHARGE_CODES
+        for addon_code in ADDON_SERVICE_CHARGE_CODES.values():
+            invalidate_service_charge_cache(addon_code)
+        super().tearDown()
+
+    def test_insurance_percentage_above_floor(self):
+        from apps.payments.services import _compute_addon_amount
+        # sum = 5000, 2% = 100.00, above the 99.00 floor
+        amount = _compute_addon_amount('insurance', [self.parcel_a, self.parcel_b])
+        self.assertEqual(amount, Decimal('100.00'))
+
+    def test_insurance_percentage_below_floor_uses_floor(self):
+        from apps.payments.services import _compute_addon_amount
+        cheap_parcel = Parcel.objects.create(
+            locker=self.locker, item_name='Pen', status='approved', item_price=Decimal('500.00'),
+        )
+        # 500 * 2% = 10.00, below the 99.00 floor
+        amount = _compute_addon_amount('insurance', [cheap_parcel])
+        self.assertEqual(amount, Decimal('99.00'))
+
+    def test_insurance_with_no_parcels_uses_floor(self):
+        from apps.payments.services import _compute_addon_amount
+        amount = _compute_addon_amount('insurance', [])
+        self.assertEqual(amount, Decimal('99.00'))
+
+    def test_flat_addon_returns_configured_amount(self):
+        from apps.payments.services import _compute_addon_amount
+        self.assertEqual(_compute_addon_amount('gift_wrapping'), Decimal('99.00'))
+        self.assertEqual(_compute_addon_amount('extra_photos'), Decimal('149.00'))
+        self.assertEqual(_compute_addon_amount('priority_packing'), Decimal('299.00'))
+
+    def test_unconfigured_addon_returns_none(self):
+        from apps.content.models import ServiceCharge
+        from apps.payments.services import _compute_addon_amount
+        ServiceCharge.objects.filter(code='addon_gift_wrapping').update(is_active=False)
+        from apps.content.services import invalidate_service_charge_cache
+        invalidate_service_charge_cache('addon_gift_wrapping')  # .update() bypasses the save signal
+        self.assertIsNone(_compute_addon_amount('gift_wrapping'))
+
+
+class GetAddonOptionsTests(TestCase):
+    def tearDown(self):
+        # Clear addon service charge cache since some tests modify it
+        # and TestCase doesn't automatically clear cache between methods
+        from apps.content.services import invalidate_service_charge_cache
+        from apps.payments.services import ADDON_SERVICE_CHARGE_CODES
+        for addon_code in ADDON_SERVICE_CHARGE_CODES.values():
+            invalidate_service_charge_cache(addon_code)
+        super().tearDown()
+
+    def test_returns_all_four_configured_addons(self):
+        from apps.payments.services import get_addon_options
+        options = get_addon_options()
+        codes = {opt['code'] for opt in options}
+        self.assertEqual(codes, {'insurance', 'extra_photos', 'priority_packing', 'gift_wrapping'})
+
+    def test_excludes_addon_with_no_active_service_charge(self):
+        from apps.content.models import ServiceCharge
+        from apps.content.services import invalidate_service_charge_cache
+        from apps.payments.services import get_addon_options
+
+        ServiceCharge.objects.filter(code='addon_priority_packing').update(is_active=False)
+        invalidate_service_charge_cache('addon_priority_packing')
+
+        options = get_addon_options()
+        codes = {opt['code'] for opt in options}
+        self.assertNotIn('priority_packing', codes)
+        self.assertEqual(len(options), 3)
+
+    def test_insurance_option_carries_rate_and_floor(self):
+        from apps.payments.services import get_addon_options
+        options = {opt['code']: opt for opt in get_addon_options()}
+        insurance = options['insurance']
+        self.assertEqual(insurance['charge_type'], 'percentage')
+        self.assertEqual(insurance['rate'], 2.0)
+        self.assertEqual(insurance['floor_or_amount'], 99.0)
+
+    def test_flat_option_has_no_rate(self):
+        from apps.payments.services import get_addon_options
+        options = {opt['code']: opt for opt in get_addon_options()}
+        self.assertIsNone(options['gift_wrapping']['rate'])
+        self.assertEqual(options['gift_wrapping']['floor_or_amount'], 99.0)
+
+
+class CreatePaymentOrderAddonsTests(TestCase):
+    def setUp(self):
+        from apps.shipments.models import ShipmentAddon
+        self.user = User.objects.create(email='addons-checkout@example.com', is_active=True)
+        Locker.objects.create(user=self.user, plan_type='free')
+        self.shipment = Shipment.objects.create(
+            user=self.user, shipment_type='international', status='pending_payment',
+            recipient_name='Jane Doe', address_line1='1 Test Street', city='Testville',
+            state='Test State', postal_code='12345', country='United States',
+            shipping_cost=Decimal('800.00'), consolidation_fee=Decimal('300.00'), currency='INR',
+        )
+        ShipmentAddon.objects.create(shipment=self.shipment, code='gift_wrapping', amount=Decimal('99.00'))
+        self.client.force_login(self.user)
+        self.url = reverse('payments:create_order', kwargs={'shipment_pk': self.shipment.pk})
+
+    def test_total_due_includes_addons(self):
+        p1, p2, p3 = _enable_razorpay('order_addons_1')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 200)
+        # 800 + 300 + 99 = 1199.00 -> 119900 paise
+        self.assertEqual(response.json()['amount'], 119900)
+
+    def test_displayed_total_equals_charged_total_with_every_fee_present(self):
+        """Regression guard for the consolidation_fee billing gap: proves
+        the two independent calculations (display math vs. charge math)
+        agree, not just that each one's own formula looks right in
+        isolation -- that's what let them drift apart the first time."""
+        from django.utils import timezone
+        from apps.shipments.views import _payment_summary
+        from apps.locker.models import Batch
+        from apps.payments.models import BatchCharge
+
+        # Batch lives in apps.locker.models (the storage-billing unit), not
+        # apps.payments.models -- BatchCharge (the per-day line item) is the
+        # one that lives in payments. Required fields per apps/locker/models.py:
+        # plan_type_at_creation, quota_year, first_parcel_received_date.
+        batch = Batch.objects.create(
+            locker=self.shipment.user.locker,
+            plan_type_at_creation='free',
+            quota_year=timezone.now().year,
+            first_parcel_received_date=timezone.now().date(),
+        )
+        BatchCharge.objects.create(
+            batch=batch, charge_date=timezone.now().date(),
+            parcel_count_snapshot=1, amount=Decimal('50.00'), status='pending',
+        )
+
+        displayed = _payment_summary(self.shipment)['shipment_amount_due']
+
+        p1, p2, p3 = _enable_razorpay('order_addons_2')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+        charged = Decimal(str(response.json()['amount'])) / 100
+
+        self.assertEqual(displayed, charged)
+
+
+class CreatePaymentOrderWaivedConsolidationAddonLabelTests(TestCase):
+    """Regression test: a Premium shipment with consolidation_fee waived to
+    0 but a purchased add-on must not have its charge mislabeled as
+    'consolidation', and notes['consolidation_due'] must not report the
+    add-on amount under the consolidation key."""
+
+    def setUp(self):
+        from apps.shipments.models import ShipmentAddon
+        self.user = User.objects.create(email='waived-consolidation@example.com', is_active=True)
+        Locker.objects.create(user=self.user, plan_type='premium')
+        # Not yet paid, shipping due, and consolidation_fee waived to 0
+        # (Premium plan) -- the purchased add-on is the only fee that
+        # should be labeled 'add-ons' rather than folded into 'consolidation'.
+        # (Add-ons are only ever created at shipment-creation time, before
+        # the first payment -- there's no flow that adds one to an already-
+        # 'paid' shipment, so this scenario is deliberately unpaid; see
+        # CreatePaymentOrderAddonsAlreadyPaidTests below for the paid case.)
+        self.shipment = Shipment.objects.create(
+            user=self.user, shipment_type='international', status='pending_payment',
+            payment_status='unpaid',
+            recipient_name='Jane Doe', address_line1='1 Test Street', city='Testville',
+            state='Test State', postal_code='12345', country='United States',
+            shipping_cost=Decimal('800.00'), consolidation_fee=Decimal('0.00'), currency='INR',
+        )
+        ShipmentAddon.objects.create(shipment=self.shipment, code='gift_wrapping', amount=Decimal('99.00'))
+        self.client.force_login(self.user)
+        self.url = reverse('payments:create_order', kwargs={'shipment_pk': self.shipment.pk})
+
+    def test_description_and_notes_attribute_charge_to_addons_not_consolidation(self):
+        p1, p2, p3 = _enable_razorpay('order_waived_consolidation_1')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        # Shipping (800) + the add-on (99), consolidation waived to 0: 89900 paise
+        self.assertEqual(response.json()['amount'], 89900)
+
+        payment = Payment.objects.get(shipment=self.shipment)
+        self.assertEqual(payment.amount, Decimal('899.00'))
+        self.assertNotIn('consolidation', payment.description.lower())
+        self.assertIn('add-ons', payment.description.lower())
+
+        notes = json.loads(payment.notes)
+        self.assertEqual(notes['consolidation_due'], '0.00')
+        self.assertEqual(Decimal(notes['addons_due']), Decimal('99.00'))
+
+
+class CreatePaymentOrderAddonsAlreadyPaidTests(TestCase):
+    """Regression test: once a shipment is paid, its add-ons must not be
+    re-charged if CreatePaymentOrderView is hit again (e.g. a new pending
+    storage charge on the locker triggers another order) -- mirrors the
+    existing shipping_due/consolidation_fee_due behavior, and matches
+    _payment_summary()'s displayed shipment_amount_due, which already zeros
+    unpaid_charges (including addons_amount) once payment_status == 'paid'."""
+
+    def setUp(self):
+        from apps.shipments.models import ShipmentAddon
+        from apps.payments.models import BatchCharge
+        from apps.locker.models import Batch
+
+        self.user = User.objects.create(email='addons-already-paid@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user, plan_type='free')
+        self.shipment = Shipment.objects.create(
+            user=self.user, shipment_type='international', status='packing',
+            payment_status='paid',
+            recipient_name='Jane Doe', address_line1='1 Test Street', city='Testville',
+            state='Test State', postal_code='12345', country='United States',
+            shipping_cost=Decimal('800.00'), consolidation_fee=Decimal('300.00'), currency='INR',
+        )
+        ShipmentAddon.objects.create(shipment=self.shipment, code='gift_wrapping', amount=Decimal('99.00'))
+
+        batch = Batch.objects.create(
+            locker=self.locker, plan_type_at_creation='free',
+            quota_year=timezone.now().year, first_parcel_received_date=timezone.now().date(),
+        )
+        BatchCharge.objects.create(
+            batch=batch, charge_date=timezone.now().date(),
+            parcel_count_snapshot=1, amount=Decimal('50.00'), status='pending',
+        )
+
+        self.client.force_login(self.user)
+        self.url = reverse('payments:create_order', kwargs={'shipment_pk': self.shipment.pk})
+
+    def test_only_new_pending_storage_is_charged_not_the_already_paid_addon(self):
+        p1, p2, p3 = _enable_razorpay('order_already_paid_1')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        # Only the new pending storage charge (50.00) -- shipping,
+        # consolidation, and the add-on were all already paid: 5000 paise
+        self.assertEqual(response.json()['amount'], 5000)
+        payment = Payment.objects.get(shipment=self.shipment)
+        self.assertEqual(payment.amount, Decimal('50.00'))

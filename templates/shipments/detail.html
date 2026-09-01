@@ -181,6 +181,18 @@
                 <span class="sd-info-value">{{ shipment.currency }} {{ consolidation_fee }}</span>
                 {% endif %}
             </div>
+            {% with shipment_addons=shipment.addons.all %}
+            {% if shipment_addons %}
+            <div class="sd-info-item" id="sd-addons-fee-row">
+                <span class="sd-info-label">Add-ons</span>
+                <span class="sd-info-value">
+                    {% for addon in shipment_addons %}
+                    {{ addon.get_code_display }}: {{ shipment.currency }} {{ addon.amount }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </span>
+            </div>
+            {% endif %}
+            {% endwith %}
             <div class="sd-info-item sd-info-total">
                 <span class="sd-info-label">Total {% if shipment.payment_status == 'paid' %}Paid{% else %}Due{% endif %}</span>
                 <span class="sd-info-value" id="sd-total-due">{{ shipment.currency }} {% if shipment.payment_status == 'paid' %}{{ shipment_total_amount }}{% else %}{{ shipment_amount_due }}{% endif %}</span>
@@ -262,7 +274,9 @@
                 </div>
                 <div class="sd-stat">
                     <span class="sd-info-label">Insurance</span>
-                    <span class="sd-stat-value sd-insured">100% Insured</span>
+                    <span class="sd-stat-value">
+                        {% if has_insurance_addon %}<span class="sd-insured">Insured</span>{% else %}Basic protection included{% endif %}
+                    </span>
                 </div>
             </div>
         </div>

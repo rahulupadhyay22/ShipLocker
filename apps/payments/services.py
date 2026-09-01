@@ -175,6 +175,65 @@ def _get_consolidation_fee_amount(locker) -> Decimal:
     return standard
 
 
+ADDON_SERVICE_CHARGE_CODES = {
+    'insurance': 'addon_insurance',
+    'extra_photos': 'addon_extra_photos',
+    'priority_packing': 'addon_priority_packing',
+    'gift_wrapping': 'addon_gift_wrapping',
+}
+
+def _compute_addon_amount(addon_code, parcels=None) -> Decimal | None:
+    """Resolve the price for a shipment add-on from its ServiceCharge row.
+    Returns None if the ServiceCharge is missing/inactive -- unlike
+    consolidation_fee's "missing means free" convention, an unpriced add-on
+    should not be offered at all (these are optional upsells, not
+    mandatory fees). parcels is only used for 'insurance' (percentage of
+    declared value); ignored for the three flat add-ons."""
+    from apps.content.services import get_service_charge
+
+    charge_code = ADDON_SERVICE_CHARGE_CODES.get(addon_code)
+    if not charge_code:
+        return None
+    charge = get_service_charge(charge_code)
+    if not charge:
+        return None
+    if addon_code == 'insurance':
+        declared_value = sum((p.item_price or Decimal('0')) for p in (parcels or []))
+        return Decimal(str(charge.compute(declared_value))).quantize(Decimal('0.01'))
+    return Decimal(str(charge.compute())).quantize(Decimal('0.01'))
+
+
+def get_addon_options():
+    """List of {code, label, description, charge_type, rate, floor_or_amount}
+    for every add-on with an active ServiceCharge configured -- single
+    source of truth for both the step-3 checkbox list (CreateShipmentView.get)
+    and add-on creation validation (CreateShipmentView.post), so the two
+    can't drift out of sync with each other. rate is None for flat charges.
+
+    label/description come straight from the ServiceCharge row's own
+    name/description fields -- ServiceCharge is documented (apps/content/
+    models.py) as "the single admin-editable source of truth... an admin
+    edit here takes effect everywhere without a deploy"; hardcoding a
+    parallel copy of the same text here would silently break that promise
+    for these four rows specifically."""
+    from apps.content.services import get_service_charge
+
+    options = []
+    for code, charge_code in ADDON_SERVICE_CHARGE_CODES.items():
+        charge = get_service_charge(charge_code)
+        if not charge:
+            continue
+        options.append({
+            'code': code,
+            'label': charge.name,
+            'description': charge.description,
+            'charge_type': charge.charge_type,
+            'rate': float(charge.percentage_rate) if charge.charge_type == 'percentage' else None,
+            'floor_or_amount': float(charge.amount),
+        })
+    return options
+
+
 def _financial_year_label(invoice_date):
     """FY runs Apr 1 - Mar 31. E.g. any date in Apr 2026-Mar 2027 -> '2026-27'."""
     year = invoice_date.year
@@ -228,6 +287,7 @@ def build_charge_snapshot(shipment):
         'shipping_amount': summary['shipping_amount'],
         'storage_fee_amount': summary['storage_fee_paid'],
         'consolidation_fee_amount': summary['consolidation_fee'],
+        'addons_amount': summary['addons_amount'],
     }
 
 
@@ -288,6 +348,8 @@ class InvoiceService:
             rows.append(['Storage Fee', f"{context['storage_fee_amount']:.2f}"])
         if context['consolidation_fee_amount'] > 0:
             rows.append(['Consolidation Fee', f"{context['consolidation_fee_amount']:.2f}"])
+        if context['addons_amount'] > 0:
+            rows.append(['Add-ons', f"{context['addons_amount']:.2f}"])
         rows.append(['Taxable Amount', f"{context['taxable_amount']:.2f}"])
 
         if context['is_zero_rated']:
@@ -351,7 +413,8 @@ class InvoiceService:
 
         charges = build_charge_snapshot(shipment)
         taxable_amount = (
-            charges['shipping_amount'] + charges['storage_fee_amount'] + charges['consolidation_fee_amount']
+            charges['shipping_amount'] + charges['storage_fee_amount']
+            + charges['consolidation_fee_amount'] + charges['addons_amount']
         )
         gst = calculate_gst(shipment, taxable_amount, settings)
         customer = build_customer_snapshot(shipment)
@@ -396,6 +459,7 @@ class InvoiceService:
                 shipping_amount=charges['shipping_amount'],
                 storage_fee_amount=charges['storage_fee_amount'],
                 consolidation_fee_amount=charges['consolidation_fee_amount'],
+                addons_amount=charges['addons_amount'],
                 taxable_amount=taxable_amount,
                 is_zero_rated=gst['is_zero_rated'],
                 gst_rate=gst['gst_rate'],

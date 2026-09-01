@@ -12,6 +12,7 @@ Covers, per spec:
 - legacy active/delivered/closed routes still resolve/respond
 """
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
@@ -406,6 +407,25 @@ class CreateShipmentESignTests(TestCase):
             category='sports', customs_description='Running shoes',
         )
         self.client.force_login(self.user)
+
+        # Mock the PDF generation/upload so this test never makes a real
+        # network call to Supabase Storage -- unmocked, it's vulnerable to
+        # the shared, process-wide _storage_breaker (apps/accounts/services.py)
+        # tripping open from unrelated tests elsewhere in the suite that
+        # deliberately simulate storage failures. Same pattern already used
+        # by apps/shipments/tests/test_esign_declaration.py.
+        self.generate_pdf_patcher = patch(
+            'apps.shipments.services.declaration_service.DeclarationService.generate_pdf',
+            return_value=b'%PDF-fake-bytes',
+        )
+        self.upload_pdf_patcher = patch(
+            'apps.shipments.services.declaration_service.DeclarationService.upload_pdf',
+            return_value='shipment/RB-1/customs_fake.pdf',
+        )
+        self.generate_pdf_patcher.start()
+        self.upload_pdf_patcher.start()
+        self.addCleanup(self.generate_pdf_patcher.stop)
+        self.addCleanup(self.upload_pdf_patcher.stop)
 
     def _post(self, **overrides):
         data = dict(

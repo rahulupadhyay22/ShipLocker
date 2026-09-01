@@ -251,6 +251,7 @@ class Invoice(models.Model):
     shipping_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     storage_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     consolidation_fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    addons_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     taxable_amount = models.DecimalField(max_digits=10, decimal_places=2)
 
     # GST breakdown
