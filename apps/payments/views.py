@@ -174,7 +174,7 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         # consolidation_fee_due, or a second order (e.g. triggered by a new
         # storage charge accruing later) would re-charge them.
         addons_total = (
-            shipment.addons.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+            (shipment.addons.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')).quantize(Decimal('0.01'))
         ) if shipment.payment_status != 'paid' else Decimal('0.00')
         consolidation_fee_due = (shipment.consolidation_fee or Decimal('0.00')) if shipment.payment_status != 'paid' else Decimal('0.00')
         consolidation_due = consolidation_fee_due + addons_total
