@@ -927,12 +927,16 @@ class CreatePaymentOrderWaivedConsolidationAddonLabelTests(TestCase):
         from apps.shipments.models import ShipmentAddon
         self.user = User.objects.create(email='waived-consolidation@example.com', is_active=True)
         Locker.objects.create(user=self.user, plan_type='premium')
-        # Shipping already paid (payment_status='paid') and consolidation_fee
-        # waived to 0 (Premium plan) -- an add-on purchased afterwards is the
-        # only outstanding charge.
+        # Not yet paid, shipping due, and consolidation_fee waived to 0
+        # (Premium plan) -- the purchased add-on is the only fee that
+        # should be labeled 'add-ons' rather than folded into 'consolidation'.
+        # (Add-ons are only ever created at shipment-creation time, before
+        # the first payment -- there's no flow that adds one to an already-
+        # 'paid' shipment, so this scenario is deliberately unpaid; see
+        # CreatePaymentOrderAddonsAlreadyPaidTests below for the paid case.)
         self.shipment = Shipment.objects.create(
-            user=self.user, shipment_type='international', status='packing',
-            payment_status='paid',
+            user=self.user, shipment_type='international', status='pending_payment',
+            payment_status='unpaid',
             recipient_name='Jane Doe', address_line1='1 Test Street', city='Testville',
             state='Test State', postal_code='12345', country='United States',
             shipping_cost=Decimal('800.00'), consolidation_fee=Decimal('0.00'), currency='INR',
@@ -947,14 +951,63 @@ class CreatePaymentOrderWaivedConsolidationAddonLabelTests(TestCase):
             response = self.client.post(self.url)
 
         self.assertEqual(response.status_code, 200)
-        # Only the add-on is charged: 99.00 -> 9900 paise
-        self.assertEqual(response.json()['amount'], 9900)
+        # Shipping (800) + the add-on (99), consolidation waived to 0: 89900 paise
+        self.assertEqual(response.json()['amount'], 89900)
 
         payment = Payment.objects.get(shipment=self.shipment)
-        self.assertEqual(payment.amount, Decimal('99.00'))
+        self.assertEqual(payment.amount, Decimal('899.00'))
         self.assertNotIn('consolidation', payment.description.lower())
         self.assertIn('add-ons', payment.description.lower())
 
         notes = json.loads(payment.notes)
         self.assertEqual(notes['consolidation_due'], '0.00')
         self.assertEqual(Decimal(notes['addons_due']), Decimal('99.00'))
+
+
+class CreatePaymentOrderAddonsAlreadyPaidTests(TestCase):
+    """Regression test: once a shipment is paid, its add-ons must not be
+    re-charged if CreatePaymentOrderView is hit again (e.g. a new pending
+    storage charge on the locker triggers another order) -- mirrors the
+    existing shipping_due/consolidation_fee_due behavior, and matches
+    _payment_summary()'s displayed shipment_amount_due, which already zeros
+    unpaid_charges (including addons_amount) once payment_status == 'paid'."""
+
+    def setUp(self):
+        from apps.shipments.models import ShipmentAddon
+        from apps.payments.models import BatchCharge
+        from apps.locker.models import Batch
+
+        self.user = User.objects.create(email='addons-already-paid@example.com', is_active=True)
+        self.locker = Locker.objects.create(user=self.user, plan_type='free')
+        self.shipment = Shipment.objects.create(
+            user=self.user, shipment_type='international', status='packing',
+            payment_status='paid',
+            recipient_name='Jane Doe', address_line1='1 Test Street', city='Testville',
+            state='Test State', postal_code='12345', country='United States',
+            shipping_cost=Decimal('800.00'), consolidation_fee=Decimal('300.00'), currency='INR',
+        )
+        ShipmentAddon.objects.create(shipment=self.shipment, code='gift_wrapping', amount=Decimal('99.00'))
+
+        batch = Batch.objects.create(
+            locker=self.locker, plan_type_at_creation='free',
+            quota_year=timezone.now().year, first_parcel_received_date=timezone.now().date(),
+        )
+        BatchCharge.objects.create(
+            batch=batch, charge_date=timezone.now().date(),
+            parcel_count_snapshot=1, amount=Decimal('50.00'), status='pending',
+        )
+
+        self.client.force_login(self.user)
+        self.url = reverse('payments:create_order', kwargs={'shipment_pk': self.shipment.pk})
+
+    def test_only_new_pending_storage_is_charged_not_the_already_paid_addon(self):
+        p1, p2, p3 = _enable_razorpay('order_already_paid_1')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        # Only the new pending storage charge (50.00) -- shipping,
+        # consolidation, and the add-on were all already paid: 5000 paise
+        self.assertEqual(response.json()['amount'], 5000)
+        payment = Payment.objects.get(shipment=self.shipment)
+        self.assertEqual(payment.amount, Decimal('50.00'))

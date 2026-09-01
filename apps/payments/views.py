@@ -168,7 +168,14 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
             return JsonResponse({'error': 'Payments not configured'}, status=503)
 
         shipping_due = shipment.shipping_cost if shipment.payment_status != 'paid' else Decimal('0.00')
-        addons_total = shipment.addons.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        # Add-ons are created once, at shipment creation, before the first
+        # payment -- so a 'paid' shipment's add-ons were necessarily already
+        # covered by that payment. Gate this the same way as shipping_due/
+        # consolidation_fee_due, or a second order (e.g. triggered by a new
+        # storage charge accruing later) would re-charge them.
+        addons_total = (
+            shipment.addons.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        ) if shipment.payment_status != 'paid' else Decimal('0.00')
         consolidation_fee_due = (shipment.consolidation_fee or Decimal('0.00')) if shipment.payment_status != 'paid' else Decimal('0.00')
         consolidation_due = consolidation_fee_due + addons_total
 
