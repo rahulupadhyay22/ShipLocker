@@ -153,7 +153,7 @@ def _normalize_supabase_pooler_url(raw_url: str) -> str:
         return raw_url
     parsed = urlparse(raw_url)
     hostname = (parsed.hostname or '').lower()
-    if hostname.endswith('pooler.supabase.com') and (parsed.port in (None, 5432)):
+    if (hostname == 'pooler.supabase.com' or hostname.endswith('.pooler.supabase.com')) and (parsed.port in (None, 5432)):
         auth = ''
         if parsed.username:
             auth = parsed.username

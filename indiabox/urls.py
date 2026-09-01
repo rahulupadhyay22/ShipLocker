@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import admin
 from django.db import connection
 from django.urls import path, include
@@ -6,6 +8,8 @@ from django.conf.urls.static import static
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.cache import cache_page
 from two_factor.views import QRGeneratorView
+
+logger = logging.getLogger(__name__)
 
 import indiabox.admin_site  # noqa: F401 — applies the OTP-required admin.site patch
 from indiabox.admin_site import (
@@ -35,8 +39,12 @@ def health_check(request):
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
-    except Exception as e:
-        return JsonResponse({"status": "error", "database": str(e)}, status=503)
+    except Exception:
+        # Public, unauthenticated endpoint (load balancer probe) -- log the
+        # real error server-side, but never return raw exception details
+        # (connection strings, hostnames, etc.) to an anonymous caller.
+        logger.exception("Health check database probe failed")
+        return JsonResponse({"status": "error", "database": "unavailable"}, status=503)
     return JsonResponse({"status": "ok"})
 
 

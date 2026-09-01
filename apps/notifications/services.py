@@ -11,6 +11,15 @@ logger = logging.getLogger(__name__)
 _breaker = CircuitBreaker('whatsapp', fail_threshold=5, reset_timeout=60, max_concurrency=4)
 
 
+def _mask_phone_number(number):
+    """Redact all but the last 4 digits for logging -- phone numbers are
+    PII and must not appear in plaintext in application logs."""
+    digits = str(number)
+    if len(digits) <= 4:
+        return '*' * len(digits)
+    return '*' * (len(digits) - 4) + digits[-4:]
+
+
 class WhatsAppService:
     """
     Service to interact with WhatsApp Cloud API.
@@ -108,15 +117,18 @@ class WhatsAppService:
             with _breaker.call():
                 response = requests.post(url, headers=headers, json=payload, timeout=5)
                 response.raise_for_status()
-            logger.info(f"WhatsApp message sent to {to_number}: {response.json()}")
+            logger.info(f"WhatsApp message sent to {_mask_phone_number(to_number)}")
             return response.json()
         except CircuitOpenError as e:
-            logger.warning(f"WhatsApp send to {to_number} skipped: {e}")
+            logger.warning(f"WhatsApp send to {_mask_phone_number(to_number)} skipped: {e}")
             return None
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to send WhatsApp message to {to_number}: {str(e)}")
-            if hasattr(e, 'response') and e.response:
-                logger.error(f"Response: {e.response.text}")
+            logger.error(f"Failed to send WhatsApp message to {_mask_phone_number(to_number)}: {str(e)}")
+            if hasattr(e, 'response') and e.response is not None:
+                # Status code only -- the response body can contain message
+                # content or other account-identifying details from the
+                # WhatsApp API and must not be logged in plaintext.
+                logger.error(f"WhatsApp API error response status: {e.response.status_code}")
             return None
 
     def send_test_message(self, to_number):

@@ -142,8 +142,13 @@ def validate_tracking_number(tracking):
     return True
 
 
+# Bounded quantifiers throughout -- CodeQL flags unbounded X+/X* pairs as
+# potentially-polynomial regardless of character-class overlap; bounding
+# them removes any backtracking blowup regardless, with generous-enough
+# limits that no real script tag or event-handler attribute is missed
+# (input is also already length-capped to max_length by the caller).
 _DANGEROUS_PATTERN = re.compile(
-    r'<script[^>]*>|javascript:|on\w+\s*=|<iframe|<object|<embed', re.IGNORECASE
+    r'<script[^>]{0,200}>|javascript:|on\w{1,20}\s{0,10}=|<iframe|<object|<embed', re.IGNORECASE
 )
 
 
