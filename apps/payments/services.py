@@ -182,14 +182,6 @@ ADDON_SERVICE_CHARGE_CODES = {
     'gift_wrapping': 'addon_gift_wrapping',
 }
 
-ADDON_LABELS = {
-    'insurance': ('Insurance', "Protect your shipment's full declared value against loss or damage."),
-    'extra_photos': ('Extra Photos', 'Extra photos of your items before packing, beyond the standard intake set.'),
-    'priority_packing': ('Priority Packing', 'Jump the queue — your shipment gets packed first.'),
-    'gift_wrapping': ('Gift Wrapping', 'Have your shipment gift-wrapped before it ships.'),
-}
-
-
 def _compute_addon_amount(addon_code, parcels=None) -> Decimal | None:
     """Resolve the price for a shipment add-on from its ServiceCharge row.
     Returns None if the ServiceCharge is missing/inactive -- unlike
@@ -216,7 +208,14 @@ def get_addon_options():
     for every add-on with an active ServiceCharge configured -- single
     source of truth for both the step-3 checkbox list (CreateShipmentView.get)
     and add-on creation validation (CreateShipmentView.post), so the two
-    can't drift out of sync with each other. rate is None for flat charges."""
+    can't drift out of sync with each other. rate is None for flat charges.
+
+    label/description come straight from the ServiceCharge row's own
+    name/description fields -- ServiceCharge is documented (apps/content/
+    models.py) as "the single admin-editable source of truth... an admin
+    edit here takes effect everywhere without a deploy"; hardcoding a
+    parallel copy of the same text here would silently break that promise
+    for these four rows specifically."""
     from apps.content.services import get_service_charge
 
     options = []
@@ -224,11 +223,10 @@ def get_addon_options():
         charge = get_service_charge(charge_code)
         if not charge:
             continue
-        label, description = ADDON_LABELS[code]
         options.append({
             'code': code,
-            'label': label,
-            'description': description,
+            'label': charge.name,
+            'description': charge.description,
             'charge_type': charge.charge_type,
             'rate': float(charge.percentage_rate) if charge.charge_type == 'percentage' else None,
             'floor_or_amount': float(charge.amount),
