@@ -169,7 +169,8 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
 
         shipping_due = shipment.shipping_cost if shipment.payment_status != 'paid' else Decimal('0.00')
         addons_total = shipment.addons.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-        consolidation_due = ((shipment.consolidation_fee or Decimal('0.00')) + addons_total) if shipment.payment_status != 'paid' else Decimal('0.00')
+        consolidation_fee_due = (shipment.consolidation_fee or Decimal('0.00')) if shipment.payment_status != 'paid' else Decimal('0.00')
+        consolidation_due = consolidation_fee_due + addons_total
 
         # Storage is billed per Trunk ID (Batch), not per shipment, but
         # paying for a shipment is a natural moment to settle the locker's
@@ -205,7 +206,7 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         description_parts = []
         if shipping_due > 0:
             description_parts.append('shipping')
-        if consolidation_due > 0:
+        if consolidation_fee_due > 0:
             description_parts.append('consolidation')
         if addons_total > 0:
             description_parts.append('add-ons')
@@ -246,7 +247,8 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
                 notes=json.dumps({
                     'shipment_id': str(shipment.pk),
                     'shipping_due': str(shipping_due),
-                    'consolidation_due': str(consolidation_due),
+                    'consolidation_due': str(consolidation_fee_due),
+                    'addons_due': str(addons_total),
                     'storage_due': str(pending_storage_total),
                     'batch_charge_ids': charge_ids,
                 }),
@@ -259,7 +261,8 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
                 notes={
                     'shipment_id': str(shipment.pk),
                     'shipping_due': str(shipping_due),
-                    'consolidation_due': str(consolidation_due),
+                    'consolidation_due': str(consolidation_fee_due),
+                    'addons_due': str(addons_total),
                     'storage_due': str(pending_storage_total),
                 },
             )

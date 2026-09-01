@@ -915,3 +915,46 @@ class CreatePaymentOrderAddonsTests(TestCase):
         charged = Decimal(str(response.json()['amount'])) / 100
 
         self.assertEqual(displayed, charged)
+
+
+class CreatePaymentOrderWaivedConsolidationAddonLabelTests(TestCase):
+    """Regression test: a Premium shipment with consolidation_fee waived to
+    0 but a purchased add-on must not have its charge mislabeled as
+    'consolidation', and notes['consolidation_due'] must not report the
+    add-on amount under the consolidation key."""
+
+    def setUp(self):
+        from apps.shipments.models import ShipmentAddon
+        self.user = User.objects.create(email='waived-consolidation@example.com', is_active=True)
+        Locker.objects.create(user=self.user, plan_type='premium')
+        # Shipping already paid (payment_status='paid') and consolidation_fee
+        # waived to 0 (Premium plan) -- an add-on purchased afterwards is the
+        # only outstanding charge.
+        self.shipment = Shipment.objects.create(
+            user=self.user, shipment_type='international', status='packing',
+            payment_status='paid',
+            recipient_name='Jane Doe', address_line1='1 Test Street', city='Testville',
+            state='Test State', postal_code='12345', country='United States',
+            shipping_cost=Decimal('800.00'), consolidation_fee=Decimal('0.00'), currency='INR',
+        )
+        ShipmentAddon.objects.create(shipment=self.shipment, code='gift_wrapping', amount=Decimal('99.00'))
+        self.client.force_login(self.user)
+        self.url = reverse('payments:create_order', kwargs={'shipment_pk': self.shipment.pk})
+
+    def test_description_and_notes_attribute_charge_to_addons_not_consolidation(self):
+        p1, p2, p3 = _enable_razorpay('order_waived_consolidation_1')
+        with p1, p2, p3:
+            response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        # Only the add-on is charged: 99.00 -> 9900 paise
+        self.assertEqual(response.json()['amount'], 9900)
+
+        payment = Payment.objects.get(shipment=self.shipment)
+        self.assertEqual(payment.amount, Decimal('99.00'))
+        self.assertNotIn('consolidation', payment.description.lower())
+        self.assertIn('add-ons', payment.description.lower())
+
+        notes = json.loads(payment.notes)
+        self.assertEqual(notes['consolidation_due'], '0.00')
+        self.assertEqual(Decimal(notes['addons_due']), Decimal('99.00'))
