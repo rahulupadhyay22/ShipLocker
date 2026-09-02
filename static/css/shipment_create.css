@@ -346,6 +346,50 @@
     color: white;
 }
 
+/* Add-on service cards */
+#addonOptions.radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+}
+
+#addonOptions .radio-card {
+    height: 100%;
+}
+
+#addonOptions .rc-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+#addonOptions .rc-content strong {
+    color: var(--text-main);
+}
+
+#addonOptions .rc-content > div > span:not(.addon-price) {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+#addonOptions input:checked+.rc-content {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.addon-price {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 100px;
+    background: var(--accent-light);
+    color: var(--accent-hover);
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
 /* Parcel Checkbox Cards */
 .parcel-select-card {
     display: block;
@@ -513,6 +557,10 @@
     /* Radio cards stack vertically */
     .radio-group {
         flex-direction: column;
+    }
+
+    #addonOptions.radio-group {
+        grid-template-columns: 1fr;
     }
 
     /* Form field grids stack to single column */
