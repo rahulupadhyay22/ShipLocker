@@ -402,7 +402,7 @@ a {
     padding: 1.35rem 1.55rem 2rem;
     width: calc(100% - var(--sidebar-width));
     min-height: 100vh;
-    background: var(--surface-0);
+    background: #fff;
 }
 
 .app-topbar {
