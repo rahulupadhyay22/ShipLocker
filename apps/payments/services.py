@@ -3,10 +3,15 @@
 import hmac
 import hashlib
 import logging
+import time
 from decimal import Decimal
 from django.db import transaction
 from .tax import calculate_gst
 from indiabox.circuit_breaker import CircuitBreaker, CircuitOpenError
+
+# Matches CreatePaymentOrderView's own stale-payment window (apps/payments/views.py)
+# so a checkout link can't outlive the point our own bookkeeping considers it stale.
+ORDER_EXPIRY_SECONDS = 30 * 60
 
 logger = logging.getLogger('security')
 
@@ -106,6 +111,7 @@ class RazorpayService:
             'amount': amount_paise,
             'currency': currency,
             'receipt': receipt,
+            'expire_by': int(time.time()) + ORDER_EXPIRY_SECONDS,
         }
         if notes:
             payload['notes'] = notes
