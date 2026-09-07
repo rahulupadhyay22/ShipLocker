@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "python manage.py expire_stale_payments"
+cronSchedule = "*/15 * * * *"
+restartPolicyType = "NEVER"
