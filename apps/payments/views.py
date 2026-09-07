@@ -235,12 +235,17 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
                     f"Returning existing payment order for {shipment.display_id}: "
                     f"{existing.razorpay_order_id}"
                 )
+                existing_notes = json.loads(existing.notes or '{}')
                 return JsonResponse({
                     'order_id': existing.razorpay_order_id,
                     'amount': int(existing.amount * 100),
                     'currency': existing.currency,
                     'key_id': service.key_id,
                     'payment_pk': str(existing.pk),
+                    'shipping_due': existing_notes.get('shipping_due', '0.00'),
+                    'consolidation_due': existing_notes.get('consolidation_due', '0.00'),
+                    'addons_due': existing_notes.get('addons_due', '0.00'),
+                    'storage_due': existing_notes.get('storage_due', '0.00'),
                 })
 
             payment = Payment.objects.create(
@@ -289,6 +294,10 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
             'currency': shipment.currency,
             'key_id': service.key_id,
             'payment_pk': str(payment.pk),
+            'shipping_due': str(shipping_due),
+            'consolidation_due': str(consolidation_fee_due),
+            'addons_due': str(addons_total),
+            'storage_due': str(pending_storage_total),
         })
 
 

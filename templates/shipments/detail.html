@@ -133,6 +133,7 @@
                         data-currency="{{ shipment.currency }}"
                         data-storage-fee-pending="{{ storage_fee_pending|stringformat:'s' }}"
                         data-consolidation-fee="{{ consolidation_fee|stringformat:'s' }}"
+                        data-addons-total="{{ addons_amount|stringformat:'s' }}"
                         data-payment-status="{{ shipment.payment_status }}">
                         {% for opt in service_options %}
                         <label class="radio-card radio-card-compact">
@@ -358,6 +359,7 @@
         const currency = optionsWrap.dataset.currency;
         const storageFeePending = parseFloat(optionsWrap.dataset.storageFeePending || '0');
         const consolidationFee = parseFloat(optionsWrap.dataset.consolidationFee || '0');
+        const addonsTotal = parseFloat(optionsWrap.dataset.addonsTotal || '0');
         const isPaid = optionsWrap.dataset.paymentStatus === 'paid';
 
         const inputs = Array.from(optionsWrap.querySelectorAll('input[name="service_type"]'));
@@ -366,7 +368,7 @@
 
         function amountDue(shippingAmount) {
             // Mirrors _payment_summary()'s shipment_amount_due formula server-side.
-            return isPaid ? storageFeePending : storageFeePending + shippingAmount + consolidationFee;
+            return isPaid ? storageFeePending : storageFeePending + shippingAmount + consolidationFee + addonsTotal;
         }
 
         inputs.forEach((input) => {
@@ -461,6 +463,8 @@
 
     const payNowBtn = document.getElementById('pay-now-btn');
     if (payNowBtn) {
+        const payNowDefaultLabel = payNowBtn.textContent.trim();
+
         payNowBtn.addEventListener('click', async function () {
             if (payNowBtn.dataset.loading === 'true') {
                 return;
@@ -483,6 +487,28 @@
                 if (!createResponse.ok) {
                     throw new Error(orderData.error || 'Could not start payment.');
                 }
+
+                // The order amount is computed fresh server-side and can be
+                // higher than what's on screen if a new storage charge landed
+                // on this locker since the page loaded (storage bills per
+                // Trunk ID, not per shipment -- see CreatePaymentOrderView).
+                // Surface that instead of silently sending the user into
+                // Razorpay checkout for a different amount than they saw.
+                if (String(payNowBtn.dataset.confirmedAmount) !== String(orderData.amount)) {
+                    const totalEl = document.getElementById('sd-total-due');
+                    if (totalEl) {
+                        totalEl.textContent = `${orderData.currency} ${(orderData.amount / 100).toFixed(2)}`;
+                    }
+                    payNowBtn.dataset.confirmedAmount = orderData.amount;
+                    payNowBtn.textContent = `Confirm & Pay ${orderData.currency} ${(orderData.amount / 100).toFixed(2)}`;
+                    CamelTrunkLoading.showError(
+                        payNowBtn,
+                        'The amount due changed since this page loaded (a new storage charge was added). Review the updated total and click again to proceed.'
+                    );
+                    CamelTrunkLoading.stop(payNowBtn);
+                    return;
+                }
+                payNowBtn.textContent = payNowDefaultLabel;
 
                 if (!window.Razorpay) {
                     throw new Error('Razorpay checkout failed to load.');
