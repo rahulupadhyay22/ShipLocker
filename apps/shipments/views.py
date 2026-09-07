@@ -54,10 +54,15 @@ def _payment_summary(shipment):
         # signup flow, but nothing here should ever 500 on a payment path) —
         # there can be no batches, so no storage balance either.
         pending_total = paid_total = Decimal('0.00')
+        pending_batch_count = 0
     else:
-        pending_total = BatchCharge.objects.filter(
-            batch__locker=locker, status='pending',
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        pending_charges_qs = BatchCharge.objects.filter(batch__locker=locker, status='pending')
+        pending_total = pending_charges_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        # Surfaced so the template can explain a locker-wide total instead of
+        # showing an unexplained number when more than one batch contributes
+        # to it (storage bills per Trunk ID, not per shipment -- see
+        # apps.payments.views._get_pending_batch_charges_for_locker).
+        pending_batch_count = pending_charges_qs.values('batch_id').distinct().count()
         paid_total = BatchCharge.objects.filter(
             batch__locker=locker, status='paid', payment__shipment=shipment,
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
@@ -72,6 +77,7 @@ def _payment_summary(shipment):
         'storage_fee_pending': pending_total,
         'storage_fee_paid': paid_total,
         'storage_fee_total': storage_total,
+        'storage_fee_batch_count': pending_batch_count,
         'shipping_amount': shipping_amount,
         'consolidation_fee': consolidation_fee,
         'addons_amount': addons_amount,
@@ -334,6 +340,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
         pending_charges = _get_pending_batch_charges_for_locker(locker)
         storage_fee_pending = pending_charges.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
         storage_fee_days_pending = pending_charges.count()
+        storage_fee_batch_count = pending_charges.values('batch_id').distinct().count()
 
         return render(request, self.template_name, {
             'parcels': parcels,
@@ -344,6 +351,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
             'consolidation_fee_standard': _lookup_consolidation_fee_standard(),
             'storage_fee_pending': storage_fee_pending,
             'storage_fee_days_pending': storage_fee_days_pending,
+            'storage_fee_batch_count': storage_fee_batch_count,
             'default_address': default_address,
             'saved_addresses': saved_addresses,
             'preselected_ids': preselected_ids,

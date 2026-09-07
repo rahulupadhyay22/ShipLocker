@@ -459,6 +459,7 @@
     const CONSOLIDATION_FEE_STANDARD = parseFloat('{{ consolidation_fee_standard|default:"0" }}') || 0;
     const STORAGE_FEE_PENDING = parseFloat('{{ storage_fee_pending|default:"0" }}') || 0;
     const STORAGE_FEE_DAYS_PENDING = parseInt('{{ storage_fee_days_pending|default:"0" }}', 10) || 0;
+    const STORAGE_FEE_BATCH_COUNT = parseInt('{{ storage_fee_batch_count|default:"0" }}', 10) || 0;
     const ADDON_OPTIONS = JSON.parse('{{ addon_options_json|escapejs }}');
 
     function toggleSelectAll(checkbox) {
@@ -503,9 +504,13 @@
         // locker's whole outstanding balance, shown whenever any items are
         // selected (paying for this shipment settles it), independent of
         // which specific parcels are checked.
-        const storageBreakdownText = STORAGE_FEE_DAYS_PENDING > 0
+        let storageBreakdownText = STORAGE_FEE_DAYS_PENDING > 0
             ? '(' + STORAGE_FEE_DAYS_PENDING + ' day' + (STORAGE_FEE_DAYS_PENDING === 1 ? '' : 's') + ' billed, unpaid)'
             : '';
+        if (STORAGE_FEE_BATCH_COUNT > 1) {
+            storageBreakdownText += (storageBreakdownText ? ' — ' : '') +
+                'covers all pending storage across your account (' + STORAGE_FEE_BATCH_COUNT + ' batches)';
+        }
         const showStorageFee = count > 0 && STORAGE_FEE_PENDING > 0;
         document.querySelectorAll('.js-storage-fee-row').forEach(function (el) { el.hidden = !showStorageFee; });
         document.querySelectorAll('.js-sum-storage-fee').forEach(function (el) { el.textContent = fmtMoney(STORAGE_FEE_PENDING); });

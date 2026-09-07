@@ -171,7 +171,10 @@
             </div>
             <div class="sd-info-item" id="sd-storage-fee-row" {% if not storage_fee_total > 0 %}hidden{% endif %}>
                 <span class="sd-info-label">Storage Fee</span>
-                <span class="sd-info-value">{{ shipment.currency }} {{ storage_fee_total }}</span>
+                <span class="sd-info-value">
+                    {{ shipment.currency }} {{ storage_fee_total }}
+                    {% if storage_fee_batch_count > 1 %}<span class="sd-empty-text">(covers all pending storage across your account, {{ storage_fee_batch_count }} batches)</span>{% endif %}
+                </span>
             </div>
             <div class="sd-info-item" id="sd-consolidation-fee-row"
                 {% if not consolidation_fee > 0 and not shipment.consolidation_fee_standard > 0 %}hidden{% endif %}>
