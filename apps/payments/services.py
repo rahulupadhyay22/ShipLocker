@@ -3,14 +3,17 @@
 import hmac
 import hashlib
 import logging
-import time
 from decimal import Decimal
 from django.db import transaction
 from .tax import calculate_gst
 from indiabox.circuit_breaker import CircuitBreaker, CircuitOpenError
 
-# Matches CreatePaymentOrderView's own stale-payment window (apps/payments/views.py)
-# so a checkout link can't outlive the point our own bookkeeping considers it stale.
+# How long a pending Payment is considered reusable/alive before
+# expire_stale_payments treats it as abandoned (apps/payments/views.py's
+# own double-click-guard window matches this too). Razorpay's own
+# expire_by isn't set here -- see git history: it 400'd order creation
+# in production and was reverted; re-add only after confirming the exact
+# payload Razorpay expects.
 ORDER_EXPIRY_SECONDS = 30 * 60
 
 logger = logging.getLogger('security')
@@ -111,7 +114,6 @@ class RazorpayService:
             'amount': amount_paise,
             'currency': currency,
             'receipt': receipt,
-            'expire_by': int(time.time()) + ORDER_EXPIRY_SECONDS,
         }
         if notes:
             payload['notes'] = notes
@@ -130,6 +132,14 @@ class RazorpayService:
             return order
         except CircuitOpenError as e:
             logger.error(f"Razorpay order creation skipped: {e}")
+            return None
+        except requests.exceptions.HTTPError as e:
+            # raise_for_status()'s own message omits the response body, which
+            # is where Razorpay actually explains a 400 (e.g. bad field) --
+            # log it explicitly so a bad payload change is diagnosable from
+            # this log line alone instead of blind guess-and-redeploy.
+            body = e.response.text if e.response is not None else ''
+            logger.error(f"Razorpay order creation failed: {e} | response body: {body}")
             return None
         except requests.exceptions.RequestException as e:
             logger.error(f"Razorpay order creation failed: {e}")
