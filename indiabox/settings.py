@@ -570,6 +570,11 @@ UNFOLD = {
                         "icon": "receipt",
                         "link": reverse_lazy("admin:payments_invoice_changelist"),
                     },
+                    {
+                        "title": "TrunkAssist Invoices",
+                        "icon": "receipt_long",
+                        "link": reverse_lazy("admin:payments_personalshopinvoice_changelist"),
+                    },
                 ],
             },
             {
@@ -616,6 +621,11 @@ UNFOLD = {
                         "title": "Saved Addresses",
                         "icon": "home_pin",
                         "link": reverse_lazy("admin:accounts_savedaddress_changelist"),
+                    },
+                    {
+                        "title": "Consent Records",
+                        "icon": "fact_check",
+                        "link": reverse_lazy("admin:accounts_consentrecord_changelist"),
                     },
                 ],
             },
