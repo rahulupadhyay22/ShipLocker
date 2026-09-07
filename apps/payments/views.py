@@ -222,13 +222,22 @@ class CreatePaymentOrderView(LoginRequiredMixin, View):
         charge_label = ' + '.join(description_parts) if description_parts else 'charges'
 
         with transaction.atomic():
-            # Prevent double payment: check for recent pending payment (last 30 min)
+            # Prevent double payment: check for recent pending payment (last 30 min).
+            # Only reuse it if the amount still matches -- the shipment may have
+            # changed (e.g. a different service_type) since that order was created,
+            # in which case it's stale and reusing it would charge the wrong amount.
             existing = Payment.objects.select_for_update().filter(
                 shipment=shipment,
                 user=request.user,
                 status='pending',
                 created_at__gte=timezone.now() - timedelta(minutes=30),
             ).order_by('-created_at').first()
+
+            if existing and existing.razorpay_order_id and existing.amount != total_due:
+                existing.status = 'failed'
+                existing.failure_reason = 'Superseded by an updated shipment total before payment completed'
+                existing.save(update_fields=['status', 'failure_reason'])
+                existing = None
 
             if existing and existing.razorpay_order_id:
                 logger.info(
