@@ -492,14 +492,18 @@
                 // higher than what's on screen if a new storage charge landed
                 // on this locker since the page loaded (storage bills per
                 // Trunk ID, not per shipment -- see CreatePaymentOrderView).
-                // Surface that instead of silently sending the user into
-                // Razorpay checkout for a different amount than they saw.
-                if (String(payNowBtn.dataset.confirmedAmount) !== String(orderData.amount)) {
-                    const totalEl = document.getElementById('sd-total-due');
+                // Compare against what's actually displayed (not a "seen
+                // before" flag, which would be unset -- and so always
+                // mismatch -- on every user's very first click).
+                const totalEl = document.getElementById('sd-total-due');
+                const displayedAmountPaise = totalEl
+                    ? Math.round(parseFloat(totalEl.textContent.replace(/[^0-9.]/g, '')) * 100)
+                    : orderData.amount;
+
+                if (displayedAmountPaise !== orderData.amount) {
                     if (totalEl) {
                         totalEl.textContent = `${orderData.currency} ${(orderData.amount / 100).toFixed(2)}`;
                     }
-                    payNowBtn.dataset.confirmedAmount = orderData.amount;
                     payNowBtn.textContent = `Confirm & Pay ${orderData.currency} ${(orderData.amount / 100).toFixed(2)}`;
                     CamelTrunkLoading.showError(
                         payNowBtn,
