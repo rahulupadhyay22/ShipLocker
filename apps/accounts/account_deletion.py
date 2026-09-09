@@ -94,15 +94,15 @@ def delete_user_account(user):
             from apps.accounts.services import get_supabase_client
             get_supabase_client().auth.admin.delete_user(supabase_id)
             supabase_auth_deleted = True
-        except Exception as e:
+        except Exception:
             # Caught (not re-raised) so a Supabase outage never rolls back the
             # DB-side anonymization that already succeeded. But the original
             # email can still request a fresh OTP against the still-live
             # Supabase Auth identity and recreate an account until this is
             # cleaned up by hand — logged loudly, not swallowed silently.
-            logger.error(
+            logger.exception(
                 f"Supabase Auth deletion failed for anonymized user {user.pk} "
-                f"(supabase_id={supabase_id}): {e}. Manual cleanup required in the Supabase dashboard."
+                f"(supabase_id={supabase_id}). Manual cleanup required in the Supabase dashboard."
             )
 
     logger.info(

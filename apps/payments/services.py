@@ -139,10 +139,10 @@ class RazorpayService:
             # log it explicitly so a bad payload change is diagnosable from
             # this log line alone instead of blind guess-and-redeploy.
             body = e.response.text if e.response is not None else ''
-            logger.error(f"Razorpay order creation failed: {e} | response body: {body}")
+            logger.exception(f"Razorpay order creation failed | response body: {body}")
             return None
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Razorpay order creation failed: {e}")
+        except requests.exceptions.RequestException:
+            logger.exception("Razorpay order creation failed")
             return None
 
     def verify_webhook_signature(self, body: bytes, signature: str, webhook_secret: str) -> bool:

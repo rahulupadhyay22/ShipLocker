@@ -81,7 +81,7 @@ class DHLService:
             if app_settings.dhl_enabled and app_settings.dhl_api_key:
                 self.api_key = app_settings.dhl_api_key
         except Exception:
-            pass
+            logger.warning('DHL AppSettings lookup failed, falling back to env vars', exc_info=True)
         if not self.api_key:
             self.api_key = os.environ.get('DHL_API_KEY', '')
         if not self.api_key:
@@ -224,7 +224,7 @@ class DHLService:
                 error=f'DHL temporarily unavailable: {str(e)}'
             )
         except requests.exceptions.RequestException as e:
-            logger.error(f"DHL API error for {tracking_number}: {e}")
+            logger.exception(f"DHL API error for {tracking_number}")
             return TrackingResult(
                 success=False,
                 status='',

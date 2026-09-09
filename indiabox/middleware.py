@@ -29,6 +29,8 @@ class RateLimitMiddleware:
         '/locker/parcel/': 'authenticated',
         '/personal-shop/new/': 'authenticated',
         '/personal-shop/requests/': 'authenticated',
+        '/payments/create-order/': 'authenticated',
+        '/payments/premium/create-order/': 'authenticated',
         '/payments/verify/': 'authenticated',
         '/payments/webhook/razorpay/': 'public',
     }

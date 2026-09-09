@@ -55,6 +55,17 @@ class ShipmentDocumentForm(forms.ModelForm):
         # Make document_url optional — it can be auto-filled from file upload
         self.fields['document_url'].required = False
 
+    def clean_document_file(self):
+        document_file = self.cleaned_data.get('document_file')
+        if document_file:
+            from django.core.exceptions import ValidationError
+            from indiabox.validators import validate_file_upload
+            try:
+                validate_file_upload(document_file)
+            except ValidationError as e:
+                raise forms.ValidationError(str(e))
+        return document_file
+
     def has_changed(self):
         # The blank "extra" inline row always submits a document_type (it's a
         # required <select> with no empty option, so the browser sends the
@@ -337,8 +348,8 @@ class DeclarationApprovalAdmin(ModelAdmin):
             try:
                 signed_url = get_signed_shipment_doc_url(doc.document_url)
                 return format_html('<a href="{}" target="_blank" style="color: #10B981; font-weight: 600;">📄 View Declaration</a>', signed_url)
-            except Exception as e:
-                logger.error(f'declaration_link failed for shipment {obj.pk}: {e}')
+            except Exception:
+                logger.exception(f'declaration_link failed for shipment {obj.pk}')
                 return mark_safe('<span style="color: #6B7280;">Document unavailable</span>')
         return mark_safe('<span style="color: #EF4444;">No document</span>')
     declaration_link.short_description = "Declaration Form"
@@ -356,8 +367,8 @@ class DeclarationApprovalAdmin(ModelAdmin):
                     '📄 Click to View/Download Declaration Form</a></div>',
                     signed_url
                 )
-            except Exception as e:
-                logger.error(f'declaration_document failed for shipment {obj.pk}: {e}')
+            except Exception:
+                logger.exception(f'declaration_document failed for shipment {obj.pk}')
                 return mark_safe('<span style="color: #EF4444;">Error loading document</span>')
         return mark_safe('<span style="color: #EF4444;">No declaration document uploaded</span>')
     declaration_document.short_description = "Declaration Document"

@@ -44,7 +44,18 @@ class ParcelImageForm(forms.ModelForm):
     class Meta:
         model = ParcelImage
         fields = ['parcel', 'is_primary', 'caption', 'image_path']
-    
+
+    def clean_image_file(self):
+        image_file = self.cleaned_data.get('image_file')
+        if image_file:
+            from django.core.exceptions import ValidationError
+            from indiabox.validators import validate_file_upload
+            try:
+                validate_file_upload(image_file)
+            except ValidationError as e:
+                raise forms.ValidationError(str(e))
+        return image_file
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         

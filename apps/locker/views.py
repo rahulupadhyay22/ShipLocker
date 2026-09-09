@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
@@ -164,6 +164,9 @@ class ApproveParcelView(LoginRequiredMixin, View):
     """Handle parcel approval."""
     
     def post(self, request, pk):
+        from django.core.exceptions import ValidationError
+        from indiabox.validators import validate_text_input, validate_decimal_amount
+
         with transaction.atomic():
             parcel = get_object_or_404(
                 Parcel.objects.select_for_update(), pk=pk, locker=request.user.locker
@@ -173,17 +176,33 @@ class ApproveParcelView(LoginRequiredMixin, View):
                 messages.error(request, 'This parcel cannot be approved.')
                 return redirect('locker:parcel_detail', pk=pk)
 
-            # Update parcel with user's declaration
-            parcel.item_name = request.POST.get('item_name', parcel.item_name)
-            raw_item_price = request.POST.get('item_price')
-            if raw_item_price:
-                try:
-                    parcel.item_price = Decimal(raw_item_price)
-                except InvalidOperation:
-                    messages.error(request, 'Invalid item price.')
-                    return redirect('locker:parcel_detail', pk=pk)
-            parcel.category = request.POST.get('category', parcel.category)
-            parcel.customs_description = request.POST.get('customs_description', parcel.customs_description)
+            # Update parcel with user's declaration -- strict schema, not
+            # sanitize-and-store: these values feed the customs declaration.
+            try:
+                raw_item_name = request.POST.get('item_name')
+                if raw_item_name is not None:
+                    parcel.item_name = validate_text_input(
+                        raw_item_name, field_name='Item name', min_length=1, max_length=255, required=False)
+
+                raw_item_price = request.POST.get('item_price')
+                if raw_item_price:
+                    parcel.item_price = validate_decimal_amount(
+                        raw_item_price, field_name='Item price', max_digits=10, decimal_places=2)
+
+                raw_category = request.POST.get('category')
+                if raw_category is not None:
+                    if raw_category and raw_category not in dict(Parcel.CATEGORY_CHOICES):
+                        raise ValidationError('Invalid category.')
+                    parcel.category = raw_category
+
+                raw_customs_description = request.POST.get('customs_description')
+                if raw_customs_description is not None:
+                    parcel.customs_description = validate_text_input(
+                        raw_customs_description, field_name='Customs description',
+                        min_length=1, max_length=2000, required=False)
+            except ValidationError as e:
+                messages.error(request, str(e))
+                return redirect('locker:parcel_detail', pk=pk)
             
             # Handle invoice upload
             invoice_file = request.FILES.get('invoice')
@@ -206,8 +225,8 @@ class ApproveParcelView(LoginRequiredMixin, View):
                         is_personal_shop=parcel.personal_shop_request.exists(),
                     )
                     parcel.invoice_url = invoice_url
-                except Exception as e:
-                    logger.error(f'Invoice upload failed for parcel {parcel.pk}: {e}')
+                except Exception:
+                    logger.exception(f'Invoice upload failed for parcel {parcel.pk}')
                     messages.warning(request, 'Invoice upload failed. Parcel still approved.')
             
             parcel.status = 'approved'
@@ -225,13 +244,18 @@ class CreateReturnPaymentOrderView(LoginRequiredMixin, View):
     apps/payments/views.py's apply_payment_captured_side_effects."""
 
     def post(self, request, pk):
+        from django.core.exceptions import ValidationError
         from apps.content.services import get_service_charge
         from apps.payments.models import Payment
         from apps.payments.services import RazorpayService
+        from indiabox.validators import validate_text_input
 
-        reason = request.POST.get('reason', '')
-        if not reason.strip():
-            return JsonResponse({'error': 'Reason for return is required.'}, status=400)
+        try:
+            reason = validate_text_input(
+                request.POST.get('reason', ''), field_name='Reason for return',
+                min_length=1, max_length=500, required=True)
+        except ValidationError as e:
+            return JsonResponse({'error': str(e)}, status=400)
 
         parcel = get_object_or_404(Parcel, pk=pk, locker=request.user.locker)
         if parcel.status not in ('action_required', 'approved'):
@@ -324,7 +348,16 @@ class RequestDiscardView(LoginRequiredMixin, View):
     """Request discard for a parcel."""
     
     def post(self, request, pk):
-        reason = request.POST.get('reason', '')
+        from django.core.exceptions import ValidationError
+        from indiabox.validators import validate_text_input
+
+        try:
+            reason = validate_text_input(
+                request.POST.get('reason', ''), field_name='Reason for discard',
+                min_length=1, max_length=500, required=False)
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('locker:parcel_detail', pk=pk)
 
         with transaction.atomic():
             parcel = get_object_or_404(

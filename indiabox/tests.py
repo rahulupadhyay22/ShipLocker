@@ -7,7 +7,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, RequestFactory, override_settings
 
 from indiabox.middleware import RateLimitMiddleware
-from indiabox.validators import validate_text_input, validate_address, validate_file_upload
+from indiabox.validators import (
+    validate_text_input, validate_address, validate_file_upload,
+    validate_otp, validate_decimal_amount,
+)
 from indiabox.circuit_breaker import CircuitBreaker, CircuitOpenError
 
 
@@ -88,6 +91,41 @@ class StrictInputValidationTests(TestCase):
                 'recipient_name': 'Rahul', 'address_line1': 'Street 1',
                 'city': 'Delhi', 'country': 'India', 'postal_code': '<img src=x>',
             })
+
+
+class OtpAndDecimalValidationTests(TestCase):
+    def test_otp_rejects_non_digits(self):
+        with self.assertRaises(ValidationError):
+            validate_otp('12a456')
+
+    def test_otp_rejects_too_short_or_too_long(self):
+        with self.assertRaises(ValidationError):
+            validate_otp('123')
+        with self.assertRaises(ValidationError):
+            validate_otp('12345678901')
+
+    def test_otp_accepts_plausible_digit_lengths(self):
+        self.assertTrue(validate_otp('123456'))
+
+    def test_decimal_amount_rejects_nan_and_infinity(self):
+        with self.assertRaises(ValidationError):
+            validate_decimal_amount('NaN', field_name='Item price')
+        with self.assertRaises(ValidationError):
+            validate_decimal_amount('Infinity', field_name='Item price')
+
+    def test_decimal_amount_rejects_out_of_range(self):
+        with self.assertRaises(ValidationError):
+            validate_decimal_amount('999999999999', field_name='Item price')
+        with self.assertRaises(ValidationError):
+            validate_decimal_amount('-5', field_name='Item price')
+
+    def test_decimal_amount_accepts_value_within_column_range(self):
+        from decimal import Decimal
+        self.assertEqual(validate_decimal_amount('1234.56', field_name='Item price'), Decimal('1234.56'))
+
+    def test_decimal_amount_rejects_too_many_decimal_places(self):
+        with self.assertRaises(ValidationError):
+            validate_decimal_amount('10.999', field_name='Item price', decimal_places=2)
 
 
 class FileUploadContentValidationTests(TestCase):

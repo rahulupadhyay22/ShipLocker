@@ -62,7 +62,7 @@ class BlueDartService:
                 self.license_key = app_settings.bluedart_license_key or ''
                 self.login_id = app_settings.bluedart_login_id or ''
         except Exception:
-            pass
+            logger.warning('BlueDart AppSettings lookup failed, falling back to env vars', exc_info=True)
         if not self.license_key:
             self.license_key = os.environ.get('BLUEDART_LICENSE_KEY', '')
         if not self.login_id:
@@ -220,7 +220,7 @@ class BlueDartService:
                 error=f'BlueDart temporarily unavailable: {str(e)}'
             )
         except requests.exceptions.RequestException as e:
-            logger.error(f"BlueDart API error for {tracking_number}: {e}")
+            logger.exception(f"BlueDart API error for {tracking_number}")
             return TrackingResult(
                 success=False,
                 status='',

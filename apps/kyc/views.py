@@ -93,9 +93,9 @@ class KYCUploadView(LoginRequiredMixin, View):
             messages.success(request, 'Document uploaded successfully! It will be reviewed shortly.')
             return redirect('kyc:list')
             
-        except Exception as e:
-            security_logger.error(
-                f"KYC upload failed: {request.user.email} - {e}"
+        except Exception:
+            security_logger.exception(
+                f"KYC upload failed: {request.user.email}"
             )
             messages.error(request, 'Upload failed. Please try again in a moment.')
             return render(request, self.template_name)

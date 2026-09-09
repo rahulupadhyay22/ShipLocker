@@ -129,6 +129,52 @@ def validate_phone(phone):
     return True
 
 
+def validate_otp(otp):
+    """Validate an email-OTP token: digits only. Length isn't hardcoded to
+    exactly 6 -- Supabase Auth's OTP length is admin-configurable (commonly
+    4-10 digits) -- but non-digit input is always rejected outright rather
+    than passed through to the auth provider."""
+    if not isinstance(otp, str) or not re.match(r'^\d{4,10}$', otp):
+        raise ValidationError('Invalid OTP format.')
+    return True
+
+
+def validate_decimal_amount(raw_value, field_name='Amount', max_digits=10, decimal_places=2,
+                             min_value=None):
+    """Strictly validate a user-submitted decimal amount against the shape
+    of the DecimalField it's ultimately stored in. Decimal() alone happily
+    parses 'NaN' / 'Infinity' / huge exponents, and comparing a NaN Decimal
+    with <= raises InvalidOperation instead of returning False -- so both
+    finiteness and range are checked explicitly, in that order, before any
+    comparison is attempted.
+    """
+    from decimal import Decimal, InvalidOperation
+
+    if raw_value is None or str(raw_value).strip() == '':
+        raise ValidationError(f'{field_name} is required.')
+
+    try:
+        value = Decimal(str(raw_value))
+    except (InvalidOperation, ValueError, TypeError):
+        raise ValidationError(f'{field_name} must be a valid number.')
+
+    if not value.is_finite():
+        raise ValidationError(f'{field_name} must be a valid number.')
+
+    exponent = value.as_tuple().exponent
+    if exponent < -decimal_places:
+        raise ValidationError(f'{field_name} must have at most {decimal_places} decimal places.')
+
+    if min_value is None:
+        min_value = Decimal('0')
+    max_value = Decimal(10) ** (max_digits - decimal_places) - Decimal(10) ** (-decimal_places)
+
+    if value < min_value or value > max_value:
+        raise ValidationError(f'{field_name} must be between {min_value} and {max_value}.')
+
+    return value
+
+
 def validate_tracking_number(tracking):
     """Validate tracking number format."""
     # Alphanumeric, some hyphens allowed
@@ -148,7 +194,7 @@ def validate_tracking_number(tracking):
 # limits that no real script tag or event-handler attribute is missed
 # (input is also already length-capped to max_length by the caller).
 _DANGEROUS_PATTERN = re.compile(
-    r'<script[^>]{0,200}>|javascript:|on\w{1,20}\s{0,10}=|<iframe|<object|<embed', re.IGNORECASE
+    r'<script[^>]{0,200}>|javascript:|\bon\w{1,20}\s{0,10}=|<iframe|<object|<embed', re.IGNORECASE
 )
 
 
@@ -166,7 +212,7 @@ def validate_text_input(text, field_name='Field', min_length=1, max_length=500, 
     if not text.strip():
         if required:
             raise ValidationError(f'{field_name} is required.')
-        return text
+        return ''
 
     if len(text) < min_length or len(text) > max_length:
         raise ValidationError(

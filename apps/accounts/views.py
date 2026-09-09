@@ -95,8 +95,8 @@ class LoginView(View):
             request.session['signup_consent_ip'] = _client_ip(request)
             messages.success(request, f'OTP sent to {email}. Please check your inbox.')
             return redirect('accounts:verify_otp')
-        except Exception as e:
-            logger.error(f'OTP send failed for {email}: {e}')
+        except Exception:
+            logger.exception(f'OTP send failed for {email}')
             messages.error(request, 'Failed to send OTP. Please try again in a moment.')
             return render(request, self.template_name)
 
@@ -133,8 +133,8 @@ class GoogleLoginView(View):
             request.session['signup_consent_given'] = True
             request.session['signup_consent_ip'] = _client_ip(request)
             return redirect(oauth_url)
-        except Exception as e:
-            logger.error(f'Google login failed: {e}')
+        except Exception:
+            logger.exception('Google login failed')
             messages.error(request, 'Google login is temporarily unavailable. Please try email login.')
             return redirect('accounts:login')
 
@@ -175,8 +175,8 @@ class GoogleCallbackView(View):
             login(request, user)
             messages.success(request, 'Welcome back!' if not created else 'Account created successfully!')
             return redirect('accounts:dashboard')
-        except Exception as e:
-            logger.error(f'Google login callback failed: {e}')
+        except Exception:
+            logger.exception('Google login callback failed')
             messages.error(request, 'Google login failed. Please try again or use email login.')
             return redirect('accounts:login')
 
@@ -202,12 +202,20 @@ class VerifyOTPView(View):
         if not email or not otp:
             messages.error(request, 'Invalid request.')
             return redirect('accounts:login')
-        
+
+        from indiabox.validators import validate_otp
+        from django.core.exceptions import ValidationError
+        try:
+            validate_otp(otp)
+        except ValidationError:
+            messages.error(request, 'Invalid OTP format.')
+            return redirect('accounts:login')
+
         # H5: Verify the session token matches
         if not stored_token or submitted_token != stored_token:
             messages.error(request, 'Session expired. Please request a new OTP.')
             return redirect('accounts:login')
-        
+
         try:
             auth = SupabaseAuth()
             result = auth.verify_otp(email, otp)
@@ -238,8 +246,8 @@ class VerifyOTPView(View):
             messages.success(request, 'Welcome back!' if not created else 'Account created successfully!')
             return redirect('accounts:dashboard')
             
-        except Exception as e:
-            logger.error(f'OTP verification failed for {email}: {e}')
+        except Exception:
+            logger.exception(f'OTP verification failed for {email}')
             messages.error(request, 'Invalid or expired OTP. Please try again.')
             return render(request, self.template_name, {
                 'email': email,

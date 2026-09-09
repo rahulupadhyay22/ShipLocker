@@ -383,6 +383,22 @@ class VerifyPaymentView(LoginRequiredMixin, View):
         if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
             return JsonResponse({'error': 'Missing payment parameters'}, status=400)
 
+        # Type/length schema check on the three Razorpay-supplied identifiers
+        # before they touch a DB lookup or the HMAC verifier -- not a format
+        # regex (Razorpay's exact id shape is a vendor contract this repo
+        # can't pin down safely), just: strings, no markup, sane length cap.
+        from django.core.exceptions import ValidationError
+        from indiabox.validators import validate_text_input
+        try:
+            razorpay_order_id = validate_text_input(
+                razorpay_order_id, field_name='razorpay_order_id', min_length=1, max_length=100)
+            razorpay_payment_id = validate_text_input(
+                razorpay_payment_id, field_name='razorpay_payment_id', min_length=1, max_length=100)
+            razorpay_signature = validate_text_input(
+                razorpay_signature, field_name='razorpay_signature', min_length=1, max_length=100)
+        except ValidationError:
+            return JsonResponse({'error': 'Invalid payment parameters'}, status=400)
+
         payment = get_object_or_404(
             Payment,
             razorpay_order_id=razorpay_order_id,

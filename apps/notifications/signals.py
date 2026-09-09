@@ -48,8 +48,8 @@ def send_notification(user, template_name, components):
             logger.error(f"Failed to send WhatsApp '{template_name}' to {user.email}")
             return False
             
-    except Exception as e:
-        logger.error(f"Error sending notification: {str(e)}")
+    except Exception:
+        logger.exception("Error sending notification")
         return False
 
 

@@ -44,8 +44,8 @@ def upload_personal_shop_image(file: UploadedFile, locker_id: str, request_displ
             file_data = output.getvalue()
             content_type = 'image/jpeg'
             filename = os.path.splitext(filename)[0] + '.jpg'
-        except Exception as e:
-            logger.error(f"Image compression failed, uploading original: {e}")
+        except Exception:
+            logger.exception("Image compression failed, uploading original")
 
     storage.upload_file(
         bucket_name='parcel-images',

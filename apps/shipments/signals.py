@@ -126,8 +126,8 @@ def sync_tracking_on_number_change(sender, instance, created, **kwargs):
         
         logger.info(f"Saved {len(result.events)} tracking events for shipment {instance.id}")
         
-    except Exception as e:
-        logger.error(f"Error auto-syncing tracking for {instance.id}: {e}")
+    except Exception:
+        logger.exception(f"Error auto-syncing tracking for {instance.id}")
 
 
 # Track original payment_status before save (same shape as _original_tracking_numbers above)

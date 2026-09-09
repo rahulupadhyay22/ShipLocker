@@ -363,7 +363,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
     
     def post(self, request):
         from django.core.exceptions import ValidationError
-        from indiabox.validators import validate_address, validate_phone, validate_email
+        from indiabox.validators import validate_address, validate_phone, validate_email, validate_text_input
 
         # Get selected parcel IDs (deduplicated — a resubmitted form or
         # duplicate checkbox value would otherwise make len(parcels), which
@@ -400,6 +400,20 @@ class CreateShipmentView(LoginRequiredMixin, View):
             recipient_email = request.POST.get('recipient_email', '')
             if recipient_email:
                 validate_email(recipient_email)
+            # SavedAddress.label is CharField(max_length=50) -- validated here
+            # (not down in the 'save_address' block below) so an overlong
+            # label fails fast with a clear message instead of raising a
+            # DB-level error deep inside the shipment-creation transaction.
+            # Only validated when save_address is actually requested -- the
+            # field is submitted unconditionally by the template even when
+            # the "save this address" checkbox is off, and its value is
+            # never used in that case.
+            address_label = ''
+            if request.POST.get('save_address') == 'on':
+                address_label = validate_text_input(
+                    request.POST.get('address_label', ''),
+                    field_name='Address label', min_length=1, max_length=50, required=False,
+                ).strip()
         except ValidationError as e:
             messages.error(request, str(e))
             return redirect('shipments:create')
@@ -484,7 +498,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
                 if request.POST.get('save_address') == 'on':
                     default_saved = request.user.saved_addresses.filter(is_default=True).first()
                     address_payload = {
-                        'label': request.POST.get('address_label', '').strip(),
+                        'label': address_label,
                         'recipient_name': address_data.get('recipient_name', ''),
                         'recipient_phone': request.POST.get('recipient_phone', ''),
                         'recipient_email': request.POST.get('recipient_email', ''),
@@ -534,8 +548,8 @@ class CreateShipmentView(LoginRequiredMixin, View):
                 for parcel in parcels:
                     parcel.status = 'shipped'
                     parcel.save(update_fields=['status', 'updated_at'])
-        except Exception as e:
-            logger.error(f"Declaration signing failed for user={request.user.email}: {e}")
+        except Exception:
+            logger.exception(f"Declaration signing failed for user={request.user.email}")
             messages.error(request, 'We could not process your declaration. Please try again.')
             return redirect('shipments:create')
 
