@@ -19,6 +19,20 @@ from .models import Parcel, ParcelImage, ReturnRequest, DiscardRequest
 logger = logging.getLogger('security')
 
 
+def _first_form_error_message(form):
+    """Return the first Form error, formatted exactly like the
+    pre-migration `messages.error(request, str(e))` /
+    `JsonResponse({'error': str(e)})` did for a raised ValidationError --
+    Django's ValidationError.__str__() renders as a repr'd single-item list
+    (e.g. "['Invalid category.']"), which this reproduces so error text
+    stays byte-identical to what these views flashed/returned before the
+    Forms migration."""
+    from django.core.exceptions import ValidationError
+    for errors in form.errors.values():
+        return str(ValidationError(errors[0]))
+    return str(ValidationError('Invalid input.'))
+
+
 def _get_locker_tab_counts(locker):
     """Get all locker tab counts in a single aggregate query.
 
@@ -164,8 +178,7 @@ class ApproveParcelView(LoginRequiredMixin, View):
     """Handle parcel approval."""
     
     def post(self, request, pk):
-        from django.core.exceptions import ValidationError
-        from indiabox.validators import validate_text_input, validate_decimal_amount
+        from .forms import ParcelApprovalForm
 
         with transaction.atomic():
             parcel = get_object_or_404(
@@ -178,44 +191,26 @@ class ApproveParcelView(LoginRequiredMixin, View):
 
             # Update parcel with user's declaration -- strict schema, not
             # sanitize-and-store: these values feed the customs declaration.
-            try:
-                raw_item_name = request.POST.get('item_name')
-                if raw_item_name is not None:
-                    parcel.item_name = validate_text_input(
-                        raw_item_name, field_name='Item name', min_length=1, max_length=255, required=False)
-
-                raw_item_price = request.POST.get('item_price')
-                if raw_item_price:
-                    parcel.item_price = validate_decimal_amount(
-                        raw_item_price, field_name='Item price', max_digits=10, decimal_places=2)
-
-                raw_category = request.POST.get('category')
-                if raw_category is not None:
-                    if raw_category and raw_category not in dict(Parcel.CATEGORY_CHOICES):
-                        raise ValidationError('Invalid category.')
-                    parcel.category = raw_category
-
-                raw_customs_description = request.POST.get('customs_description')
-                if raw_customs_description is not None:
-                    parcel.customs_description = validate_text_input(
-                        raw_customs_description, field_name='Customs description',
-                        min_length=1, max_length=2000, required=False)
-            except ValidationError as e:
-                messages.error(request, str(e))
+            # ParcelApprovalForm wraps the same indiabox.validators calls this
+            # view used to make directly -- see apps/locker/forms.py.
+            form = ParcelApprovalForm(request.POST, request.FILES)
+            if not form.is_valid():
+                messages.error(request, _first_form_error_message(form))
                 return redirect('locker:parcel_detail', pk=pk)
-            
+
+            cleaned = form.cleaned_data
+            if cleaned['item_name'] is not None:
+                parcel.item_name = cleaned['item_name']
+            if cleaned['item_price'] is not None:
+                parcel.item_price = cleaned['item_price']
+            if cleaned['category'] is not None:
+                parcel.category = cleaned['category']
+            if cleaned['customs_description'] is not None:
+                parcel.customs_description = cleaned['customs_description']
+
             # Handle invoice upload
-            invoice_file = request.FILES.get('invoice')
+            invoice_file = cleaned['invoice']
             if invoice_file:
-                # Validate file upload
-                from indiabox.validators import validate_file_upload
-                from django.core.exceptions import ValidationError
-                try:
-                    validate_file_upload(invoice_file)
-                except ValidationError as e:
-                    messages.error(request, str(e))
-                    return redirect('locker:parcel_detail', pk=pk)
-                
                 try:
                     from .utils import upload_invoice
                     invoice_url = upload_invoice(
@@ -228,11 +223,11 @@ class ApproveParcelView(LoginRequiredMixin, View):
                 except Exception:
                     logger.exception(f'Invoice upload failed for parcel {parcel.pk}')
                     messages.warning(request, 'Invoice upload failed. Parcel still approved.')
-            
+
             parcel.status = 'approved'
             parcel.approved_at = timezone.now()
             parcel.save()
-        
+
         messages.success(request, f'Parcel {parcel.tracking_number} approved and ready to ship!')
         return redirect('locker:ready_to_ship')
 
@@ -244,18 +239,15 @@ class CreateReturnPaymentOrderView(LoginRequiredMixin, View):
     apps/payments/views.py's apply_payment_captured_side_effects."""
 
     def post(self, request, pk):
-        from django.core.exceptions import ValidationError
         from apps.content.services import get_service_charge
         from apps.payments.models import Payment
         from apps.payments.services import RazorpayService
-        from indiabox.validators import validate_text_input
+        from .forms import ReasonForm
 
-        try:
-            reason = validate_text_input(
-                request.POST.get('reason', ''), field_name='Reason for return',
-                min_length=1, max_length=500, required=True)
-        except ValidationError as e:
-            return JsonResponse({'error': str(e)}, status=400)
+        form = ReasonForm(request.POST, required=True, field_name='Reason for return')
+        if not form.is_valid():
+            return JsonResponse({'error': _first_form_error_message(form)}, status=400)
+        reason = form.cleaned_data['reason']
 
         parcel = get_object_or_404(Parcel, pk=pk, locker=request.user.locker)
         if parcel.status not in ('action_required', 'approved'):
@@ -348,16 +340,13 @@ class RequestDiscardView(LoginRequiredMixin, View):
     """Request discard for a parcel."""
     
     def post(self, request, pk):
-        from django.core.exceptions import ValidationError
-        from indiabox.validators import validate_text_input
+        from .forms import ReasonForm
 
-        try:
-            reason = validate_text_input(
-                request.POST.get('reason', ''), field_name='Reason for discard',
-                min_length=1, max_length=500, required=False)
-        except ValidationError as e:
-            messages.error(request, str(e))
+        form = ReasonForm(request.POST, required=False, field_name='Reason for discard')
+        if not form.is_valid():
+            messages.error(request, _first_form_error_message(form))
             return redirect('locker:parcel_detail', pk=pk)
+        reason = form.cleaned_data['reason']
 
         with transaction.atomic():
             parcel = get_object_or_404(

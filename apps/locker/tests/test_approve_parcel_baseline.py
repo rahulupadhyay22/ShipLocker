@@ -129,10 +129,20 @@ class ApproveParcelCategoryTests(TestCase):
         self.url = reverse('locker:approve_parcel', kwargs={'pk': self.parcel.pk})
 
     def test_invalid_category_rejected_with_exact_message(self):
+        """Pins the CURRENT exact flashed text, not the intended one: the
+        view does `messages.error(request, str(e))` on a bare
+        ValidationError('Invalid category.'), and Django's
+        ValidationError.__str__() renders that as a repr'd single-item list
+        -- "['Invalid category.']" -- not the plain string. Preserving this
+        exactly (warts included) is what requirement 8 asks for; a future
+        ParcelApprovalForm using form.errors instead of str(exception) would
+        naturally drop the brackets, which is a deliberate, separately
+        call-out-able behavior change at migration time, not something to
+        silently fix here."""
         response = self.client.post(self.url, {'category': 'not_a_real_category'}, follow=True)
 
         messages = [str(m) for m in response.context['messages']]
-        self.assertIn('Invalid category.', messages)
+        self.assertIn("['Invalid category.']", messages)
         self.parcel.refresh_from_db()
         self.assertEqual(self.parcel.status, 'action_required')
         self.assertEqual(self.parcel.category, '')
