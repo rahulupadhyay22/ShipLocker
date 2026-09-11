@@ -362,8 +362,7 @@ class CreateShipmentView(LoginRequiredMixin, View):
         })
     
     def post(self, request):
-        from django.core.exceptions import ValidationError
-        from indiabox.validators import validate_address, validate_phone, validate_email, validate_text_input
+        from .forms import ShipmentCreateForm
 
         # Get selected parcel IDs (deduplicated — a resubmitted form or
         # duplicate checkbox value would otherwise make len(parcels), which
@@ -375,50 +374,25 @@ class CreateShipmentView(LoginRequiredMixin, View):
             messages.error(request, 'Please select at least one parcel.')
             return redirect('shipments:create')
 
-        # Customs declaration e-signature fields
-        from .services.declaration_service import DeclarationService
-        try:
-            declaration_purpose, signature_name = DeclarationService.validate_signature_fields(request.POST)
-        except ValidationError as e:
-            messages.error(request, str(e))
+        # Address, contact, and customs e-signature fields. ShipmentCreateForm
+        # wraps the same indiabox.validators calls this view used to make
+        # directly -- see apps/shipments/forms.py. form.cleaned_data becomes
+        # the single source of truth: nothing below re-reads request.POST for
+        # a field the form already validated.
+        form = ShipmentCreateForm(request.POST)
+        if not form.is_valid():
+            first_error = next(iter(form.errors.get_json_data().values()))[0]['message']
+            messages.error(request, first_error)
             return redirect('shipments:create')
 
-        # Validate address + contact fields against a strict schema
-        try:
-            address_data = validate_address({
-                'recipient_name': request.POST.get('recipient_name', ''),
-                'address_line1': request.POST.get('address_line1', ''),
-                'address_line2': request.POST.get('address_line2', ''),
-                'city': request.POST.get('city', ''),
-                'state': request.POST.get('state', ''),
-                'postal_code': request.POST.get('postal_code', ''),
-                'country': request.POST.get('country', ''),
-            })
-            recipient_phone = request.POST.get('recipient_phone', '')
-            if recipient_phone:
-                validate_phone(recipient_phone)
-            recipient_email = request.POST.get('recipient_email', '')
-            if recipient_email:
-                validate_email(recipient_email)
-            # SavedAddress.label is CharField(max_length=50) -- validated here
-            # (not down in the 'save_address' block below) so an overlong
-            # label fails fast with a clear message instead of raising a
-            # DB-level error deep inside the shipment-creation transaction.
-            # Only validated when save_address is actually requested -- the
-            # field is submitted unconditionally by the template even when
-            # the "save this address" checkbox is off, and its value is
-            # never used in that case.
-            address_label = ''
-            if request.POST.get('save_address') == 'on':
-                address_label = validate_text_input(
-                    request.POST.get('address_label', ''),
-                    field_name='Address label', min_length=1, max_length=50, required=False,
-                ).strip()
-        except ValidationError as e:
-            messages.error(request, str(e))
-            return redirect('shipments:create')
+        cleaned = form.cleaned_data
+        declaration_purpose = cleaned['declaration_purpose']
+        signature_name = cleaned['signature_name']
+        recipient_phone = cleaned['recipient_phone']
+        recipient_email = cleaned['recipient_email']
+        address_label = cleaned['address_label']
 
-        shipment_type = 'domestic' if address_data['country'].strip().upper() == 'INDIA' else 'international'
+        shipment_type = 'domestic' if cleaned['country'].strip().upper() == 'INDIA' else 'international'
 
         locker = request.user.locker
 
@@ -448,6 +422,8 @@ class CreateShipmentView(LoginRequiredMixin, View):
                     messages.error(request, 'Invalid parcel selection.')
                     return redirect('shipments:create')
 
+                from .services.declaration_service import DeclarationService
+
                 import ipaddress
                 x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
                 candidate_ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
@@ -462,13 +438,13 @@ class CreateShipmentView(LoginRequiredMixin, View):
                     user=request.user,
                     shipment_type=shipment_type,
                     status='declaration_pending',
-                    recipient_name=address_data.get('recipient_name', ''),
-                    address_line1=address_data.get('address_line1', ''),
-                    address_line2=address_data.get('address_line2', ''),
-                    city=address_data.get('city', ''),
-                    state=address_data.get('state', ''),
-                    postal_code=address_data.get('postal_code', ''),
-                    country=address_data.get('country', ''),
+                    recipient_name=cleaned.get('recipient_name', ''),
+                    address_line1=cleaned.get('address_line1', ''),
+                    address_line2=cleaned.get('address_line2', ''),
+                    city=cleaned.get('city', ''),
+                    state=cleaned.get('state', ''),
+                    postal_code=cleaned.get('postal_code', ''),
+                    country=cleaned.get('country', ''),
                     recipient_phone=recipient_phone,
                     recipient_email=recipient_email,
                     consolidation_fee=consolidation_fee,
@@ -494,20 +470,26 @@ class CreateShipmentView(LoginRequiredMixin, View):
                             f"by user {request.user.id}"
                         )
 
-                # Optionally save as default address for quick reuse
-                if request.POST.get('save_address') == 'on':
+                # Optionally save as default address for quick reuse. Built
+                # entirely from form.cleaned_data -- previously this mixed
+                # validated address_data with fresh, unvalidated
+                # request.POST reads for recipient_phone/recipient_email/
+                # address_line2/state, so a saved address could silently
+                # diverge from the validated address actually used on the
+                # shipment above.
+                if cleaned.get('save_address'):
                     default_saved = request.user.saved_addresses.filter(is_default=True).first()
                     address_payload = {
                         'label': address_label,
-                        'recipient_name': address_data.get('recipient_name', ''),
-                        'recipient_phone': request.POST.get('recipient_phone', ''),
-                        'recipient_email': request.POST.get('recipient_email', ''),
-                        'address_line1': address_data.get('address_line1', ''),
-                        'address_line2': request.POST.get('address_line2', ''),
-                        'city': address_data.get('city', ''),
-                        'state': request.POST.get('state', ''),
-                        'postal_code': address_data.get('postal_code', ''),
-                        'country': address_data.get('country', ''),
+                        'recipient_name': cleaned.get('recipient_name', ''),
+                        'recipient_phone': recipient_phone,
+                        'recipient_email': recipient_email,
+                        'address_line1': cleaned.get('address_line1', ''),
+                        'address_line2': cleaned.get('address_line2', ''),
+                        'city': cleaned.get('city', ''),
+                        'state': cleaned.get('state', ''),
+                        'postal_code': cleaned.get('postal_code', ''),
+                        'country': cleaned.get('country', ''),
                         'is_default': True,
                     }
 

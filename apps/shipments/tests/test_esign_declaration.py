@@ -26,7 +26,7 @@ from unittest.mock import patch
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.accounts.models import User, Locker
+from apps.accounts.models import User, Locker, SavedAddress
 from apps.locker.models import Parcel
 from apps.shipments.models import Shipment, ShipmentDocument
 
@@ -223,19 +223,34 @@ class ESignDeclarationTests(TestCase):
 
         self.assertEqual(Shipment.objects.count(), 0)
 
-    def test_overlong_signature_name_truncated_not_rejected(self):
-        """Code-review fix: declaration_signed_name is max_length=255, and
-        Shipment.objects.create() skips full_clean(), so an oversized name
-        must be truncated before it reaches the DB -- not left to raise a
-        raw DataError / 500."""
+    def test_overlong_signature_name_rejected_not_truncated(self):
+        """Intentional behavior change (Forms migration, see
+        apps/shipments/forms.py ShipmentCreateForm.clean_signature_name):
+        signature_name now goes through indiabox.validators.validate_text_input
+        like every other free-text field in this view, so an oversized name is
+        rejected outright with no Shipment created -- it is no longer silently
+        truncated to 255 chars before reaching the DB. This replaces the old
+        test_overlong_signature_name_truncated_not_rejected, which asserted
+        the truncation behavior this migration deliberately removed."""
         self.client.force_login(self.user)
         long_name = 'A' * 300
         response = self._post(self._valid_data(signature_name=long_name))
 
         self.assertEqual(response.status_code, 302)
-        shipment = Shipment.objects.get()
-        self.assertEqual(len(shipment.declaration_signed_name), 255)
-        self.assertEqual(shipment.declaration_signed_name, long_name[:255])
+        self.assertRedirects(response, reverse('shipments:create'))
+        self.assertEqual(Shipment.objects.count(), 0)
+
+    def test_signature_name_with_script_tag_rejected(self):
+        """Intentional behavior change: signature_name now also runs through
+        validate_text_input's dangerous-pattern blocklist, same as every
+        other free-text field in this view (recipient_name, customs
+        description, etc.) -- previously only a length-cap applied."""
+        self.client.force_login(self.user)
+        response = self._post(self._valid_data(signature_name='<script>alert(1)</script>'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('shipments:create'))
+        self.assertEqual(Shipment.objects.count(), 0)
 
     # -- No KYC / identity-match requirement -------------------------------
 
@@ -349,3 +364,66 @@ class ESignDeclarationTests(TestCase):
         self.assertIsNotNone(shipment.declaration_signed_at)
         self.assertIsNotNone(shipment.declaration_signed_ip)
         self.assertEqual(shipment.declaration_version, Shipment.DECLARATION_TEXT_VERSION)
+
+    # -- SavedAddress uses validated data, not raw POST (Forms migration) --
+
+    def test_saved_address_matches_validated_shipment_address(self):
+        """Regression test for the audit-identified bug: the save-address
+        block used to mix validated address_data with fresh, unvalidated
+        request.POST reads for recipient_phone/recipient_email/
+        address_line2/state. Since those two sources happened to hold the
+        same raw string in the normal case, the divergence was only
+        observable if a validator ever transformed the value. This asserts
+        the SavedAddress created here is built from the exact same
+        form.cleaned_data used for the Shipment itself, field for field."""
+        self.client.force_login(self.user)
+        response = self._post(self._valid_data(
+            save_address='on',
+            address_label='Office',
+            address_line2='Suite 400',
+            state='California',
+            recipient_phone='9998887777',
+            recipient_email='saved@example.com',
+        ))
+
+        shipment = Shipment.objects.get()
+        saved = SavedAddress.objects.get(user=self.user)
+
+        self.assertRedirects(response, reverse('shipments:detail', kwargs={'pk': shipment.pk}))
+        self.assertEqual(saved.label, 'Office')
+        self.assertEqual(saved.recipient_name, shipment.recipient_name)
+        self.assertEqual(saved.recipient_phone, shipment.recipient_phone)
+        self.assertEqual(saved.recipient_email, shipment.recipient_email)
+        self.assertEqual(saved.address_line1, shipment.address_line1)
+        self.assertEqual(saved.address_line2, shipment.address_line2)
+        self.assertEqual(saved.address_line2, 'Suite 400')
+        self.assertEqual(saved.city, shipment.city)
+        self.assertEqual(saved.state, shipment.state)
+        self.assertEqual(saved.state, 'California')
+        self.assertEqual(saved.postal_code, shipment.postal_code)
+        self.assertEqual(saved.country, shipment.country)
+        self.assertTrue(saved.is_default)
+
+    def test_save_address_off_creates_no_saved_address(self):
+        self.client.force_login(self.user)
+        self._post(self._valid_data())
+
+        self.assertFalse(SavedAddress.objects.filter(user=self.user).exists())
+
+    def test_save_address_updates_existing_default_with_validated_data(self):
+        self.client.force_login(self.user)
+        existing = SavedAddress.objects.create(
+            user=self.user, label='Old', is_default=True,
+            recipient_name='Old Name', recipient_phone='1111111111',
+            address_line1='Old Street', city='Old City', state='Old State',
+            postal_code='000000', country='Old Country',
+        )
+
+        self._post(self._valid_data(save_address='on', address_label='New', state='Texas'))
+
+        existing.refresh_from_db()
+        shipment = Shipment.objects.get()
+        self.assertEqual(existing.label, 'New')
+        self.assertEqual(existing.state, 'Texas')
+        self.assertEqual(existing.state, shipment.state)
+        self.assertEqual(SavedAddress.objects.filter(user=self.user).count(), 1)
