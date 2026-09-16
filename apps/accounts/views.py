@@ -402,38 +402,20 @@ class ProfileView(LoginRequiredMixin, View):
         })
     
     def post(self, request):
-        from indiabox.validators import validate_phone, validate_text_input
-        from django.core.exceptions import ValidationError
+        from .forms import ProfileUpdateForm
+
+        # ProfileUpdateForm wraps the same indiabox.validators calls this
+        # view used to make directly -- see apps/accounts/forms.py.
+        form = ProfileUpdateForm(request.POST, user=request.user)
+        if not form.is_valid():
+            first_error = next(iter(form.errors.get_json_data().values()))[0]['message']
+            messages.error(request, first_error)
+            return redirect('accounts:profile')
 
         user = request.user
-        try:
-            full_name = validate_text_input(
-                request.POST.get('full_name', user.full_name),
-                field_name='Full name', min_length=2, max_length=255,
-            )
-        except ValidationError as e:
-            messages.error(request, str(e))
-            return redirect('accounts:profile')
-        user.full_name = full_name
-
-        phone = request.POST.get('phone', user.phone)
-        if phone:
-            try:
-                validate_phone(phone)
-                user.phone = phone
-            except ValidationError as e:
-                messages.error(request, str(e))
-                return redirect('accounts:profile')
-        
-        whatsapp = request.POST.get('whatsapp_number', user.whatsapp_number)
-        if whatsapp:
-            try:
-                validate_phone(whatsapp)
-                user.whatsapp_number = whatsapp
-            except ValidationError as e:
-                messages.error(request, str(e))
-                return redirect('accounts:profile')
-        
+        user.full_name = form.cleaned_data['full_name']
+        user.phone = form.cleaned_data['phone']
+        user.whatsapp_number = form.cleaned_data['whatsapp_number']
         user.save()
 
         messages.success(request, 'Profile updated successfully.')

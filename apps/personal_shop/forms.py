@@ -1,6 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
+from indiabox.validators import validate_text_input, validate_phone
 from .models import PersonalShopRequest
 
 
@@ -48,6 +49,12 @@ class ProductLinkForm(FormInputStylingMixin, forms.ModelForm):
             raise ValidationError('Product URL is required.')
         return url
 
+    def clean_notes(self):
+        notes = self.cleaned_data.get('notes', '')
+        return validate_text_input(
+            notes, field_name='Additional Notes', max_length=300, required=False,
+        )
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.type_details = {
@@ -68,6 +75,12 @@ class ImageSearchForm(FormInputStylingMixin, forms.ModelForm):
     class Meta:
         model = PersonalShopRequest
         fields = []
+
+    def clean_description(self):
+        description = self.cleaned_data.get('description', '')
+        return validate_text_input(
+            description, field_name='Description', max_length=500, required=False,
+        )
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -108,6 +121,16 @@ class BoutiquePurchaseForm(FormInputStylingMixin, forms.ModelForm):
             self.initial['source_mode'] = 'trunk'
             self.initial['source_parcel'] = self.instance.source_parcel_id
 
+    def clean_item_description(self):
+        # required=False here to preserve the conditional (not unconditional)
+        # requirement enforced below in clean() -- this only adds the shared
+        # length/dangerous-pattern checks on top, it must not itself reject
+        # a blank value in 'trunk' mode.
+        item_description = self.cleaned_data.get('item_description', '')
+        return validate_text_input(
+            item_description, field_name='Item Description', max_length=500, required=False,
+        )
+
     def clean(self):
         cleaned = super().clean()
         cleaned['source_mode'] = cleaned.get('source_mode') or 'new'
@@ -117,7 +140,12 @@ class BoutiquePurchaseForm(FormInputStylingMixin, forms.ModelForm):
         else:
             if not cleaned.get('boutique_name'):
                 self.add_error('boutique_name', 'Boutique name is required.')
-            if not cleaned.get('item_description'):
+            # 'item_description' not in self.errors: only genuinely blank/
+            # missing values are "required" errors -- if clean_item_description
+            # already raised (dangerous pattern, over-limit), it's not in
+            # cleaned_data either, but reporting "required" on top of that
+            # would be a redundant second error for one invalid input.
+            if not cleaned.get('item_description') and 'item_description' not in self.errors:
                 self.add_error('item_description', 'Item description is required.')
         return cleaned
 
@@ -150,7 +178,16 @@ class LocalShopPurchaseForm(FormInputStylingMixin, forms.ModelForm):
     )
     shop_address = forms.CharField(widget=forms.Textarea, label='Shop Address / Landmark')
     maps_link = forms.URLField(required=False, label='Google Maps Link (Optional)')
-    shop_phone = forms.CharField(max_length=20, label='Contact Number')
+    # required=False: the template label reads "(If known)"
+    # (templates/personal_shop/request_form_local_shop.html) and the
+    # sidebar tip for this request type says "Add a contact number so we
+    # can confirm details" alongside "Mention the shop's open hours if
+    # known" (SIDEBAR_TIPS['local_shop_purchase'] in views.py) -- both
+    # phrase it as optional, not mandatory. The field previously had no
+    # required=False, so Django's default required=True silently
+    # contradicted its own label; this was a pre-existing authoring gap,
+    # not an intentional requirement.
+    shop_phone = forms.CharField(max_length=20, required=False, label='Contact Number')
     item_description = forms.CharField(widget=forms.Textarea, label='Item Description')
 
     class Meta:
@@ -163,6 +200,28 @@ class LocalShopPurchaseForm(FormInputStylingMixin, forms.ModelForm):
         if not name:
             raise ValidationError('Shop name is required.')
         return name
+
+    def clean_shop_phone(self):
+        # Optional field (see the field declaration's comment) -- only
+        # validate format when a value was actually supplied, same
+        # optional-phone pattern already used elsewhere (ProfileUpdateForm,
+        # SavedAddressForm, ShipmentCreateForm.recipient_phone).
+        phone = self.cleaned_data.get('shop_phone', '')
+        if phone:
+            validate_phone(phone)
+        return phone
+
+    def clean_shop_address(self):
+        shop_address = self.cleaned_data.get('shop_address', '')
+        return validate_text_input(
+            shop_address, field_name='Shop Address', max_length=300, required=True,
+        )
+
+    def clean_item_description(self):
+        item_description = self.cleaned_data.get('item_description', '')
+        return validate_text_input(
+            item_description, field_name='Item Description', max_length=500, required=True,
+        )
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -186,10 +245,10 @@ class CustomRequestForm(FormInputStylingMixin, forms.ModelForm):
         fields = []
 
     def clean_description(self):
-        description = self.cleaned_data.get('description')
-        if not description:
-            raise ValidationError('Description is required.')
-        return description
+        description = self.cleaned_data.get('description', '')
+        return validate_text_input(
+            description, field_name='Description', max_length=500, required=True,
+        )
 
     def save(self, commit=True):
         instance = super().save(commit=False)

@@ -376,6 +376,17 @@ class VerifyPaymentView(LoginRequiredMixin, View):
         except json.JSONDecodeError:
             return HttpResponseBadRequest('Invalid JSON')
 
+        # Valid JSON but not an object (e.g. a bare array/number/string) has
+        # no .get() -- reject cleanly here instead of letting the next line
+        # raise AttributeError. Distinct message from the shape/length
+        # failure below (same 400 status) -- this is "the body isn't even
+        # the right shape to contain parameters" vs. "the parameters
+        # themselves are invalid"; previously both cases returned the
+        # identical text, making it unclear which failure occurred without
+        # exposing any request content.
+        if not isinstance(data, dict):
+            return JsonResponse({'error': 'Malformed request body'}, status=400)
+
         razorpay_order_id = data.get('razorpay_order_id', '')
         razorpay_payment_id = data.get('razorpay_payment_id', '')
         razorpay_signature = data.get('razorpay_signature', '')
@@ -484,6 +495,31 @@ class RazorpayWebhookView(View):
             order_id = payment_entity.get('order_id')
             payment_id = payment_entity.get('id')
 
+            # Defensive shape/length guard on these two provider-supplied
+            # identifiers before they reach a DB lookup (order_id) or a DB
+            # write (payment_id) -- HMAC verification already establishes
+            # this payload came from Razorpay, but a malformed value here
+            # (wrong JSON type, or oversized) would otherwise risk an
+            # unhandled TypeError from the ORM equality filter below, or --
+            # for payment_id specifically -- a crash on .save(): Payment.
+            # razorpay_payment_id is a CharField with no null=True, so
+            # assigning None (payment_id missing from the payload) would
+            # violate the column's NOT NULL constraint. Bounded at 100
+            # chars to match that field's own max_length and
+            # VerifyPaymentView's existing 100-char shape guard for the
+            # same identifiers in the checkout flow. No dangerous-pattern
+            # filtering -- these values are already signature-authenticated,
+            # not attacker-controlled free text, so only shape/length is
+            # checked, same scope as the error_description length fix above.
+            if not (isinstance(order_id, str) and 0 < len(order_id) <= 100):
+                if order_id:
+                    logger.warning(
+                        f"Webhook: order_id failed shape validation (type={type(order_id).__name__})"
+                    )
+                order_id = None
+            if not (isinstance(payment_id, str) and 0 < len(payment_id) <= 100):
+                payment_id = ''
+
             if order_id:
                 try:
                     with transaction.atomic():
@@ -508,7 +544,27 @@ class RazorpayWebhookView(View):
                 try:
                     payment = Payment.objects.get(razorpay_order_id=order_id)
                     payment.status = 'failed'
-                    payment.failure_reason = payment_entity.get('error_description', 'Payment failed')
+                    # failure_reason is a CharField(max_length=255) -- Django
+                    # doesn't enforce that at .save() time (only full_clean()
+                    # does, which this path never calls), so an over-length
+                    # value would otherwise reach Postgres raw and raise
+                    # StringDataRightTruncation. Scoped to a length check only
+                    # (matching the model field's own max_length -- the same
+                    # bound indiabox.validators.validate_text_input would use)
+                    # -- content/pattern filtering is out of scope here, since
+                    # any <=255-char value must keep behaving exactly as
+                    # before. On rejection, fall back to the same default
+                    # text this line already used for a missing
+                    # error_description -- not a new convention, not a
+                    # truncation of the oversized value.
+                    error_description = payment_entity.get('error_description', 'Payment failed')
+                    if isinstance(error_description, str) and len(error_description) > 255:
+                        logger.warning(
+                            f"Webhook: error_description for order {order_id} exceeds 255 chars "
+                            f"(length={len(error_description)}) -- using default failure reason"
+                        )
+                        error_description = 'Payment failed'
+                    payment.failure_reason = error_description
                     payment.save()
                     logger.info(f"Webhook: Payment failed for order {order_id}")
                 except Payment.DoesNotExist:

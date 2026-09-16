@@ -26,40 +26,23 @@ class KYCUploadView(LoginRequiredMixin, View):
         return render(request, self.template_name)
     
     def post(self, request):
-        from django.core.exceptions import ValidationError
-        from indiabox.validators import validate_file_upload, sanitize_filename
         import logging
-        
+        from .forms import KYCUploadForm
+
         security_logger = logging.getLogger('security')
-        
-        doc_type = request.POST.get('document_type')
-        file = request.FILES.get('document')
 
-        if not doc_type or not file:
-            messages.error(request, 'Please select document type and file.')
+        # KYCUploadForm wraps the same indiabox.validators call (and the
+        # same security-logging-on-file-rejection behavior) this view used
+        # to make directly -- see apps/kyc/forms.py.
+        form = KYCUploadForm(request.POST, request.FILES, user=request.user)
+        if not form.is_valid():
+            first_error = next(iter(form.errors.get_json_data().values()))[0]['message']
+            messages.error(request, first_error)
             return render(request, self.template_name)
 
-        if not request.POST.get('kyc_consent'):
-            messages.error(request, 'Please consent to processing this document to continue.')
-            return render(request, self.template_name)
+        doc_type = form.cleaned_data['document_type']
+        file = form.cleaned_data['document']
 
-        if doc_type not in dict(KYCDocument.DOCUMENT_TYPES):
-            messages.error(request, 'Invalid document type.')
-            return render(request, self.template_name)
-
-        # Validate file using security validators
-        try:
-            validate_file_upload(file)
-        except ValidationError as e:
-            messages.error(request, str(e))
-            security_logger.warning(
-                f"KYC upload rejected: {request.user.email} - {e}"
-            )
-            return render(request, self.template_name)
-        
-        # Sanitize filename
-        safe_filename = sanitize_filename(file.name)
-        
         try:
             # Upload to Supabase Storage (organized by locker_id)
             locker_id = get_user_locker_id(request.user)
