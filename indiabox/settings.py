@@ -192,15 +192,6 @@ if SELECTED_DATABASE_URL:
         # Ensure SSL is enabled for production database.
         if not DEBUG:
             db_options.setdefault('sslmode', 'require')
-
-        # Supabase's template1 can lag behind the host's current glibc
-        # collation version after a platform-side OS upgrade (collation
-        # version stamped on template1 goes stale until Supabase refreshes
-        # it), which makes `CREATE DATABASE ... TEMPLATE template1` fail for
-        # `manage.py test`. template0 is never connected to and carries no
-        # stale collation-version stamp, so building the test DB from it
-        # sidesteps the mismatch without touching template1 itself.
-        DATABASES['default']['TEST'] = {'TEMPLATE': 'template0'}
 else:
     # Fallback to SQLite for development without Supabase
     DATABASES = {
