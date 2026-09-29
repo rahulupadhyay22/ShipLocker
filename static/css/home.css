@@ -6,15 +6,15 @@
 
     --shadow-header-scrolled: 0 10px 30px rgba(0, 0, 0, 0.18);
     --shadow-header-active: 0 10px 30px rgba(0, 0, 0, 0.24);
-    --shadow-glow-gold: 0 10px 22px rgba(243, 174, 49, 0.2);
-    --shadow-glow-gold-hover: 0 14px 26px rgba(243, 174, 49, 0.26);
-    --shadow-glow-gold-press: 0 6px 14px rgba(243, 174, 49, 0.22);
-    --shadow-ring-gold: 0 0 0 3px rgba(243, 174, 49, 0.16);
-    --shadow-card-strip: 0 20px 50px rgba(9, 28, 39, 0.16);
-    --shadow-panel: 0 24px 46px rgba(8, 43, 58, 0.22);
+    --shadow-glow-gold: 0 10px 22px rgba(232,31,61, 0.2);
+    --shadow-glow-gold-hover: 0 14px 26px rgba(232,31,61, 0.26);
+    --shadow-glow-gold-press: 0 6px 14px rgba(232,31,61, 0.22);
+    --shadow-ring-gold: 0 0 0 3px rgba(232,31,61, 0.16);
+    --shadow-card-strip: 0 20px 50px rgba(30,31,46, 0.16);
+    --shadow-panel: 0 24px 46px rgba(43,44,65, 0.22);
     --shadow-field: 0 14px 30px rgba(0, 0, 0, 0.14);
-    --shadow-icon-rest: 0 14px 26px rgba(8, 43, 58, 0.07);
-    --shadow-icon-hover: 0 16px 30px rgba(8, 43, 58, 0.12);
+    --shadow-icon-rest: 0 14px 26px rgba(43,44,65, 0.07);
+    --shadow-icon-hover: 0 16px 30px rgba(43,44,65, 0.12);
 }
 
 .sr-only {
@@ -53,7 +53,7 @@ body.home-page {
     overflow-x: hidden;
     background: var(--surface-50);
     color: var(--text-main);
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     line-height: 1.6;
 }
 
@@ -82,13 +82,13 @@ body.home-page img {
 }
 
 .home-page .site-header.scrolled {
-    background: rgba(8, 43, 58, 0.96);
+    background: rgba(43,44,65, 0.96);
     backdrop-filter: blur(18px);
     box-shadow: var(--shadow-header-scrolled);
 }
 
 .home-page .site-header.menu-open {
-    background: rgba(8, 43, 58, 0.98);
+    background: rgba(43,44,65, 0.98);
     backdrop-filter: blur(18px);
     box-shadow: var(--shadow-header-active);
 }
@@ -97,7 +97,7 @@ body.home-page img {
    transparent/unscrolled state contrast, so keep it in its opaque "scrolled"
    look at all times. */
 .public-page .site-header {
-    background: rgba(8, 43, 58, 0.96);
+    background: rgba(43,44,65, 0.96);
     backdrop-filter: blur(18px);
     box-shadow: var(--shadow-header-scrolled);
 }
@@ -127,21 +127,23 @@ body.home-page img {
     color: var(--accent);
 }
 
-.home-page .brand-mark svg {
+.home-page .brand-mark img {
     width: 100%;
     height: 100%;
+    object-fit: contain;
 }
 
 .home-page .brand-text {
-    font-family: 'Fraunces', serif;
+    font-family: 'Jost', 'Futura', sans-serif;
     font-size: 1.9rem;
     line-height: 1;
     letter-spacing: -0.02em;
     white-space: nowrap;
+    color: var(--accent);
 }
 
 .home-page .brand-text span {
-    color: var(--accent);
+    color: #fff;
 }
 
 .home-page .nav-links {
@@ -184,7 +186,7 @@ body.home-page img {
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
     background: var(--accent);
-    color: var(--primary);
+    color: #fff;
     font-size: 0.95rem;
     font-weight: 700;
     box-shadow: var(--shadow-glow-gold);
@@ -329,11 +331,11 @@ body.home-page img {
 .home-page .hero-copy h1 {
     margin: 0 0 20px;
     max-width: 560px;
-    font-family: 'Fraunces', serif;
+    font-family: 'Jost', 'Futura', sans-serif;
     font-size: clamp(2.5rem, 3.8vw, 4rem);
     line-height: 1.08;
     letter-spacing: -0.02em;
-    font-weight: 800;
+    font-weight: 700;
     color: #ffffff;
 }
 
@@ -423,7 +425,7 @@ body.home-page img {
     position: absolute;
     inset: 40px 24px 18px;
     border-radius: 34px;
-    background: radial-gradient(circle at 72% 35%, rgba(123, 216, 224, 0.14), transparent 32%), radial-gradient(circle at 30% 22%, rgba(243, 174, 49, 0.12), transparent 20%);
+    background: radial-gradient(circle at 72% 35%, rgba(232, 31, 61, 0.12), transparent 32%), radial-gradient(circle at 30% 22%, rgba(232,31,61, 0.12), transparent 20%);
     filter: blur(1px);
 }
 
@@ -487,7 +489,7 @@ body.home-page img {
     width: min(300px, 44vw);
     height: 130px;
     border-radius: 14px 14px 20px 20px;
-    background: linear-gradient(180deg, #0f6f7c 0%, #0c5b69 100%);
+    background: linear-gradient(180deg, #e81f3d 0%, #c8102e 100%);
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 28px 48px rgba(0, 0, 0, 0.35);
     z-index: 2;
@@ -510,7 +512,7 @@ body.home-page img {
     height: 18px;
     transform: translateX(-50%);
     border-radius: 999px;
-    background: linear-gradient(180deg, #0c5b69, #0a4955);
+    background: linear-gradient(180deg, #3d3f58, #2b2c41);
     border: 2px solid rgba(255, 255, 255, 0.14);
 }
 
@@ -522,7 +524,7 @@ body.home-page img {
     height: 22px;
     transform: translateX(-50%);
     border-radius: 10px;
-    border: 3px solid var(--accent);
+    border: 3px solid #fff;
 }
 
 .home-page .trunk-lock::before {
@@ -530,7 +532,7 @@ body.home-page img {
     position: absolute;
     inset: 3px 8px;
     border-radius: 8px;
-    border: 2px solid var(--accent);
+    border: 2px solid #fff;
 }
 
 .home-page .trunk-logo {
@@ -539,8 +541,8 @@ body.home-page img {
     right: 0;
     bottom: 14px;
     text-align: center;
-    color: var(--accent);
-    font-family: 'Fraunces', serif;
+    color: #fff;
+    font-family: 'Jost', 'Futura', sans-serif;
     line-height: 1;
 }
 
@@ -607,7 +609,7 @@ body.home-page img {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: inset 0 0 0 1px rgba(8, 43, 58, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(43,44,65, 0.08);
 }
 
 .home-page .feature-icon svg {
@@ -656,7 +658,7 @@ body.home-page img {
     justify-content: center;
     flex-wrap: wrap;
     gap: 14px;
-    font-family: 'Fraunces', serif;
+    font-family: 'Jost', 'Futura', sans-serif;
     font-size: clamp(1.9rem, 2.8vw, 2.5rem);
     line-height: 1;
     font-weight: 700;
@@ -767,7 +769,7 @@ body.home-page img {
 
 .home-page .estimate-copy h2 {
     margin: 0 0 12px;
-    font-family: 'Fraunces', serif;
+    font-family: 'Jost', 'Futura', sans-serif;
     font-size: clamp(2rem, 3vw, 3rem);
     line-height: 1.08;
     font-weight: 700;
@@ -920,7 +922,7 @@ body.home-page img {
 
 .home-page .trusted-section h2 {
     margin: 0;
-    font-family: 'Fraunces', serif;
+    font-family: 'Jost', 'Futura', sans-serif;
     font-size: clamp(2rem, 3vw, 2.85rem);
     line-height: 1.08;
     color: var(--text-main);
@@ -989,7 +991,7 @@ body.home-page img {
     display: inline-flex;
     align-items: center;
     white-space: nowrap;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: -0.02em;
 }
 
@@ -1168,7 +1170,7 @@ body.home-page img {
     height: 46px;
     border: 0;
     background: var(--accent);
-    color: var(--primary);
+    color: #fff;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -1243,7 +1245,7 @@ body.home-page img {
     }
 
     .home-page .site-header {
-        background: rgba(8, 43, 58, 0.96);
+        background: rgba(43,44,65, 0.96);
         backdrop-filter: blur(16px);
         box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
     }
@@ -1277,7 +1279,7 @@ body.home-page img {
         margin: 0;
         padding: 8px 20px 16px;
         gap: 0;
-        background: rgba(8, 43, 58, 0.98);
+        background: rgba(43,44,65, 0.98);
         border-top: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 20px 32px rgba(0, 0, 0, 0.28);
     }
@@ -1621,7 +1623,7 @@ body.home-page img {
         height: 21px;
         font-size: 0.7rem;
         background: var(--primary);
-        box-shadow: 0 0 0 2px rgba(243, 174, 49, 0.16);
+        box-shadow: 0 0 0 2px rgba(232,31,61, 0.16);
         z-index: 2;
     }
 
@@ -1656,8 +1658,8 @@ body.home-page img {
         line-height: 1;
         color: var(--accent);
         background: #fff;
-        border: 1px solid rgba(243, 174, 49, 0.35);
-        box-shadow: 0 6px 14px rgba(8, 43, 58, 0.1);
+        border: 1px solid rgba(232,31,61, 0.35);
+        box-shadow: 0 6px 14px rgba(43,44,65, 0.1);
     }
 
     .home-page .estimate-panel {
@@ -1924,7 +1926,7 @@ body.home-page img {
 }
 
 .home-page .pricing-table thead th {
-    font-family: 'Fraunces', serif;
+    font-family: 'Jost', 'Futura', sans-serif;
     font-size: 1.05rem;
     color: var(--text-main);
     background: var(--surface-50);
@@ -1970,9 +1972,9 @@ body.home-page img {
     padding: 3px 10px;
     border-radius: var(--radius-pill, 999px);
     background: var(--accent);
-    color: var(--primary);
+    color: #fff;
     font-size: 0.7rem;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0.02em;
     vertical-align: middle;
 }

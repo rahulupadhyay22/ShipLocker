@@ -97,3 +97,7 @@ scratchpad/
 .codebase-memory/
 *.txt
 !requirements*.txt
+
+# Brand kit source files (print/design masters, 26MB) — web assets live in static/img/brand/
+Camel Trunk Files/
+.playwright-mcp/

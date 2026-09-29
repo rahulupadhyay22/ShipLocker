@@ -409,7 +409,7 @@
 .trunk-page-btn.active {
     background: var(--accent);
     border-color: var(--accent);
-    color: var(--primary);
+    color: #fff;
 }
 
 /* ---------- List view (grid/list toggle) ---------- */

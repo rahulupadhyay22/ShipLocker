@@ -479,7 +479,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: var(--text-main, #0d2b3c);
+    background: var(--text-main, #25263a);
     color: #fff;
     font-size: 0.7rem;
     font-weight: 700;
@@ -550,7 +550,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
-    background: #0d2b3c;
+    background: #25263a;
     color: white;
     border-radius: var(--radius-lg);
     padding: 1.75rem 2rem;

@@ -1,14 +1,9 @@
+{% load static %}
     <header class="site-header" id="siteHeader">
         <div class="nav-shell">
             <a href="/" class="brand" aria-label="CamelTrunk home">
                 <span class="brand-mark" aria-hidden="true">
-                    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M15 36c0-8 6-15 14-15h4c6 0 11 5 11 11v6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M17 37h27c5 0 9 4 9 9v3H12v-6c0-3 2-6 5-6Z" fill="currentColor"/>
-                        <path d="M21 40h6" stroke="#082b3a" stroke-width="3" stroke-linecap="round"/>
-                        <path d="M27 19c0-2 2-4 4-4h4l2 6" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="43" cy="17" r="2.5" fill="currentColor"/>
-                    </svg>
+                    <img src="{% static 'img/brand/icon.svg' %}" alt="" width="34" height="36">
                 </span>
                 <span class="brand-text">Camel<span>Trunk</span></span>
             </a>

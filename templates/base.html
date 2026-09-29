@@ -11,6 +11,10 @@
     <!-- Google Fonts -->
     <!-- Styles -->
     {% load static %}
+    <link rel="icon" href="{% static 'img/brand/icon.svg' %}" type="image/svg+xml">
+    <link rel="icon" href="{% static 'img/brand/favicon-32.png' %}" sizes="32x32" type="image/png">
+    <link rel="apple-touch-icon" href="{% static 'img/brand/apple-touch-icon.png' %}">
+    <meta name="theme-color" content="#2b2c41">
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
     <script src="{% static 'js/form-loading.js' %}"></script>
     {% block extra_css %}{% endblock %}
@@ -90,7 +94,7 @@
                 <span class="hamburger-bar"></span>
                 <span class="hamburger-bar"></span>
             </button>
-            <span class="mobile-brand"><i>{% block brand_name_mobile %}CamelTrunk{% endblock %}</i></span>
+            <span class="mobile-brand">{% block brand_name_mobile %}<span>Camel</span>Trunk{% endblock %}</span>
             <div class="mobile-user">
                 <button type="button" class="mobile-user-btn" onclick="toggleMobileAccount()" aria-label="Account">
                     {{ user.first_name|first|default:user.email|first|upper }}
@@ -109,9 +113,9 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
                 {% block brand_icon %}
-                <div class="brand-mark" aria-hidden="true">🐫</div>
+                <img class="brand-mark" src="{% static 'img/brand/icon.svg' %}" alt="" aria-hidden="true">
                 {% endblock %}
-                <h1>{% block brand_name %}CamelTrunk{% endblock %}</h1>
+                <h1>{% block brand_name %}<span>Camel</span>Trunk{% endblock %}</h1>
                 <button type="button" class="sidebar-close" onclick="toggleSidebar()" aria-label="Close menu">&times;</button>
             </div>
 
