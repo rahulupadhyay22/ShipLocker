@@ -2,13 +2,13 @@
    Scoped under body.dashboard-page so other pages keep the light sidebar. */
 
 body.dashboard-page {
-    --ct-navy: #0d2b3c;
-    --ct-navy-light: #143b50;
-    --ct-navy-lighter: #1c4a63;
-    --ct-gold: #f5a623;
-    --ct-gold-dark: #d88f13;
-    --ct-text-light: #dce8ee;
-    --ct-text-muted: #7fa1b3;
+    --ct-navy: #25263a;
+    --ct-navy-light: #34354d;
+    --ct-navy-lighter: #3d3f58;
+    --ct-gold: #e81f3d;
+    --ct-gold-dark: #c8102e;
+    --ct-text-light: #eeeef3;
+    --ct-text-muted: #a3a4b8;
     background: #fff;
 }
 
@@ -18,7 +18,7 @@ body.dashboard-page .main-content {
 
 body.dashboard-page .mobile-user-btn {
     background: var(--ct-gold);
-    color: var(--ct-navy);
+    color: #fff;
 }
 
 body.dashboard-page .announcement-card {
@@ -200,7 +200,7 @@ a.db-stat-card-sm:hover {
     max-width: 340px;
     width: 100%;
     height: auto;
-    filter: drop-shadow(0 10px 18px rgba(13, 43, 60, 0.18));
+    filter: drop-shadow(0 10px 18px rgba(43, 44, 65, 0.18));
 }
 
 .db-trunk-progress-bar {
@@ -338,7 +338,7 @@ a.db-stat-card-sm:hover {
 
 .db-qa-btn.primary {
     background: var(--ct-gold);
-    color: var(--ct-navy);
+    color: #fff;
 }
 
 .db-qa-btn.primary:hover {

@@ -415,7 +415,7 @@
     }
 
     .pd-mobile-bar-btn-primary {
-        color: var(--primary);
+        color: #fff;
         background: var(--accent);
         border-radius: var(--radius-sm);
     }

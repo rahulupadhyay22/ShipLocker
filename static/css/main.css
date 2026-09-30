@@ -1,29 +1,28 @@
 /* CamelTrunk authenticated app design system */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@500;600;700;800&display=swap');
 
 :root {
-    /* Caravan Teal + Blackberry Ink + Treasure Gold Palette */
-    --primary: #003746;
-    /* Caravan Teal */
-    --primary-hover: #012f3b;
-    --primary-light: #e8f4f3;
-    --secondary: #123844;
-    /* Blackberry Ink */
+    /* CamelTrunk brand palette: red #e81f3d, navy #2b2c41, cream #fcf0d6 */
+    --primary: #2b2c41;
+    /* Brand navy */
+    --primary-hover: #1f2031;
+    --primary-light: #eeeef3;
+    --secondary: #2b2c41;
 
-    --accent: #f6a313;
-    /* Treasure Gold */
-    --accent-hover: #df8d00;
-    --accent-light: #fff3d4;
+    --accent: #e81f3d;
+    /* Brand red */
+    --accent-hover: #c8102e;
+    --accent-light: #fde8eb;
 
-    --surface-0: #fbfbf8;
-    --surface-50: #f5f6f2;
-    --surface-100: #eaeee7;
-    --surface-200: #dfe5da;
-    --surface-300: #c7cdd2;
+    --surface-0: #fffdf8;
+    --surface-50: #fdf8ee;
+    --surface-100: #f5eee0;
+    --surface-200: #ebe2d0;
+    --surface-300: #d6ccba;
 
-    --text-main: #132326;
-    --text-secondary: #52666b;
-    --text-muted: #8a9a9e;
+    --text-main: #22233a;
+    --text-secondary: #5a5b70;
+    --text-muted: #8c8d9e;
 
     --success-bg: #ECFDF5;
     --success-text: #059669;
@@ -48,7 +47,7 @@
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-    --shadow-glow: 0 0 24px rgba(0, 95, 115, 0.18);
+    --shadow-glow: 0 0 24px rgba(43,44,65, 0.18);
 }
 
 /* Reset & Base */
@@ -65,8 +64,8 @@ body {
 }
 
 body {
-    font-family: 'Manrope', sans-serif;
-    background: #002f3c;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #2b2c41;
     color: var(--text-main);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -78,7 +77,7 @@ h3,
 h4,
 h5,
 h6 {
-    font-family: 'Fraunces', serif;
+    font-family: 'Jost', 'Futura', sans-serif;
     font-weight: 600;
     color: var(--text-main);
     line-height: 1.15;
@@ -101,7 +100,7 @@ a {
 /* Sidebar */
 .sidebar {
     width: var(--sidebar-width);
-    background: #0d2b3c;
+    background: #25263a;
     border-right: 1px solid rgba(234, 238, 231, 0.14);
     height: 100vh;
     position: fixed;
@@ -137,22 +136,20 @@ a {
 .sidebar-brand h1 {
     font-size: 1rem;
     color: #fff8e8;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: -0.01em;
     margin-bottom: 0;
 }
 
 .brand-mark {
-    width: 31px;
-    height: 31px;
-    border-radius: 999px;
-    background: var(--accent);
-    color: #003746;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    line-height: 1;
+    width: 30px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+.sidebar-brand h1 span,
+.mobile-brand span {
+    color: var(--accent);
 }
 
 .sidebar-nav-heading {
@@ -160,7 +157,7 @@ a {
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(245, 251, 249, 0.36);
+    color: rgba(253,248,238, 0.36);
     padding: 0 0.72rem;
     margin: 1.05rem 0 0.4rem;
 }
@@ -173,7 +170,7 @@ a {
     display: flex;
     align-items: center;
     padding: 0.62rem 0.72rem;
-    color: rgba(245, 251, 249, 0.86);
+    color: rgba(253,248,238, 0.86);
     border-radius: 8px;
     font-weight: 600;
     margin-bottom: 0.22rem;
@@ -197,9 +194,9 @@ a {
 }
 
 .nav-item.active {
-    background: linear-gradient(180deg, #ffb82e, #f3a10f);
-    color: #003746;
-    box-shadow: 0 8px 18px rgba(246, 163, 19, 0.22);
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(232,31,61, 0.22);
 }
 
 .nav-item.active svg {
@@ -215,7 +212,7 @@ a {
     background: var(--badge-danger);
     color: #fff;
     font-size: 0.68rem;
-    font-weight: 800;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -241,14 +238,14 @@ a {
     padding: 0.65rem 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 12px;
-    background: rgba(0, 41, 52, 0.8);
+    background: rgba(35,36,54, 0.8);
 }
 
 .sidebar-trunk-label {
     display: block;
     font-size: 0.65rem;
     letter-spacing: 0.03em;
-    color: rgba(245, 251, 249, 0.6);
+    color: rgba(253,248,238, 0.6);
 }
 
 .sidebar-trunk-value {
@@ -265,7 +262,7 @@ a {
     border-radius: 8px;
     border: none;
     background: rgba(255, 255, 255, 0.1);
-    color: rgba(245, 251, 249, 0.8);
+    color: rgba(253,248,238, 0.8);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -285,11 +282,11 @@ a {
     padding: 0.6rem 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 12px;
-    background: rgba(0, 41, 52, 0.8);
+    background: rgba(35,36,54, 0.8);
 }
 
 .sidebar-profile-card:hover {
-    background: rgba(0, 41, 52, 1);
+    background: rgba(35,36,54, 1);
 }
 
 .sidebar-profile-card svg {
@@ -303,11 +300,11 @@ a {
     height: 32px;
     border-radius: 999px;
     background: var(--accent);
-    color: var(--primary);
+    color: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
+    font-weight: 700;
     font-size: 0.85rem;
     flex-shrink: 0;
 }
@@ -329,7 +326,7 @@ a {
 
 .sidebar-profile-link {
     font-size: 0.68rem;
-    color: rgba(245, 251, 249, 0.6);
+    color: rgba(253,248,238, 0.6);
 }
 
 .sidebar-logout-btn {
@@ -357,7 +354,7 @@ a {
     padding: 0.85rem;
     border: 1px solid rgba(255,255,255,0.14);
     border-radius: 12px;
-    background: rgba(0, 41, 52, 0.8);
+    background: rgba(35,36,54, 0.8);
 }
 
 .sidebar-support h4 {
@@ -367,14 +364,14 @@ a {
     margin-bottom: 0.1rem;
     letter-spacing: 0;
     text-transform: none;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 .support-link {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    color: rgba(245, 251, 249, 0.72);
+    color: rgba(253,248,238, 0.72);
     font-size: 0.72rem;
     margin-bottom: 0;
     font-weight: 500;
@@ -470,9 +467,9 @@ a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: #182b24;
+    background: var(--primary);
     color: #fff8e8;
-    font-weight: 800;
+    font-weight: 700;
 }
 
 /* Page Header */
@@ -559,13 +556,13 @@ a {
 
 /* Virtual Card Specifics */
 .virtual-card {
-    background: linear-gradient(135deg, #005F73 0%, #00757F 100%);
+    background: linear-gradient(135deg, #2b2c41 0%, #46475f 100%);
     border-radius: var(--radius-lg);
     color: white;
     padding: 2.5rem;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 20px 25px -5px rgba(0, 95, 115, 0.35);
+    box-shadow: 0 20px 25px -5px rgba(43,44,65, 0.35);
 }
 
 .virtual-card::before {
@@ -680,7 +677,7 @@ a {
     justify-content: center;
     padding: 0.68rem 1.15rem;
     border-radius: 8px;
-    font-weight: 800;
+    font-weight: 700;
     font-size: 0.82rem;
     border: 1px solid transparent;
     cursor: pointer;
@@ -691,14 +688,14 @@ a {
 
 .btn-primary {
     background: var(--accent);
-    color: #003746;
-    box-shadow: 0 8px 18px rgba(246, 163, 19, 0.22);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(232,31,61, 0.22);
 }
 
 .btn-primary:hover {
     background: var(--accent-hover);
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 95, 115, 0.35);
+    box-shadow: 0 6px 16px rgba(43,44,65, 0.35);
 }
 
 .btn-accent {
@@ -947,7 +944,7 @@ a {
     justify-content: space-between;
     height: 64px;
     padding: 0 1.25rem;
-    background: #0d2b3c;
+    background: #25263a;
     border-bottom: 1px solid var(--surface-100);
     position: sticky;
     top: 0;
@@ -962,7 +959,7 @@ a {
     width: 32px;
     height: 32px;
     background: var(--accent);
-    color: #003746;
+    color: #fff;
     border-radius: 50%;
     border: none;
     display: flex;
@@ -1021,7 +1018,7 @@ a {
     left: 0;
     right: 0;
     z-index: 55;
-    background: #0d2b3c;
+    background: #25263a;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding: 0.4rem 0.25rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
     align-items: stretch;
@@ -1036,7 +1033,7 @@ a {
     justify-content: center;
     gap: 0.2rem;
     padding: 0.3rem 0.1rem;
-    color: rgba(245, 251, 249, 0.6);
+    color: rgba(253,248,238, 0.6);
     font-size: 0.62rem;
     font-weight: 700;
     position: relative;
@@ -1067,7 +1064,7 @@ a {
     background: var(--badge-danger);
     color: #fff;
     font-size: 0.55rem;
-    font-weight: 800;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;

@@ -61,7 +61,7 @@
 
 .wizard-step-indicator.complete .wsi-circle {
     background: var(--accent);
-    color: var(--primary);
+    color: #fff;
     box-shadow: 0 0 0 1px var(--accent);
 }
 
@@ -175,7 +175,7 @@
 .summary-fees-total .summary-stat-label,
 .summary-fees-total .summary-stat-value {
     font-size: 0.95rem;
-    font-weight: 800;
+    font-weight: 700;
     color: var(--text-main);
 }
 

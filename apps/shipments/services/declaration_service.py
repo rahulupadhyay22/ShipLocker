@@ -82,7 +82,7 @@ class DeclarationService:
 
         table = Table(rows, colWidths=[35 * mm, 25 * mm, 55 * mm, 30 * mm, 25 * mm])
         table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#003746')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2b2c41')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),

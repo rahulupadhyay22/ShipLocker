@@ -449,7 +449,10 @@ from django.urls import reverse_lazy
 UNFOLD = {
     "SITE_TITLE": "CamelTrunk Admin",
     "SITE_HEADER": "CamelTrunk",
-    "SITE_SYMBOL": "package",  # Material icon
+    "SITE_ICON": lambda request: static("img/brand/icon.svg"),
+    "SITE_FAVICONS": [
+        {"rel": "icon", "type": "image/svg+xml", "href": lambda request: static("img/brand/icon.svg")},
+    ],
     "DASHBOARD_CALLBACK": "indiabox.dashboard.dashboard_callback",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
@@ -460,18 +463,19 @@ UNFOLD = {
         lambda request: static("unfold/fix-search.js"),  # ESC key fix
     ],
     "COLORS": {
+        # Brand red (#e81f3d at 500) — matches the public site
         "primary": {
-            "50": "239 246 255",
-            "100": "219 234 254",
-            "200": "191 219 254",
-            "300": "147 197 253",
-            "400": "96 165 250",
-            "500": "59 130 246",
-            "600": "37 99 235",
-            "700": "29 78 216",
-            "800": "30 64 175",
-            "900": "30 58 138",
-            "950": "23 37 84",
+            "50": "#fef2f4",
+            "100": "#fde8eb",
+            "200": "#fbc5cd",
+            "300": "#f794a3",
+            "400": "#f05a71",
+            "500": "#e81f3d",
+            "600": "#c8102e",
+            "700": "#a50d26",
+            "800": "#870f24",
+            "900": "#701123",
+            "950": "#3f040f",
         },
     },
     "SIDEBAR": {
